@@ -5,7 +5,7 @@ import { NodeProps } from "@xyflow/react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { ExternalLink, Trash2, Pencil } from "lucide-react";
+import { ExternalLink, Trash2, Pencil, Rss } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -61,6 +61,28 @@ function getYouTubeVideoId(url: string): string | null {
   }
 }
 
+function looksLikeRssFeed(url: string): boolean {
+  try {
+    const path = new URL(url).pathname.toLowerCase();
+    if ([".rss", ".xml", ".atom"].some((ext) => path.endsWith(ext))) return true;
+    if (["/feed", "/rss", "/atom"].some((p) => path.includes(p))) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function RssIndicator() {
+  return (
+    <div className="absolute -top-1.5 -right-1.5 flex items-center justify-center z-10" title="RSS Feed">
+      <span className="absolute inline-flex h-4 w-4 rounded-full bg-orange-400/30 animate-ping" />
+      <span className="relative inline-flex items-center justify-center h-4 w-4 rounded-full bg-orange-400 shadow-sm">
+        <Rss className="h-2.5 w-2.5 text-white" />
+      </span>
+    </div>
+  );
+}
+
 function Shimmer({ className }: { className?: string }) {
   return (
     <div
@@ -91,6 +113,7 @@ export function LinkNode({ data }: NodeProps) {
   const title = metadata?.title;
   const description = metadata?.description;
   const youtubeId = getYouTubeVideoId(content);
+  const isRss = looksLikeRssFeed(content);
 
   const openRename = useCallback(() => {
     setRenameValue(title || "");
@@ -145,7 +168,8 @@ export function LinkNode({ data }: NodeProps) {
       )}
     </div>
   ) : (
-    <div className="bg-card border rounded-lg shadow-sm w-[280px] group">
+    <div className="bg-card border rounded-lg shadow-sm w-[280px] group relative">
+      {isRss && <RssIndicator />}
       <a
         href={content}
         target="_blank"
