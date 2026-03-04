@@ -42,7 +42,7 @@ export default function DashboardPage() {
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
-              src="https://magpai.app/magpai_full_logo_black.svg"
+              src="/magpai-logo.svg"
               alt="Magpai"
               className="h-7"
             />

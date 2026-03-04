@@ -55,7 +55,7 @@ export default function Home() {
     <div className="landing-dot-grid min-h-screen flex flex-col items-center px-4 py-20">
       {/* Logo */}
       <img
-        src="http://magpai.app/magpai_full_logo_black.svg"
+        src="/magpai-logo.svg"
         alt="Magpai"
         className="h-12 sm:h-14"
       />
