@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 
 interface TipTapEditorProps {
   content: string;
@@ -13,7 +15,7 @@ interface TipTapEditorProps {
 export function TipTapEditor({ content, onSave, onCancel }: TipTapEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [StarterKit],
+    extensions: [StarterKit, TaskList, TaskItem.configure({ nested: true })],
     content,
     editorProps: {
       attributes: {

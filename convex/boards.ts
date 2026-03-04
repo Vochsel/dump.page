@@ -1,4 +1,5 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
+import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 
 export const createBoard = mutation({
@@ -271,6 +272,139 @@ export const regenerateShareToken = mutation({
     });
 
     return newToken;
+  },
+});
+
+export const seedDefaultBoard = internalMutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    const boardId = await ctx.db.insert("boards", {
+      name: "Welcome to Magpai",
+      icon: "👋",
+      ownerId: args.userId,
+      visibility: "private",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("boardMembers", {
+      boardId,
+      userId: args.userId,
+      role: "owner",
+      joinedAt: now,
+    });
+
+    const templateNodes: Array<{
+      type: "link" | "text";
+      content: string;
+      position: { x: number; y: number };
+      dimensions: { width: number; height: number };
+    }> = [
+      {
+        type: "link",
+        content: "https://news.ycombinator.com",
+        position: { x: 100, y: 100 },
+        dimensions: { width: 280, height: 120 },
+      },
+      {
+        type: "link",
+        content: "https://en.wikipedia.org/wiki/Australian_magpie",
+        position: { x: 420, y: 100 },
+        dimensions: { width: 280, height: 120 },
+      },
+      {
+        type: "link",
+        content: "https://magpai.app",
+        position: { x: 740, y: 100 },
+        dimensions: { width: 280, height: 120 },
+      },
+      {
+        type: "text",
+        content:
+          "Welcome! This is your first board. Drop links, paste notes, and share with your team.",
+        position: { x: 100, y: 300 },
+        dimensions: { width: 320, height: 120 },
+      },
+      {
+        type: "text",
+        content:
+          "Tip: Right-click the canvas to add new items, or just paste a URL.",
+        position: { x: 460, y: 300 },
+        dimensions: { width: 320, height: 120 },
+      },
+    ];
+
+    for (const node of templateNodes) {
+      const nodeId = await ctx.db.insert("nodes", {
+        boardId,
+        type: node.type,
+        content: node.content,
+        position: node.position,
+        dimensions: node.dimensions,
+        createdBy: args.userId,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      if (node.type === "link") {
+        await ctx.scheduler.runAfter(0, api.nodes.fetchLinkMetadata, {
+          nodeId,
+          url: node.content,
+        });
+      }
+    }
+  },
+});
+
+export const getMyBoardsWithRecentNodes = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
+      .unique();
+    if (!user) return [];
+
+    const memberships = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const boards = await Promise.all(
+      memberships.map(async (m) => {
+        const board = await ctx.db.get(m.boardId);
+        if (!board) return null;
+        const memberCount = (
+          await ctx.db
+            .query("boardMembers")
+            .withIndex("by_boardId", (q) => q.eq("boardId", m.boardId))
+            .collect()
+        ).length;
+        const nodes = await ctx.db
+          .query("nodes")
+          .withIndex("by_boardId", (q) => q.eq("boardId", m.boardId))
+          .collect();
+        // Sort by updatedAt descending and take top 4
+        const recentNodes = nodes
+          .sort((a, b) => b.updatedAt - a.updatedAt)
+          .slice(0, 4)
+          .map((n) => ({
+            _id: n._id,
+            type: n.type,
+            content: n.content,
+            metadata: n.metadata,
+            updatedAt: n.updatedAt,
+          }));
+        return { ...board, role: m.role, memberCount, recentNodes };
+      })
+    );
+
+    return boards.filter(Boolean);
   },
 });
 

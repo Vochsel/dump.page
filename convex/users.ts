@@ -1,4 +1,5 @@
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 export const getOrCreateUser = mutation({
@@ -26,13 +27,21 @@ export const getOrCreateUser = mutation({
       return existing._id;
     }
 
-    return await ctx.db.insert("users", {
+    const userId = await ctx.db.insert("users", {
       firebaseUid: args.firebaseUid,
       email: args.email,
       name: args.name,
       profileImage: args.profileImage,
       createdAt: Date.now(),
     });
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.boards.seedDefaultBoard,
+      { userId }
+    );
+
+    return userId;
   },
 });
 

@@ -202,6 +202,38 @@
   padding: 0;
 }
 
+.tiptap-editor ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.25em 0;
+}
+
+.tiptap-editor ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35em;
+  margin: 0.1em 0;
+}
+
+.tiptap-editor ul[data-type="taskList"] li label {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+}
+
+.tiptap-editor ul[data-type="taskList"] li label input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: #92400e;
+}
+
+.tiptap-editor ul[data-type="taskList"] li div {
+  flex: 1;
+}
+
+.tiptap-editor ul[data-type="taskList"] li[data-checked="true"] > div > p {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
 /* Landing page — whiteboard dot grid */
 .landing-dot-grid {
   background-color: #fafaf8;
