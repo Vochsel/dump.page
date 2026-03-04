@@ -1,10 +1,22 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
+import TurndownService from "turndown";
 
 const convex = new ConvexHttpClient(
   process.env.NEXT_PUBLIC_CONVEX_URL as string
 );
+
+const turndown = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" });
+
+function contentToMarkdown(content: string): string {
+  if (!content) return "";
+  // If content looks like HTML, convert to markdown
+  if (content.trimStart().startsWith("<")) {
+    return turndown.turndown(content);
+  }
+  return content;
+}
 
 export async function getBoardMarkdown(
   boardId: string,
@@ -33,7 +45,7 @@ export async function getBoardMarkdown(
     if (textNodes.length > 0) {
       markdown += `## Notes\n\n`;
       for (const node of textNodes) {
-        markdown += `${node.content}\n\n`;
+        markdown += `${contentToMarkdown(node.content)}\n\n`;
       }
     }
 

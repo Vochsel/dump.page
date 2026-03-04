@@ -21,6 +21,21 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { TextNode } from "./TextNode";
 import { LinkNode } from "./LinkNode";
 import { Toolbar } from "./Toolbar";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Type, Link, Plus } from "lucide-react";
 
 import { darkenHex } from "@/lib/utils";
 
@@ -45,6 +60,11 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
   const fetchMetadata = useAction(api.nodes.fetchLinkMetadata);
   const { screenToFlowPosition, fitView } = useReactFlow();
   const mousePosRef = useRef({ x: 0, y: 0 });
+  const contextMenuPosRef = useRef({ x: 0, y: 0 });
+
+  // Link dialog state
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
 
   // Local node state for optimistic updates
   const [localNodes, setLocalNodes] = useState<Node[]>([]);
@@ -198,6 +218,45 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [localNodes, fitView]);
 
+  // Context menu handlers
+  const addTextNodeAtCursor = useCallback(() => {
+    const pos = screenToFlowPosition(contextMenuPosRef.current);
+    createNode({
+      boardId,
+      type: "text",
+      content: "",
+      position: { x: pos.x - 90, y: pos.y - 20 },
+    });
+  }, [boardId, createNode, screenToFlowPosition]);
+
+  const addLinkNodeAtCursor = useCallback(() => {
+    setLinkUrl("");
+    setLinkDialogOpen(true);
+  }, []);
+
+  const handleLinkSubmit = useCallback(() => {
+    let url = linkUrl.trim();
+    if (!url) return;
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      url = "https://" + url;
+    }
+    const pos = screenToFlowPosition(contextMenuPosRef.current);
+    createNode({
+      boardId,
+      type: "link",
+      content: url,
+      position: { x: pos.x - 140, y: pos.y - 30 },
+    }).then((nodeId) => {
+      fetchMetadata({ nodeId, url });
+    });
+    setLinkDialogOpen(false);
+    setLinkUrl("");
+  }, [linkUrl, boardId, createNode, fetchMetadata, screenToFlowPosition]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    contextMenuPosRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
   const bgPattern = settings.backgroundPattern ?? "dots";
   const bgColor = settings.backgroundColor ?? "#f9fafb";
   const controlsVariant = settings.controlsVariant ?? "default";
@@ -223,30 +282,90 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
     return null; // "blank"
   };
 
+  const flowContent = (
+    <ReactFlow
+      nodes={localNodes}
+      edges={[]}
+      onNodesChange={onNodesChange}
+      nodeTypes={nodeTypes}
+      nodesDraggable={canEdit}
+      nodesConnectable={false}
+      selectionMode={SelectionMode.Partial}
+      fitView
+      fitViewOptions={{ padding: 0.5 }}
+      minZoom={0.1}
+      maxZoom={2}
+      panOnScroll={controlsVariant === "default"}
+      zoomOnScroll={controlsVariant !== "default"}
+      proOptions={{ hideAttribution: true }}
+      style={{ backgroundColor: bgColor }}
+    >
+      {renderBackground()}
+      {controlsVariant === "default" && <Controls />}
+      {canEdit && <Toolbar boardId={boardId} />}
+    </ReactFlow>
+  );
+
+  if (!canEdit) {
+    return (
+      <div className="w-full h-full relative" onMouseMove={onMouseMove}>
+        {flowContent}
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full h-full relative" onMouseMove={onMouseMove}>
-      <ReactFlow
-        nodes={localNodes}
-        edges={[]}
-        onNodesChange={onNodesChange}
-        nodeTypes={nodeTypes}
-        nodesDraggable={canEdit}
-        nodesConnectable={false}
-        selectionMode={SelectionMode.Partial}
-        fitView
-        fitViewOptions={{ padding: 0.5 }}
-        minZoom={0.1}
-        maxZoom={2}
-        panOnScroll={controlsVariant === "default"}
-        zoomOnScroll={controlsVariant !== "default"}
-        proOptions={{ hideAttribution: true }}
-        style={{ backgroundColor: bgColor }}
-      >
-        {renderBackground()}
-        {controlsVariant === "default" && <Controls />}
-        {canEdit && <Toolbar boardId={boardId} />}
-      </ReactFlow>
-    </div>
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            className="w-full h-full relative"
+            onMouseMove={onMouseMove}
+            onContextMenu={handleContextMenu}
+          >
+            {flowContent}
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-48">
+          <ContextMenuItem onClick={addTextNodeAtCursor}>
+            <Type className="h-4 w-4 mr-2" />
+            Add Text
+          </ContextMenuItem>
+          <ContextMenuItem onClick={addLinkNodeAtCursor}>
+            <Link className="h-4 w-4 mr-2" />
+            Add Link
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Link
+            </DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleLinkSubmit();
+            }}
+            className="flex gap-2"
+          >
+            <Input
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://example.com"
+              autoFocus
+            />
+            <Button type="submit" disabled={!linkUrl.trim()}>
+              Add
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

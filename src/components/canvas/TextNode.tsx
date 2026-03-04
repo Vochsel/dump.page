@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { NodeProps } from "@xyflow/react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { Trash2 } from "lucide-react";
-import TextareaAutosize from "react-textarea-autosize";
+import { TipTapEditor } from "./TipTapEditor";
 
 type TextNodeData = {
   content: string;
@@ -17,64 +17,56 @@ type TextNodeData = {
 export function TextNode({ data }: NodeProps) {
   const { content, nodeId, canEdit } = data as unknown as TextNodeData;
   const [editing, setEditing] = useState(!content && canEdit);
-  const [value, setValue] = useState(content);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const updateNode = useMutation(api.nodes.updateNode);
   const deleteNode = useMutation(api.nodes.deleteNode);
 
+  // If content becomes non-empty externally while we were in auto-edit mode, stop editing
   useEffect(() => {
-    if (!editing) setValue(content);
+    if (content && editing) {
+      // Keep editing - user is actively typing
+    }
   }, [content, editing]);
 
-  useEffect(() => {
-    if (editing && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.selectionStart = textareaRef.current.value.length;
-    }
-  }, [editing]);
-
-  const handleBlur = useCallback(async () => {
-    setEditing(false);
-    if (value !== content) {
-      await updateNode({ nodeId, content: value });
-    }
-  }, [value, content, nodeId, updateNode]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setEditing(false);
-        setValue(content);
+  const handleSave = useCallback(
+    async (html: string) => {
+      setEditing(false);
+      // Normalize empty editor output
+      const isEmpty =
+        !html || html === "<p></p>" || html.replace(/<[^>]*>/g, "").trim() === "";
+      const newContent = isEmpty ? "" : html;
+      if (newContent !== content) {
+        await updateNode({ nodeId, content: newContent });
       }
-      e.stopPropagation();
     },
-    [content]
+    [content, nodeId, updateNode]
   );
+
+  const handleCancel = useCallback(() => {
+    setEditing(false);
+  }, []);
 
   return (
     <div className="bg-yellow-100 dark:bg-yellow-900/40 rounded-sm shadow-md min-w-[180px] max-w-[360px] group border border-yellow-200/60 dark:border-yellow-700/40">
       <div className="p-3">
         {editing && canEdit ? (
-          <TextareaAutosize
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            minRows={1}
-            className="w-full resize-none bg-transparent border-none p-0 text-sm text-yellow-900 dark:text-yellow-100 placeholder:text-yellow-600/50 focus:outline-none"
-            placeholder="Type something..."
+          <TipTapEditor
+            content={content}
+            onSave={handleSave}
+            onCancel={handleCancel}
           />
         ) : (
           <div
-            className="text-sm whitespace-pre-wrap min-h-[24px] cursor-text text-yellow-900 dark:text-yellow-100"
+            className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-yellow-100"
             onClick={() => canEdit && setEditing(true)}
+            dangerouslySetInnerHTML={
+              content ? { __html: content } : undefined
+            }
           >
-            {content || (
+            {!content ? (
               <span className="text-yellow-600/50 italic">
                 Click to edit...
               </span>
-            )}
+            ) : undefined}
           </div>
         )}
       </div>

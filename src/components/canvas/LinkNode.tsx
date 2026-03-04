@@ -1,10 +1,25 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { NodeProps } from "@xyflow/react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, Trash2, Pencil } from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 type LinkNodeData = {
   content: string;
@@ -41,6 +56,10 @@ export function LinkNode({ data }: NodeProps) {
   const { content, nodeId, canEdit, metadata, metadataLoading } =
     data as unknown as LinkNodeData;
   const deleteNode = useMutation(api.nodes.deleteNode);
+  const updateNode = useMutation(api.nodes.updateNode);
+
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
 
   let hostname = "";
   try {
@@ -53,7 +72,25 @@ export function LinkNode({ data }: NodeProps) {
   const title = metadata?.title;
   const description = metadata?.description;
 
-  return (
+  const openRename = useCallback(() => {
+    setRenameValue(title || "");
+    setRenameOpen(true);
+  }, [title]);
+
+  const handleRename = useCallback(() => {
+    const newTitle = renameValue.trim();
+    if (!newTitle) return;
+    updateNode({
+      nodeId,
+      metadata: {
+        ...metadata,
+        title: newTitle,
+      },
+    });
+    setRenameOpen(false);
+  }, [renameValue, nodeId, metadata, updateNode]);
+
+  const nodeContent = (
     <div className="bg-card border rounded-lg shadow-sm w-[280px] group">
       <a
         href={content}
@@ -122,5 +159,48 @@ export function LinkNode({ data }: NodeProps) {
         </div>
       )}
     </div>
+  );
+
+  if (!canEdit) return nodeContent;
+
+  return (
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          {nodeContent}
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-40">
+          <ContextMenuItem onClick={openRename}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Rename
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Link</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleRename();
+            }}
+            className="flex gap-2"
+          >
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="Link title"
+              autoFocus
+            />
+            <Button type="submit" disabled={!renameValue.trim()}>
+              Save
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
