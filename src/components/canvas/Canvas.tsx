@@ -20,6 +20,7 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { TextNode } from "./TextNode";
 import { LinkNode } from "./LinkNode";
+import { ChecklistNode } from "./ChecklistNode";
 import { Toolbar } from "./Toolbar";
 import {
   ContextMenu,
@@ -35,13 +36,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus } from "lucide-react";
+import { Type, Link, Plus, CheckSquare } from "lucide-react";
 
 import { darkenHex } from "@/lib/utils";
 
 const nodeTypes: NodeTypes = {
   text: TextNode,
   link: LinkNode,
+  checklist: ChecklistNode,
 };
 
 const URL_REGEX = /^https?:\/\/.+/i;
@@ -229,6 +231,16 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
     });
   }, [boardId, createNode, screenToFlowPosition]);
 
+  const addChecklistNodeAtCursor = useCallback(() => {
+    const pos = screenToFlowPosition(contextMenuPosRef.current);
+    createNode({
+      boardId,
+      type: "checklist",
+      content: "[]",
+      position: { x: pos.x - 110, y: pos.y - 20 },
+    });
+  }, [boardId, createNode, screenToFlowPosition]);
+
   const addLinkNodeAtCursor = useCallback(() => {
     setLinkUrl("");
     setLinkDialogOpen(true);
@@ -334,6 +346,10 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
           <ContextMenuItem onClick={addLinkNodeAtCursor}>
             <Link className="h-4 w-4 mr-2" />
             Add Link
+          </ContextMenuItem>
+          <ContextMenuItem onClick={addChecklistNodeAtCursor}>
+            <CheckSquare className="h-4 w-4 mr-2" />
+            Add Checklist
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>

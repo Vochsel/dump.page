@@ -15,7 +15,7 @@ export const getNodesByBoard = query({
 export const createNode = mutation({
   args: {
     boardId: v.id("boards"),
-    type: v.union(v.literal("text"), v.literal("link")),
+    type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),
     content: v.string(),
     position: v.object({ x: v.number(), y: v.number() }),
     dimensions: v.optional(v.object({ width: v.number(), height: v.number() })),

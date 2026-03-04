@@ -56,7 +56,7 @@ export default defineSchema({
 
   nodes: defineTable({
     boardId: v.id("boards"),
-    type: v.union(v.literal("text"), v.literal("link")),
+    type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),
     content: v.string(),
     position: v.object({ x: v.number(), y: v.number() }),
     dimensions: v.object({ width: v.number(), height: v.number() }),

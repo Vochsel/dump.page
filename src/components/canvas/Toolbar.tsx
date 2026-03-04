@@ -11,7 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Type, Link, Plus } from "lucide-react";
+import { Type, Link, Plus, CheckSquare } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
 
 interface ToolbarProps {
@@ -42,6 +42,16 @@ export function Toolbar({ boardId }: ToolbarProps) {
     });
   };
 
+  const addChecklistNode = async () => {
+    const pos = getCenter();
+    await createNode({
+      boardId,
+      type: "checklist",
+      content: "[]",
+      position: { x: pos.x - 110, y: pos.y - 60 },
+    });
+  };
+
   const addLinkNode = async () => {
     if (!linkUrl.trim()) return;
     let url = linkUrl.trim();
@@ -66,6 +76,10 @@ export function Toolbar({ boardId }: ToolbarProps) {
       <Button variant="ghost" size="sm" className="gap-2" onClick={addTextNode}>
         <Type className="h-4 w-4" />
         Text
+      </Button>
+      <Button variant="ghost" size="sm" className="gap-2" onClick={addChecklistNode}>
+        <CheckSquare className="h-4 w-4" />
+        Checklist
       </Button>
       <Popover open={linkOpen} onOpenChange={setLinkOpen}>
         <PopoverTrigger asChild>
