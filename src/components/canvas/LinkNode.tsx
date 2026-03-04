@@ -122,9 +122,11 @@ export function LinkNode({ data }: NodeProps) {
         />
       </div>
       <div className="p-3">
-        <p className="text-sm font-medium leading-snug line-clamp-2">
-          {title || content}
-        </p>
+        {title && (
+          <p className="text-sm font-medium leading-snug line-clamp-2">
+            {title}
+          </p>
+        )}
         <span className="text-xs text-muted-foreground">{hostname}</span>
       </div>
       {canEdit && (
