@@ -121,7 +121,7 @@ export function LinkNode({ data }: NodeProps) {
           className="absolute inset-0 w-full h-full border-0"
         />
       </div>
-      <div className="p-3">
+      <div className={`p-3 ${title ? "" : "pt-1"}`}>
         {title && (
           <p className="text-sm font-medium leading-snug line-clamp-2">
             {title}
