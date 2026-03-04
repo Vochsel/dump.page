@@ -74,10 +74,10 @@ function looksLikeRssFeed(url: string): boolean {
 
 function RssIndicator() {
   return (
-    <div className="absolute -top-1.5 -right-1.5 flex items-center justify-center z-10" title="RSS Feed">
-      <span className="absolute inline-flex h-4 w-4 rounded-full bg-orange-400/30 animate-ping" />
-      <span className="relative inline-flex items-center justify-center h-4 w-4 rounded-full bg-orange-400 shadow-sm">
-        <Rss className="h-2.5 w-2.5 text-white" />
+    <div className="absolute top-2.5 right-2.5 flex items-center justify-center z-10" title="RSS Feed">
+      <span className="absolute inline-flex h-4 w-4 rounded-full bg-orange-400/20 animate-ping" />
+      <span className="relative inline-flex items-center justify-center h-4 w-4 rounded-full bg-orange-100 shadow-sm">
+        <Rss className="h-2.5 w-2.5 text-orange-500" />
       </span>
     </div>
   );
