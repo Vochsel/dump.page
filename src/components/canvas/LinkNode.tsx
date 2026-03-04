@@ -42,6 +42,25 @@ function getFaviconUrl(url: string): string {
   }
 }
 
+function getYouTubeVideoId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("/")[0] || null;
+    if (
+      u.hostname === "www.youtube.com" ||
+      u.hostname === "youtube.com" ||
+      u.hostname === "m.youtube.com"
+    ) {
+      if (u.pathname === "/watch") return u.searchParams.get("v");
+      const m = u.pathname.match(/^\/(?:embed|shorts|v)\/([^/?]+)/);
+      if (m) return m[1];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function Shimmer({ className }: { className?: string }) {
   return (
     <div
@@ -71,6 +90,7 @@ export function LinkNode({ data }: NodeProps) {
   const faviconUrl = metadata?.favicon || getFaviconUrl(content);
   const title = metadata?.title;
   const description = metadata?.description;
+  const youtubeId = getYouTubeVideoId(content);
 
   const openRename = useCallback(() => {
     setRenameValue(title || "");
@@ -90,7 +110,39 @@ export function LinkNode({ data }: NodeProps) {
     setRenameOpen(false);
   }, [renameValue, nodeId, metadata, updateNode]);
 
-  const nodeContent = (
+  const nodeContent = youtubeId ? (
+    <div className="bg-card border rounded-lg shadow-sm w-[360px] group overflow-hidden">
+      <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${youtubeId}`}
+          title={title || "YouTube video"}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="absolute inset-0 w-full h-full border-0"
+        />
+      </div>
+      <div className="p-3">
+        <p className="text-sm font-medium leading-snug line-clamp-2">
+          {title || content}
+        </p>
+        <span className="text-xs text-muted-foreground">{hostname}</span>
+      </div>
+      {canEdit && (
+        <div className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              deleteNode({ nodeId });
+            }}
+            className="bg-destructive rounded-full p-1 shadow-sm hover:bg-destructive/90"
+          >
+            <Trash2 className="h-3 w-3 text-white" />
+          </button>
+        </div>
+      )}
+    </div>
+  ) : (
     <div className="bg-card border rounded-lg shadow-sm w-[280px] group">
       <a
         href={content}
