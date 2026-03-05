@@ -3,7 +3,83 @@
 import { useAuth } from "@/context/auth-context";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
+
+function DraggableCard({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragState = useRef<{
+    startX: number;
+    startY: number;
+    baseX: number;
+    baseY: number;
+    started: boolean;
+  } | null>(null);
+
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (window.matchMedia("(pointer: coarse)").matches) return;
+      if ((e.target as HTMLElement).closest("a, button")) return;
+      dragState.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        baseX: offset.x,
+        baseY: offset.y,
+        started: false,
+      };
+    },
+    [offset]
+  );
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      const ds = dragState.current;
+      if (!ds) return;
+      const dx = e.clientX - ds.startX;
+      const dy = e.clientY - ds.startY;
+      if (!ds.started && Math.abs(dx) + Math.abs(dy) < 5) return;
+      ds.started = true;
+      setDragging(true);
+      setOffset({ x: ds.baseX + dx, y: ds.baseY + dy });
+    };
+    const onMouseUp = () => {
+      if (dragState.current?.started) {
+        setDragging(false);
+      }
+      dragState.current = null;
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      onMouseDown={onMouseDown}
+      className={className}
+      style={{
+        transform: `translate(${offset.x}px, ${offset.y}px)`,
+        cursor: dragging ? "grabbing" : "grab",
+        zIndex: dragging ? 50 : undefined,
+        userSelect: dragging ? "none" : undefined,
+        transition: dragging ? "none" : "box-shadow 0.2s",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 const features = [
   {
@@ -34,7 +110,7 @@ const painPoints = [
 ];
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, loading, signInWithGoogle } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -54,49 +130,64 @@ export default function Home() {
   return (
     <div className="landing-dot-grid min-h-screen flex flex-col items-center px-4 py-20">
       {/* Logo */}
-      <img
-        src="/magpai-logo.svg"
-        alt="Magpai"
-        className="h-12 sm:h-14"
-      />
+      <div className="flex items-center gap-3">
+        <img
+          src="/dump.png"
+          alt="Dump"
+          className="h-24 sm:h-30"
+        />
+        <span className="font-[family-name:var(--font-dynapuff)] text-4xl sm:text-5xl text-gray-800">
+          Dump
+        </span>
+      </div>
 
       {/* Tagline */}
       <div className="text-center space-y-1.5 max-w-lg mt-8">
         <p className="font-[family-name:var(--font-poppins)] text-lg sm:text-xl text-gray-600 font-medium">
           Your team&apos;s{" "}
           <span className="landing-underline relative text-gray-900 font-semibold">
-            context whiteboard
+            context dump
           </span>{" "}
           <span className="inline-block landing-sparkle">&#10024;</span>
         </p>
         <p className="text-sm text-gray-400 font-[family-name:var(--font-poppins)]">
-          Collect links, notes &amp; ideas — make them useful for humans and AI.
+          Dump links, notes &amp; ideas — make them useful for humans and AI.
         </p>
+        <button
+          onClick={signInWithGoogle}
+          className="mt-4 px-8 py-3 text-white text-lg font-semibold rounded-full font-[family-name:var(--font-poppins)] transition-all hover:scale-105 shadow-md"
+          style={{ backgroundColor: "#7bd096", outline: "3px solid white", outlineOffset: "-1px", boxShadow: "0 2px 8px rgba(123, 208, 150, 0.4)" }}
+        >
+          Start dumping!
+        </button>
       </div>
 
       {/* Pain points — whiteboard scribbles */}
       <div className="mt-16 max-w-md w-full">
         <div className="flex flex-wrap items-center justify-center gap-3">
           {painPoints.map((item) => (
-            <span
+            <DraggableCard
               key={item.text}
               className={`${item.rotate} inline-block bg-white/60 border border-dashed border-gray-300 rounded px-3 py-1.5 text-sm text-gray-400 line-through decoration-red-400/60 decoration-2 font-[family-name:var(--font-poppins)]`}
             >
               {item.text}
-            </span>
+            </DraggableCard>
           ))}
         </div>
-        <p className="text-center text-xs text-gray-400 font-[family-name:var(--font-poppins)] mt-4">
-          Stop losing context. Put it all on a board.
+        <p className="text-center text-sm text-gray-600 font-medium font-[family-name:var(--font-poppins)] mt-4">
+          One place for links your team, agents, and chatbots can all reach.
         </p>
       </div>
 
       {/* Feature cards */}
-      <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 max-w-2xl w-full px-2">
+      <p className="mt-16 text-center text-xs font-[family-name:var(--font-poppins)] text-gray-400 uppercase tracking-widest mb-6">
+        How it works
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 max-w-2xl w-full px-2">
         {features.map((feature) => (
-          <div
+          <DraggableCard
             key={feature.title}
-            className={`${feature.color} ${feature.rotate} border-2 rounded-sm p-5 shadow-md hover:shadow-lg transition-shadow cursor-default`}
+            className={`${feature.color} ${feature.rotate} border-2 rounded-sm p-5 shadow-md hover:shadow-lg cursor-default`}
           >
             <h3 className="font-[family-name:var(--font-poppins)] font-semibold text-gray-800 text-sm mb-1">
               {feature.title}
@@ -104,8 +195,68 @@ export default function Home() {
             <p className="text-xs text-gray-600 leading-relaxed">
               {feature.description}
             </p>
-          </div>
+          </DraggableCard>
         ))}
+      </div>
+
+      {/* Use cases */}
+      <div className="mt-16 max-w-2xl w-full px-2">
+        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-400 uppercase tracking-widest mb-6">
+          How people use Dump
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {[
+            {
+              emoji: "🔖",
+              title: "Smarter bookmarks",
+              description:
+                "Save links you actually want to find again — organized by project, not buried in a browser folder.",
+              accent: "from-amber-50 to-orange-50 border-amber-200/80",
+              emojiAccent: "bg-amber-100",
+            },
+            {
+              emoji: "🤖",
+              title: "Context for AI chats",
+              description:
+                "Dump reference links into a board and share it with ChatGPT, Claude, or any LLM for richer answers.",
+              accent: "from-violet-50 to-purple-50 border-violet-200/80",
+              emojiAccent: "bg-violet-100",
+            },
+            {
+              emoji: "🗂️",
+              title: "Cross-project research",
+              description:
+                "Collect docs, articles, and repos across multiple projects in one place your whole team can access.",
+              accent: "from-emerald-50 to-teal-50 border-emerald-200/80",
+              emojiAccent: "bg-emerald-100",
+            },
+            {
+              emoji: "💬",
+              title: "Share context, not links",
+              description:
+                "Instead of pasting 5 URLs in Slack, share one board with all the context anyone needs.",
+              accent: "from-sky-50 to-blue-50 border-sky-200/80",
+              emojiAccent: "bg-sky-100",
+            },
+          ].map((useCase) => (
+            <DraggableCard
+              key={useCase.title}
+              className={`bg-gradient-to-br ${useCase.accent} border rounded-xl p-5 space-y-2.5 hover:shadow-md transition-all duration-200`}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className={`text-lg ${useCase.emojiAccent} rounded-lg w-8 h-8 flex items-center justify-center`}>
+                  {useCase.emoji}
+                </span>
+                <h3 className="font-[family-name:var(--font-poppins)] font-semibold text-gray-800 text-sm">
+                  {useCase.title}
+                </h3>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed font-[family-name:var(--font-poppins)]">
+                {useCase.description}
+              </p>
+            </DraggableCard>
+          ))}
+        </div>
       </div>
 
       {/* Works with AI */}
@@ -120,7 +271,7 @@ export default function Home() {
             { name: "Gemini", icon: "https://upload.wikimedia.org/wikipedia/commons/1/1d/Google_Gemini_icon_2025.svg" },
             { name: "Grok", icon: "https://cdn.worldvectorlogo.com/logos/grok-1.svg" },
           ].map((ai) => (
-            <div
+            <DraggableCard
               key={ai.name}
               className="flex items-center gap-2 bg-white/70 border border-gray-200 rounded-full px-4 py-2"
             >
@@ -128,7 +279,7 @@ export default function Home() {
               <span className="text-sm text-gray-700 font-medium font-[family-name:var(--font-poppins)]">
                 {ai.name}
               </span>
-            </div>
+            </DraggableCard>
           ))}
         </div>
         <p className="text-center text-xs text-gray-400 font-[family-name:var(--font-poppins)]">

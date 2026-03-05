@@ -101,9 +101,20 @@ export function ChecklistNode({ data }: NodeProps) {
     []
   );
 
-  const handleBlur = useCallback(() => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleBlur = useCallback((e: React.FocusEvent) => {
+    // If focus is moving to another input within this checklist, stay in editing mode
+    if (
+      containerRef.current &&
+      e.relatedTarget &&
+      containerRef.current.contains(e.relatedTarget as Node)
+    ) {
+      // Internal focus transfer — persist but keep hasFocusRef true
+      updateNode({ nodeId, content: JSON.stringify(itemsRef.current) });
+      return;
+    }
     hasFocusRef.current = false;
-    // Persist latest items via ref — never stale
     updateNode({ nodeId, content: JSON.stringify(itemsRef.current) });
   }, [nodeId, updateNode]);
 
@@ -115,6 +126,8 @@ export function ChecklistNode({ data }: NodeProps) {
       const newItems = [...cur];
       newItems.splice(idx + 1, 0, newItem);
       focusIdRef.current = newItem.id;
+      // Keep editing flag true across the focus transfer
+      hasFocusRef.current = true;
       // Local-only update; the old input's blur will persist via ref
       setItems(newItems);
     },
@@ -194,7 +207,7 @@ export function ChecklistNode({ data }: NodeProps) {
   }, []);
 
   return (
-    <div className="bg-amber-50 dark:bg-amber-900/40 rounded-sm shadow-md min-w-[220px] max-w-[360px] group border border-amber-200/60 dark:border-amber-700/40">
+    <div ref={containerRef} className="bg-amber-50 dark:bg-amber-900/40 rounded-sm shadow-md min-w-[220px] max-w-[360px] group border border-amber-200/60 dark:border-amber-700/40">
       <div className="p-2 space-y-0.5">
         {items.map((item, idx) => (
           <div

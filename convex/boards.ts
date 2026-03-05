@@ -281,7 +281,7 @@ export const seedDefaultBoard = internalMutation({
     const now = Date.now();
 
     const boardId = await ctx.db.insert("boards", {
-      name: "Welcome to Magpai",
+      name: "Welcome to Dump",
       icon: "👋",
       ownerId: args.userId,
       visibility: "private",

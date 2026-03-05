@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Poppins } from "next/font/google";
+import { Geist, Geist_Mono, Poppins, DynaPuff } from "next/font/google";
 import "./globals.css";
 import { ConvexProvider } from "@/providers/convex-provider";
 import { AuthProvider } from "@/context/auth-context";
@@ -21,8 +21,13 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700"],
 });
 
+const dynaPuff = DynaPuff({
+  variable: "--font-dynapuff",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Magpai Collab",
+  title: "Dump",
   description: "Collaborative context boards for teams",
 };
 
@@ -34,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${dynaPuff.variable} antialiased`}
       >
         <ConvexProvider>
           <AuthProvider>

@@ -42,10 +42,13 @@ export default function DashboardPage() {
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
-              src="/magpai-logo.svg"
-              alt="Magpai"
-              className="h-7"
+              src="/dump.png"
+              alt="Dump"
+              className="h-9"
             />
+            <span className="font-[family-name:var(--font-dynapuff)] text-lg text-gray-800">
+              Dump
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <CreateBoardDialog />
