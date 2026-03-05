@@ -9,7 +9,7 @@ import { BoardIcon } from "@/components/board/BoardIcon";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import { Users, Plus, Globe, Link as LinkIcon, FileText, ExternalLink } from "lucide-react";
+import { Users, Plus, Globe, Link as LinkIcon, FileText, ExternalLink, CheckSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
@@ -141,6 +141,8 @@ export default function DashboardPage() {
                             >
                               {node.type === "link" ? (
                                 <LinkIcon className="h-3 w-3 text-blue-400 flex-shrink-0" />
+                              ) : node.type === "checklist" ? (
+                                <CheckSquare className="h-3 w-3 text-green-500 flex-shrink-0" />
                               ) : (
                                 <FileText className="h-3 w-3 text-amber-400 flex-shrink-0" />
                               )}
@@ -148,7 +150,20 @@ export default function DashboardPage() {
                                 {node.type === "link"
                                   ? node.metadata?.title ||
                                     node.content.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")
-                                  : node.content.replace(/<[^>]*>/g, "").slice(0, 60)}
+                                  : node.type === "checklist"
+                                    ? (() => {
+                                        try {
+                                          const items = JSON.parse(node.content);
+                                          if (Array.isArray(items)) {
+                                            const checked = items.filter((i: { checked: boolean }) => i.checked).length;
+                                            const total = items.length;
+                                            const label = items.find((i: { text: string }) => i.text)?.text || "Checklist";
+                                            return `${label} (${checked}/${total})`;
+                                          }
+                                        } catch { /* ignore */ }
+                                        return "Checklist";
+                                      })()
+                                    : node.content.replace(/<[^>]*>/g, "").slice(0, 60)}
                               </span>
                             </li>
                           ))}

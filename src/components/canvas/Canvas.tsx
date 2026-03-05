@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2 } from "lucide-react";
 
 import { darkenHex } from "@/lib/utils";
 
@@ -67,6 +67,14 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
   // Link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+
+  // Node context menu state
+  const [nodeMenu, setNodeMenu] = useState<{
+    nodeId: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const deleteNode = useMutation(api.nodes.deleteNode);
 
   // Local node state for optimistic updates
   const [localNodes, setLocalNodes] = useState<Node[]>([]);
@@ -269,6 +277,53 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
     contextMenuPosRef.current = { x: e.clientX, y: e.clientY };
   }, []);
 
+  const onNodeContextMenu = useCallback(
+    (e: React.MouseEvent, node: Node) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setNodeMenu({ nodeId: node.id, x: e.clientX, y: e.clientY });
+    },
+    []
+  );
+
+  const closeNodeMenu = useCallback(() => setNodeMenu(null), []);
+
+  const handleNodeCopy = useCallback(() => {
+    if (!nodeMenu) return;
+    const node = localNodes.find((n) => n.id === nodeMenu.nodeId);
+    if (!node) return;
+    const data = node.data as { content?: string; metadata?: { title?: string } };
+    const text = data.metadata?.title || data.content || "";
+    // Strip HTML tags for text nodes
+    const plain = text.replace(/<[^>]*>/g, "");
+    navigator.clipboard.writeText(plain);
+    setNodeMenu(null);
+  }, [nodeMenu, localNodes]);
+
+  const handleNodeDuplicate = useCallback(() => {
+    if (!nodeMenu) return;
+    const node = localNodes.find((n) => n.id === nodeMenu.nodeId);
+    if (!node) return;
+    const data = node.data as { content?: string };
+    createNode({
+      boardId,
+      type: node.type as "text" | "link" | "checklist",
+      content: data.content || "",
+      position: { x: node.position.x + 30, y: node.position.y + 30 },
+    }).then((newNodeId) => {
+      if (node.type === "link" && data.content) {
+        fetchMetadata({ nodeId: newNodeId, url: data.content });
+      }
+    });
+    setNodeMenu(null);
+  }, [nodeMenu, localNodes, boardId, createNode, fetchMetadata]);
+
+  const handleNodeDelete = useCallback(() => {
+    if (!nodeMenu) return;
+    deleteNode({ nodeId: nodeMenu.nodeId as Id<"nodes"> });
+    setNodeMenu(null);
+  }, [nodeMenu, deleteNode]);
+
   const bgPattern = settings.backgroundPattern ?? "dots";
   const bgColor = settings.backgroundColor ?? "#f9fafb";
   const controlsVariant = settings.controlsVariant ?? "default";
@@ -302,6 +357,8 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
       nodeTypes={nodeTypes}
       nodesDraggable={canEdit}
       nodesConnectable={false}
+      onNodeContextMenu={canEdit ? onNodeContextMenu : undefined}
+      onPaneClick={closeNodeMenu}
       selectionMode={SelectionMode.Partial}
       fitView
       fitViewOptions={{ padding: 0.5 }}
@@ -353,6 +410,39 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
+
+      {nodeMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={closeNodeMenu} onContextMenu={(e) => { e.preventDefault(); closeNodeMenu(); }} />
+          <div
+            className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
+            style={{ left: nodeMenu.x, top: nodeMenu.y }}
+          >
+            <button
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              onClick={handleNodeCopy}
+            >
+              <Copy className="h-3.5 w-3.5" />
+              Copy to clipboard
+            </button>
+            <button
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              onClick={handleNodeDuplicate}
+            >
+              <CopyPlus className="h-3.5 w-3.5" />
+              Duplicate
+            </button>
+            <div className="my-1 border-t border-gray-100" />
+            <button
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              onClick={handleNodeDelete}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </button>
+          </div>
+        </>
+      )}
 
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent className="sm:max-w-md">
