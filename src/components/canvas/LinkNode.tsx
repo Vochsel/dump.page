@@ -21,6 +21,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+import type { UndoAction } from "@/hooks/useUndoRedo";
+
 type LinkNodeData = {
   content: string;
   nodeId: Id<"nodes">;
@@ -31,6 +33,8 @@ type LinkNodeData = {
     favicon?: string;
     description?: string;
   };
+  pushAction: (action: UndoAction) => void;
+  deleteNodeWithUndo: (nodeId: Id<"nodes">) => void;
 };
 
 function getFaviconUrl(url: string): string {
@@ -256,9 +260,8 @@ function EmbedNode({
 }
 
 export function LinkNode({ data }: NodeProps) {
-  const { content, nodeId, canEdit, metadata, metadataLoading } =
+  const { content, nodeId, canEdit, metadata, metadataLoading, pushAction, deleteNodeWithUndo } =
     data as unknown as LinkNodeData;
-  const deleteNode = useMutation(api.nodes.deleteNode);
   const updateNode = useMutation(api.nodes.updateNode);
 
   const [renameOpen, setRenameOpen] = useState(false);
@@ -289,17 +292,21 @@ export function LinkNode({ data }: NodeProps) {
   const handleRename = useCallback(() => {
     const newTitle = renameValue.trim();
     if (!newTitle) return;
-    updateNode({
+    const oldMetadata = metadata ? { ...metadata } : undefined;
+    const newMetadata = { ...metadata, title: newTitle };
+    pushAction({
+      type: "edit",
       nodeId,
-      metadata: {
-        ...metadata,
-        title: newTitle,
-      },
+      oldContent: content,
+      newContent: content,
+      oldMetadata,
+      newMetadata,
     });
+    updateNode({ nodeId, metadata: newMetadata });
     setRenameOpen(false);
-  }, [renameValue, nodeId, metadata, updateNode]);
+  }, [renameValue, nodeId, metadata, updateNode, pushAction, content]);
 
-  const handleDelete = () => deleteNode({ nodeId });
+  const handleDelete = () => deleteNodeWithUndo(nodeId);
 
   const nodeContent = youtubeId ? (
     <EmbedNode

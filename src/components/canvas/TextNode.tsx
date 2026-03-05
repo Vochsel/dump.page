@@ -8,17 +8,20 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { Trash2 } from "lucide-react";
 import { TipTapEditor } from "./TipTapEditor";
 
+import type { UndoAction } from "@/hooks/useUndoRedo";
+
 type TextNodeData = {
   content: string;
   nodeId: Id<"nodes">;
   canEdit: boolean;
+  pushAction: (action: UndoAction) => void;
+  deleteNodeWithUndo: (nodeId: Id<"nodes">) => void;
 };
 
 export function TextNode({ data }: NodeProps) {
-  const { content, nodeId, canEdit } = data as unknown as TextNodeData;
+  const { content, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as TextNodeData;
   const [editing, setEditing] = useState(!content && canEdit);
   const updateNode = useMutation(api.nodes.updateNode);
-  const deleteNode = useMutation(api.nodes.deleteNode);
 
   // If content becomes non-empty externally while we were in auto-edit mode, stop editing
   useEffect(() => {
@@ -35,10 +38,11 @@ export function TextNode({ data }: NodeProps) {
         !html || html === "<p></p>" || html.replace(/<[^>]*>/g, "").trim() === "";
       const newContent = isEmpty ? "" : html;
       if (newContent !== content) {
+        pushAction({ type: "edit", nodeId, oldContent: content, newContent });
         await updateNode({ nodeId, content: newContent });
       }
     },
-    [content, nodeId, updateNode]
+    [content, nodeId, updateNode, pushAction]
   );
 
   const handleCancel = useCallback(() => {
@@ -73,7 +77,7 @@ export function TextNode({ data }: NodeProps) {
       {canEdit && (
         <div className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={() => deleteNode({ nodeId })}
+            onClick={() => deleteNodeWithUndo(nodeId)}
             className="bg-destructive rounded-full p-1 shadow-sm hover:bg-destructive/90"
           >
             <Trash2 className="h-3 w-3 text-white" />

@@ -13,10 +13,14 @@ type ChecklistItem = {
   checked: boolean;
 };
 
+import type { UndoAction } from "@/hooks/useUndoRedo";
+
 type ChecklistNodeData = {
   content: string;
   nodeId: Id<"nodes">;
   canEdit: boolean;
+  pushAction: (action: UndoAction) => void;
+  deleteNodeWithUndo: (nodeId: Id<"nodes">) => void;
 };
 
 function generateId() {
@@ -34,9 +38,8 @@ function parseItems(content: string): ChecklistItem[] {
 }
 
 export function ChecklistNode({ data }: NodeProps) {
-  const { content, nodeId, canEdit } = data as unknown as ChecklistNodeData;
+  const { content, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as ChecklistNodeData;
   const updateNode = useMutation(api.nodes.updateNode);
-  const deleteNodeMut = useMutation(api.nodes.deleteNode);
 
   const [items, setItems] = useState<ChecklistItem[]>(() => {
     const parsed = parseItems(content);
@@ -104,6 +107,7 @@ export function ChecklistNode({ data }: NodeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleBlur = useCallback((e: React.FocusEvent) => {
+    const newContent = JSON.stringify(itemsRef.current);
     // If focus is moving to another input within this checklist, stay in editing mode
     if (
       containerRef.current &&
@@ -111,12 +115,18 @@ export function ChecklistNode({ data }: NodeProps) {
       containerRef.current.contains(e.relatedTarget as Node)
     ) {
       // Internal focus transfer — persist but keep hasFocusRef true
-      updateNode({ nodeId, content: JSON.stringify(itemsRef.current) });
+      if (newContent !== content) {
+        pushAction({ type: "edit", nodeId, oldContent: content, newContent });
+      }
+      updateNode({ nodeId, content: newContent });
       return;
     }
     hasFocusRef.current = false;
-    updateNode({ nodeId, content: JSON.stringify(itemsRef.current) });
-  }, [nodeId, updateNode]);
+    if (newContent !== content) {
+      pushAction({ type: "edit", nodeId, oldContent: content, newContent });
+    }
+    updateNode({ nodeId, content: newContent });
+  }, [nodeId, updateNode, content, pushAction]);
 
   const addItemAfter = useCallback(
     (id: string) => {
@@ -207,7 +217,7 @@ export function ChecklistNode({ data }: NodeProps) {
   }, []);
 
   return (
-    <div ref={containerRef} className="bg-amber-50 dark:bg-amber-900/40 rounded-sm shadow-md min-w-[220px] max-w-[360px] group border border-amber-200/60 dark:border-amber-700/40">
+    <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md min-w-[220px] max-w-[360px] group border border-gray-200 dark:border-gray-700">
       <div className="p-2 space-y-0.5">
         {items.map((item, idx) => (
           <div
@@ -217,7 +227,7 @@ export function ChecklistNode({ data }: NodeProps) {
             onDragEnd={handleDragEnd}
             className={`flex items-center gap-1 rounded px-1 py-0.5 group/item ${
               dragOverIdx === idx && dragIdx !== idx
-                ? "border-t-2 border-amber-400"
+                ? "border-t-2 border-gray-400"
                 : "border-t-2 border-transparent"
             } ${dragIdx === idx ? "opacity-40" : ""}`}
           >
@@ -227,7 +237,7 @@ export function ChecklistNode({ data }: NodeProps) {
                 onDragStart={(e) => handleDragStart(e, idx)}
                 className="nodrag cursor-grab shrink-0"
               >
-                <GripVertical className="h-3 w-3 text-amber-400/60" />
+                <GripVertical className="h-3 w-3 text-gray-400/60" />
               </div>
             )}
             <input
@@ -235,7 +245,7 @@ export function ChecklistNode({ data }: NodeProps) {
               checked={item.checked}
               onChange={() => canEdit && toggleCheck(item.id)}
               disabled={!canEdit}
-              className="nodrag h-3.5 w-3.5 rounded border-amber-300 text-amber-600 focus:ring-amber-500 shrink-0 cursor-pointer"
+              className="nodrag h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 shrink-0 cursor-pointer"
             />
             {canEdit ? (
               <input
@@ -250,25 +260,25 @@ export function ChecklistNode({ data }: NodeProps) {
                 onFocus={() => { hasFocusRef.current = true; }}
                 onBlur={handleBlur}
                 onKeyDown={(e) => handleKeyDown(e, item.id)}
-                className={`nodrag nowheel flex-1 bg-transparent border-none outline-none text-sm px-1 py-0 text-amber-900 dark:text-amber-100 placeholder:text-amber-400/50 ${
+                className={`nodrag nowheel flex-1 bg-transparent border-none outline-none text-sm px-1 py-0 text-gray-900 dark:text-gray-100 placeholder:text-gray-400/50 ${
                   item.checked ? "line-through opacity-50" : ""
                 }`}
               />
             ) : (
               <span
-                className={`flex-1 text-sm px-1 text-amber-900 dark:text-amber-100 ${
+                className={`flex-1 text-sm px-1 text-gray-900 dark:text-gray-100 ${
                   item.checked ? "line-through opacity-50" : ""
                 }`}
               >
-                {item.text || <span className="text-amber-400/50 italic">Empty</span>}
+                {item.text || <span className="text-gray-400/50 italic">Empty</span>}
               </span>
             )}
             {canEdit && (
               <button
                 onClick={() => deleteItem(item.id)}
-                className="nodrag opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 hover:bg-amber-200/50 rounded shrink-0"
+                className="nodrag opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 hover:bg-gray-200/50 rounded shrink-0"
               >
-                <X className="h-3 w-3 text-amber-600/60" />
+                <X className="h-3 w-3 text-gray-600/60" />
               </button>
             )}
           </div>
@@ -277,7 +287,7 @@ export function ChecklistNode({ data }: NodeProps) {
       {canEdit && (
         <div className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={() => deleteNodeMut({ nodeId })}
+            onClick={() => deleteNodeWithUndo(nodeId)}
             className="bg-destructive rounded-full p-1 shadow-sm hover:bg-destructive/90"
           >
             <Trash2 className="h-3 w-3 text-white" />

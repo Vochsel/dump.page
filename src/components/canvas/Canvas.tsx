@@ -39,6 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2 } from "lucide-react";
 
 import { darkenHex } from "@/lib/utils";
+import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
 
 const nodeTypes: NodeTypes = {
   text: TextNode,
@@ -59,6 +60,7 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
   const convexNodes = useQuery(api.nodes.getNodesByBoard, { boardId });
   const updateNodePosition = useMutation(api.nodes.updateNodePosition);
   const createNode = useMutation(api.nodes.createNode);
+  const updateNode = useMutation(api.nodes.updateNode);
   const fetchMetadata = useAction(api.nodes.fetchLinkMetadata);
   const { screenToFlowPosition, fitView } = useReactFlow();
   const mousePosRef = useRef({ x: 0, y: 0 });
@@ -75,6 +77,38 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
     y: number;
   } | null>(null);
   const deleteNode = useMutation(api.nodes.deleteNode);
+
+  // Undo/Redo
+  const { pushAction, undo, redo, canUndo, canRedo } = useUndoRedo({
+    convexNodes,
+    createNode,
+    deleteNode,
+    updateNode,
+    updateNodePosition,
+  });
+
+  const deleteNodeWithUndo = useCallback(
+    async (nodeId: Id<"nodes">) => {
+      const node = convexNodes?.find((n) => n._id === nodeId);
+      if (!node) {
+        await deleteNode({ nodeId });
+        return;
+      }
+      pushAction({
+        type: "delete",
+        deletedNodeId: nodeId,
+        snapshot: {
+          boardId: node.boardId,
+          type: node.type,
+          content: node.content,
+          position: node.position,
+          metadata: node.metadata,
+        },
+      });
+      await deleteNode({ nodeId });
+    },
+    [convexNodes, deleteNode, pushAction]
+  );
 
   // Local node state for optimistic updates
   const [localNodes, setLocalNodes] = useState<Node[]>([]);
@@ -102,11 +136,13 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
             canEdit,
             metadata: n.metadata,
             metadataLoading: n.type === "link" && n.metadata === undefined,
+            pushAction,
+            deleteNodeWithUndo,
           },
         };
       });
     });
-  }, [convexNodes, canEdit]);
+  }, [convexNodes, canEdit, pushAction, deleteNodeWithUndo]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -127,10 +163,17 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
             // On drag end, persist to Convex
             if (change.dragging === false && change.position) {
               draggingRef.current.delete(change.id);
-              updateNodePosition({
-                nodeId: change.id as Id<"nodes">,
-                position: { x: change.position.x, y: change.position.y },
+              const nodeId = change.id as Id<"nodes">;
+              const convexNode = convexNodes?.find((n) => n._id === nodeId);
+              const oldPosition = convexNode?.position ?? change.position;
+              const newPosition = { x: change.position.x, y: change.position.y };
+              pushAction({
+                type: "move",
+                nodeId,
+                oldPosition: { x: oldPosition.x, y: oldPosition.y },
+                newPosition,
               });
+              updateNodePosition({ nodeId, position: newPosition });
             }
           } else if (change.type === "dimensions" && change.dimensions) {
             updated = updated.map((n) =>
@@ -147,7 +190,7 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
         return updated;
       });
     },
-    [canEdit, updateNodePosition]
+    [canEdit, updateNodePosition, convexNodes, pushAction]
   );
 
   // Track mouse position for paste
@@ -189,6 +232,7 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
           content: url,
           position: { x: pos.x - 140, y: pos.y - 30 },
         }).then((nodeId) => {
+          pushAction({ type: "create", nodeId });
           fetchMetadata({ nodeId, url });
         });
       } else {
@@ -197,13 +241,15 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
           type: "text",
           content: text,
           position: { x: pos.x - 120, y: pos.y - 40 },
+        }).then((nodeId) => {
+          pushAction({ type: "create", nodeId });
         });
       }
     };
 
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
-  }, [canEdit, boardId, createNode, fetchMetadata, screenToFlowPosition]);
+  }, [canEdit, boardId, createNode, fetchMetadata, screenToFlowPosition, pushAction]);
 
   // "f" key: fit selected nodes, or all nodes if none selected
   useEffect(() => {
@@ -228,6 +274,29 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [localNodes, fitView]);
 
+  // Cmd+Z / Cmd+Shift+Z for undo/redo
+  useEffect(() => {
+    if (!canEdit) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) return;
+      if (e.key === "z" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [canEdit, undo, redo]);
+
   // Context menu handlers
   const addTextNodeAtCursor = useCallback(() => {
     const pos = screenToFlowPosition(contextMenuPosRef.current);
@@ -236,8 +305,8 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
       type: "text",
       content: "",
       position: { x: pos.x - 90, y: pos.y - 20 },
-    });
-  }, [boardId, createNode, screenToFlowPosition]);
+    }).then((nodeId) => pushAction({ type: "create", nodeId }));
+  }, [boardId, createNode, screenToFlowPosition, pushAction]);
 
   const addChecklistNodeAtCursor = useCallback(() => {
     const pos = screenToFlowPosition(contextMenuPosRef.current);
@@ -246,8 +315,8 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
       type: "checklist",
       content: "[]",
       position: { x: pos.x - 110, y: pos.y - 20 },
-    });
-  }, [boardId, createNode, screenToFlowPosition]);
+    }).then((nodeId) => pushAction({ type: "create", nodeId }));
+  }, [boardId, createNode, screenToFlowPosition, pushAction]);
 
   const addLinkNodeAtCursor = useCallback(() => {
     setLinkUrl("");
@@ -267,11 +336,12 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
       content: url,
       position: { x: pos.x - 140, y: pos.y - 30 },
     }).then((nodeId) => {
+      pushAction({ type: "create", nodeId });
       fetchMetadata({ nodeId, url });
     });
     setLinkDialogOpen(false);
     setLinkUrl("");
-  }, [linkUrl, boardId, createNode, fetchMetadata, screenToFlowPosition]);
+  }, [linkUrl, boardId, createNode, fetchMetadata, screenToFlowPosition, pushAction]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     contextMenuPosRef.current = { x: e.clientX, y: e.clientY };
@@ -311,18 +381,19 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
       content: data.content || "",
       position: { x: node.position.x + 30, y: node.position.y + 30 },
     }).then((newNodeId) => {
+      pushAction({ type: "create", nodeId: newNodeId });
       if (node.type === "link" && data.content) {
         fetchMetadata({ nodeId: newNodeId, url: data.content });
       }
     });
     setNodeMenu(null);
-  }, [nodeMenu, localNodes, boardId, createNode, fetchMetadata]);
+  }, [nodeMenu, localNodes, boardId, createNode, fetchMetadata, pushAction]);
 
   const handleNodeDelete = useCallback(() => {
     if (!nodeMenu) return;
-    deleteNode({ nodeId: nodeMenu.nodeId as Id<"nodes"> });
+    deleteNodeWithUndo(nodeMenu.nodeId as Id<"nodes">);
     setNodeMenu(null);
-  }, [nodeMenu, deleteNode]);
+  }, [nodeMenu, deleteNodeWithUndo]);
 
   const bgPattern = settings.backgroundPattern ?? "dots";
   const bgColor = settings.backgroundColor ?? "#f9fafb";
@@ -371,7 +442,16 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
     >
       {renderBackground()}
       {controlsVariant === "default" && <Controls />}
-      {canEdit && <Toolbar boardId={boardId} />}
+      {canEdit && (
+        <Toolbar
+          boardId={boardId}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={undo}
+          onRedo={redo}
+          onNodeCreated={(nodeId) => pushAction({ type: "create", nodeId })}
+        />
+      )}
     </ReactFlow>
   );
 
