@@ -20,6 +20,7 @@ import {
   Check,
   Grid3X3,
   Map,
+  Rss,
 } from "lucide-react";
 import { IconPicker } from "./IconPicker";
 
@@ -40,16 +41,26 @@ interface BoardShareProps {
 
 export function BoardShare({ board, isOwner }: BoardShareProps) {
   const [copied, setCopied] = useState(false);
+  const [copiedRss, setCopiedRss] = useState(false);
   const updateBoard = useMutation(api.boards.updateBoard);
   const regenerateToken = useMutation(api.boards.regenerateShareToken);
 
   if (!isOwner) return null;
 
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+
   const shareUrl =
     board.visibility === "shared" && board.shareToken
-      ? `${typeof window !== "undefined" ? window.location.origin : ""}/b/${board._id}?token=${board.shareToken}`
+      ? `${origin}/b/${board._id}?token=${board.shareToken}`
       : board.visibility === "public"
-        ? `${typeof window !== "undefined" ? window.location.origin : ""}/b/${board._id}`
+        ? `${origin}/b/${board._id}`
+        : null;
+
+  const rssUrl =
+    board.visibility === "shared" && board.shareToken
+      ? `${origin}/b/${board._id}/rss.xml?token=${board.shareToken}`
+      : board.visibility === "public"
+        ? `${origin}/b/${board._id}/rss.xml`
         : null;
 
   const copyShareUrl = async () => {
@@ -115,6 +126,32 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
                   Regenerate link
                 </Button>
               )}
+            </div>
+          )}
+
+          {rssUrl && (
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                RSS Feed
+              </label>
+              <div className="flex gap-2">
+                <Input value={rssUrl} readOnly className="text-xs" />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(rssUrl);
+                    setCopiedRss(true);
+                    setTimeout(() => setCopiedRss(false), 2000);
+                  }}
+                >
+                  {copiedRss ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Rss className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </div>
