@@ -13,6 +13,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
+import { ChatButton } from "@/components/board/ChatButton";
 import { Button } from "@/components/ui/button";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { BoardIcon } from "@/components/board/BoardIcon";
@@ -182,18 +183,15 @@ export default function BoardPage({
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               </Link>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="flex items-center gap-2 pointer-events-auto min-w-0">
-                <BoardIcon icon={access.board.icon} className="text-lg flex-shrink-0" size={20} />
-                <EditableBoardName
-                  boardId={boardId as Id<"boards">}
-                  name={access.board.name}
-                  canEdit={access.role === "owner"}
-                />
-              </div>
+              <BoardIcon icon={access.board.icon} className="text-lg flex-shrink-0" size={20} />
+              <EditableBoardName
+                boardId={boardId as Id<"boards">}
+                name={access.board.name}
+                canEdit={access.role === "owner"}
+              />
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+              <ChatButton boardId={boardId as Id<"boards">} />
               <BoardSettingsPopover
                 boardId={boardId as Id<"boards">}
                 icon={access.board.icon}
