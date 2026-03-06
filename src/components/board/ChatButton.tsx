@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MessageSquare, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 const SITE_URL = "https://www.get-dump.com";
@@ -18,24 +18,28 @@ const PROVIDERS = [
   {
     id: "claude",
     name: "Claude",
+    favicon: "https://claude.ai/favicon.ico",
     buildUrl: (prompt: string) =>
       `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
   },
   {
     id: "chatgpt",
     name: "ChatGPT",
+    favicon: "https://chatgpt.com/favicon.ico",
     buildUrl: (prompt: string) =>
       `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`,
   },
   {
     id: "gemini",
     name: "Gemini",
+    favicon: "https://gemini.google.com/favicon.ico",
     buildUrl: (prompt: string) =>
       `https://gemini.google.com/app?q=${encodeURIComponent(prompt)}`,
   },
   {
     id: "grok",
     name: "Grok",
+    favicon: "https://grok.com/favicon.ico",
     buildUrl: (prompt: string) =>
       `https://grok.com/?q=${encodeURIComponent(prompt)}`,
   },
@@ -90,7 +94,7 @@ export function ChatButton({ boardId, slug }: ChatButtonProps) {
         onClick={() => openChat()}
         title={`Chat with ${current.name}`}
       >
-        <MessageSquare className="h-3.5 w-3.5" />
+        <img src={current.favicon} alt={current.name} className="h-3.5 w-3.5" />
         {current.name}
       </Button>
       <DropdownMenu>
@@ -111,7 +115,9 @@ export function ChatButton({ boardId, slug }: ChatButtonProps) {
                 selectProvider(p.id);
                 openChat(p.id);
               }}
+              className="gap-2"
             >
+              <img src={p.favicon} alt={p.name} className="h-3.5 w-3.5" />
               {p.name}
               {p.id === provider && (
                 <span className="ml-auto text-xs text-muted-foreground">

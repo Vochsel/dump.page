@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { Doc } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 
 export const addMember = mutation({
   args: {
@@ -106,7 +106,7 @@ export const checkAccess = query({
       .unique();
     if (!board) {
       try {
-        const byId = await ctx.db.get(args.slug as any);
+        const byId = await ctx.db.get(args.slug as Id<"boards">);
         if (byId) board = byId;
       } catch {
         // Not a valid ID, ignore
