@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
@@ -24,11 +25,13 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="outline-none">
-        <Avatar className="h-7 w-7">
-          <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ""} />
-          <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
-        </Avatar>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md p-0 overflow-hidden">
+          <Avatar className="h-6 w-6 rounded-md">
+            <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ""} className="rounded-md" />
+            <AvatarFallback className="text-[10px] rounded-md">{initials}</AvatarFallback>
+          </Avatar>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem className="text-muted-foreground text-xs" disabled>
