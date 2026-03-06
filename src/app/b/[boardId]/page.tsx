@@ -117,6 +117,36 @@ export default function BoardPage({
     }
   }, [boardId, token, boardName]);
 
+  // Cmd/Ctrl+C with nothing selected → copy share URL
+  const shareUrl = (() => {
+    if (!access?.board) return "";
+    const slug = access.board.slug ?? boardId;
+    const base = `https://www.get-dump.com/b/${slug}`;
+    if (access.board.visibility === "shared" && access.board.shareToken) {
+      return `${base}?token=${access.board.shareToken}`;
+    }
+    return base;
+  })();
+
+  useEffect(() => {
+    if (!shareUrl) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "c" || !(e.metaKey || e.ctrlKey)) return;
+      const sel = window.getSelection()?.toString();
+      if (sel && sel.length > 0) return; // native copy
+      // Check if focus is in an input/textarea
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+      e.preventDefault();
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast.success("Board link copied to clipboard");
+      });
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [shareUrl]);
+
   useEffect(() => {
     if (access?.canView && access?.board) {
       logMarkdown();
@@ -149,34 +179,6 @@ export default function BoardPage({
       </div>
     );
   }
-
-  // Cmd/Ctrl+C with nothing selected → copy share URL
-  const shareUrl = (() => {
-    const slug = access.board.slug ?? boardId;
-    const base = `https://www.get-dump.com/b/${slug}`;
-    if (access.board.visibility === "shared" && access.board.shareToken) {
-      return `${base}?token=${access.board.shareToken}`;
-    }
-    return base;
-  })();
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key !== "c" || !(e.metaKey || e.ctrlKey)) return;
-      const sel = window.getSelection()?.toString();
-      if (sel && sel.length > 0) return; // native copy
-      // Check if focus is in an input/textarea
-      const tag = (document.activeElement as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
-
-      e.preventDefault();
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        toast.success("Board link copied to clipboard");
-      });
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [shareUrl]);
 
   const boardSettings = access.board.settings ?? {};
   const bgColor = boardSettings.backgroundColor ?? "#f9fafb";
