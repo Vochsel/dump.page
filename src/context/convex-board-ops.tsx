@@ -26,6 +26,7 @@ export function ConvexBoardOpsProvider({ boardId, children }: ConvexBoardOpsProv
       boardId: n.boardId as string,
       type: n.type,
       content: n.content,
+      title: n.title,
       position: n.position,
       metadata: n.metadata,
     }));
@@ -49,6 +50,7 @@ export function ConvexBoardOpsProvider({ boardId, children }: ConvexBoardOpsProv
         await updateNodeMutation({
           nodeId: args.nodeId as Id<"nodes">,
           content: args.content,
+          title: args.title,
           metadata: args.metadata,
         });
         return null;

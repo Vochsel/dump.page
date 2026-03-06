@@ -61,13 +61,28 @@ export async function getBoardRss(
           description = node.metadata?.description || node.content;
           link = node.content;
         } else if (node.type === "text") {
-          const text = stripHtml(node.content);
-          title = text.slice(0, 100) + (text.length > 100 ? "..." : "");
-          description = text;
+          if (node.title) {
+            title = node.title;
+          } else {
+            const text = stripHtml(node.content);
+            title = text.slice(0, 100) + (text.length > 100 ? "..." : "");
+          }
+          description = stripHtml(node.content);
         } else {
           // checklist
-          title = "Checklist";
-          description = stripHtml(node.content);
+          title = node.title || "Checklist";
+          try {
+            const items = JSON.parse(node.content);
+            if (Array.isArray(items)) {
+              description = items.map((i: { text: string; checked: boolean }) =>
+                `[${i.checked ? "x" : " "}] ${i.text}`
+              ).join("\n");
+            } else {
+              description = node.content;
+            }
+          } catch {
+            description = node.content;
+          }
         }
 
         const pubDate = new Date(node.updatedAt).toUTCString();

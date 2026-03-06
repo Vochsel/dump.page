@@ -58,6 +58,7 @@ export default defineSchema({
     boardId: v.id("boards"),
     type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),
     content: v.string(),
+    title: v.optional(v.string()),
     position: v.object({ x: v.number(), y: v.number() }),
     dimensions: v.object({ width: v.number(), height: v.number() }),
     metadata: v.optional(

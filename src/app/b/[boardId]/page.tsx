@@ -98,6 +98,28 @@ export default function BoardPage({
     shareToken: token,
   });
 
+  // Debug: log board markdown to console (hooks must be before early returns)
+  const markdownLogged = useRef(false);
+  const boardName = access?.board?.name;
+  const logMarkdown = useCallback(async () => {
+    if (markdownLogged.current) return;
+    markdownLogged.current = true;
+    try {
+      const url = `/api/board-markdown/${boardId}${token ? `?token=${token}` : ""}`;
+      const res = await fetch(url);
+      const md = await res.text();
+      console.log(`📋 Board markdown for ${boardName}:\n${md}`);
+    } catch (e) {
+      console.warn("Failed to fetch board markdown:", e);
+    }
+  }, [boardId, token, boardName]);
+
+  useEffect(() => {
+    if (access?.canView && access?.board) {
+      logMarkdown();
+    }
+  }, [logMarkdown, access?.canView, access?.board]);
+
   if (access === undefined || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -124,25 +146,6 @@ export default function BoardPage({
       </div>
     );
   }
-
-  // Debug: log board markdown to console
-  const markdownLogged = useRef(false);
-  const logMarkdown = useCallback(async () => {
-    if (markdownLogged.current) return;
-    markdownLogged.current = true;
-    try {
-      const url = `/api/board-markdown/${boardId}${token ? `?token=${token}` : ""}`;
-      const res = await fetch(url);
-      const md = await res.text();
-      console.log(`📋 Board markdown for ${access.board?.name}:\n${md}`);
-    } catch (e) {
-      console.warn("Failed to fetch board markdown:", e);
-    }
-  }, [boardId, token, access.board?.name]);
-
-  useEffect(() => {
-    logMarkdown();
-  }, [logMarkdown]);
 
   const boardSettings = access.board.settings ?? {};
   const bgColor = boardSettings.backgroundColor ?? "#f9fafb";

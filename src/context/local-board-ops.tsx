@@ -58,6 +58,7 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
       boardId: "local",
       type: args.type,
       content: args.content,
+      title: undefined,
       position: args.position,
       metadata: args.metadata,
     };
@@ -72,6 +73,7 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
         return {
           ...n,
           ...(args.content !== undefined ? { content: args.content } : {}),
+          ...(args.title !== undefined ? { title: args.title } : {}),
           ...(args.metadata !== undefined ? { metadata: args.metadata } : {}),
         };
       })

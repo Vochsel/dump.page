@@ -159,7 +159,7 @@ export default function DashboardPage() {
                                           if (Array.isArray(items)) {
                                             const checked = items.filter((i: { checked: boolean }) => i.checked).length;
                                             const total = items.length;
-                                            const label = items.find((i: { text: string }) => i.text)?.text || "Checklist";
+                                            const label = (node as unknown as { title?: string }).title || items.find((i: { text: string }) => i.text)?.text || "Checklist";
                                             return `${label} (${checked}/${total})`;
                                           }
                                         } catch { /* ignore */ }

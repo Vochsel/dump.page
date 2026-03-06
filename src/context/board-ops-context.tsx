@@ -16,6 +16,7 @@ export type BoardNode = {
   boardId: string;
   type: "text" | "link" | "checklist";
   content: string;
+  title?: string;
   position: Position;
   metadata?: Metadata;
 };
@@ -33,6 +34,7 @@ export interface BoardOps {
   updateNode: (args: {
     nodeId: string;
     content?: string;
+    title?: string;
     metadata?: Metadata;
   }) => Promise<null>;
   updateNodePosition: (args: {

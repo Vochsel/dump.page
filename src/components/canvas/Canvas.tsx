@@ -145,6 +145,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
           position,
           data: {
             content: n.content,
+            title: n.title,
             nodeId: n._id,
             canEdit,
             metadata: n.metadata,

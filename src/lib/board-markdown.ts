@@ -129,11 +129,35 @@ export async function getBoardMarkdown(
 
     const textNodes = nodes.filter((n) => n.type === "text");
     const linkNodes = nodes.filter((n) => n.type === "link");
+    const checklistNodes = nodes.filter((n) => n.type === "checklist");
 
     if (textNodes.length > 0) {
       markdown += `## Notes\n\n`;
       for (const node of textNodes) {
+        if (node.title) {
+          markdown += `### ${node.title}\n\n`;
+        }
         markdown += `${contentToMarkdown(node.content)}\n\n`;
+      }
+    }
+
+    if (checklistNodes.length > 0) {
+      markdown += `## Checklists\n\n`;
+      for (const node of checklistNodes) {
+        if (node.title) {
+          markdown += `### ${node.title}\n\n`;
+        }
+        try {
+          const items = JSON.parse(node.content);
+          if (Array.isArray(items)) {
+            for (const item of items) {
+              markdown += `- [${item.checked ? "x" : " "}] ${item.text}\n`;
+            }
+            markdown += `\n`;
+          }
+        } catch {
+          markdown += `${node.content}\n\n`;
+        }
       }
     }
 
