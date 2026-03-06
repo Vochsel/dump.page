@@ -25,9 +25,9 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="outline-none">
-        <Avatar className="h-8 w-8">
+        <Avatar className="h-7 w-7">
           <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ""} />
-          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
