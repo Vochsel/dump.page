@@ -2,6 +2,15 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 
+function generateSlug(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let slug = "";
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  for (const b of bytes) slug += chars[b % chars.length];
+  return slug;
+}
+
 export const createBoard = mutation({
   args: {
     name: v.string(),
@@ -28,8 +37,10 @@ export const createBoard = mutation({
         ? crypto.randomUUID().replace(/-/g, "").slice(0, 16)
         : undefined;
 
+    const slug = generateSlug();
     const boardId = await ctx.db.insert("boards", {
       name: args.name,
+      slug,
       icon: args.icon,
       ownerId: user._id,
       visibility: args.visibility,
@@ -45,7 +56,7 @@ export const createBoard = mutation({
       joinedAt: now,
     });
 
-    return boardId;
+    return slug;
   },
 });
 
@@ -282,6 +293,7 @@ export const seedDefaultBoard = internalMutation({
 
     const boardId = await ctx.db.insert("boards", {
       name: "Welcome to Dump",
+      slug: generateSlug(),
       icon: "👋",
       ownerId: args.userId,
       visibility: "private",
@@ -440,8 +452,10 @@ export const persistLocalBoard = mutation({
 
     const now = Date.now();
 
+    const slug = generateSlug();
     const boardId = await ctx.db.insert("boards", {
       name: args.name,
+      slug,
       icon: args.icon,
       ownerId: user._id,
       visibility: "private",
@@ -470,7 +484,7 @@ export const persistLocalBoard = mutation({
       });
     }
 
-    return boardId;
+    return slug;
   },
 });
 
@@ -484,11 +498,20 @@ export const getBoardCount = query({
 
 export const getBoardForMarkdown = query({
   args: {
-    boardId: v.id("boards"),
+    boardId: v.optional(v.id("boards")),
+    slug: v.optional(v.string()),
     shareToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const board = await ctx.db.get(args.boardId);
+    let board;
+    if (args.boardId) {
+      board = await ctx.db.get(args.boardId);
+    } else if (args.slug) {
+      board = await ctx.db
+        .query("boards")
+        .withIndex("by_slug", (q) => q.eq("slug", args.slug!))
+        .unique();
+    }
     if (!board) return null;
 
     // Check if authenticated user is a member
@@ -503,7 +526,7 @@ export const getBoardForMarkdown = query({
         const membership = await ctx.db
           .query("boardMembers")
           .withIndex("by_boardId_userId", (q) =>
-            q.eq("boardId", args.boardId).eq("userId", user._id)
+            q.eq("boardId", board!._id).eq("userId", user._id)
           )
           .unique();
         if (membership) isMember = true;
@@ -527,7 +550,7 @@ export const getBoardForMarkdown = query({
 
     const nodes = await ctx.db
       .query("nodes")
-      .withIndex("by_boardId", (q) => q.eq("boardId", args.boardId))
+      .withIndex("by_boardId", (q) => q.eq("boardId", board!._id))
       .collect();
 
     return { board, nodes };

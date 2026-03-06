@@ -43,6 +43,7 @@ export type BoardSettingsData = {
 interface BoardShareProps {
   board: {
     _id: Id<"boards">;
+    slug: string;
     visibility: "private" | "shared" | "public";
     shareToken?: string;
   };
@@ -133,16 +134,16 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
 
   const shareUrl =
     board.visibility === "shared" && board.shareToken
-      ? `${origin}/b/${board._id}?token=${board.shareToken}`
+      ? `${origin}/b/${board.slug}?token=${board.shareToken}`
       : board.visibility === "public"
-        ? `${origin}/b/${board._id}`
+        ? `${origin}/b/${board.slug}`
         : null;
 
   const rssUrl =
     board.visibility === "shared" && board.shareToken
-      ? `${origin}/b/${board._id}/rss.xml?token=${board.shareToken}`
+      ? `${origin}/b/${board.slug}/rss.xml?token=${board.shareToken}`
       : board.visibility === "public"
-        ? `${origin}/b/${board._id}/rss.xml`
+        ? `${origin}/b/${board.slug}/rss.xml`
         : null;
 
   const copyShareUrl = async () => {

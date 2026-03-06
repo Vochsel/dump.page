@@ -14,6 +14,7 @@ export default defineSchema({
 
   boards: defineTable({
     name: v.string(),
+    slug: v.string(),
     icon: v.string(),
     ownerId: v.id("users"),
     visibility: v.union(
@@ -42,6 +43,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_ownerId", ["ownerId"])
+    .index("by_slug", ["slug"])
     .index("by_shareToken", ["shareToken"]),
 
   boardMembers: defineTable({

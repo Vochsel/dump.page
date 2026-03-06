@@ -10,6 +10,7 @@ import { BoardIcon } from "./BoardIcon";
 interface BoardCardProps {
   board: {
     _id: Id<"boards">;
+    slug: string;
     name: string;
     icon: string;
     visibility: "private" | "shared" | "public";
@@ -19,7 +20,7 @@ interface BoardCardProps {
 
 export function BoardCard({ board }: BoardCardProps) {
   return (
-    <Link href={`/b/${board._id}`}>
+    <Link href={`/b/${board.slug}`}>
       <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
         <CardHeader className="space-y-3">
           <BoardIcon icon={board.icon} className="text-3xl" size={30} />

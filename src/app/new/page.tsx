@@ -94,7 +94,7 @@ export default function NewBoardPage() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       const nodes = raw ? JSON.parse(raw) : [];
-      const boardId = await persistLocalBoard({
+      const slug = await persistLocalBoard({
         name: "Untitled Board",
         icon: "📋",
         nodes: nodes.map((n: { type: string; content: string; position: { x: number; y: number }; metadata?: { title?: string; favicon?: string; description?: string } }) => ({
@@ -105,7 +105,7 @@ export default function NewBoardPage() {
         })),
       });
       clearLocalBoard();
-      router.push(`/b/${boardId}`);
+      router.push(`/b/${slug}`);
     } catch {
       setPersisting(false);
     }

@@ -26,12 +26,12 @@ export function CreateBoardDialog() {
 
   const handleCreate = async () => {
     if (!name.trim()) return;
-    const boardId = await createBoard({ name: name.trim(), icon, visibility });
+    const slug = await createBoard({ name: name.trim(), icon, visibility });
     setOpen(false);
     setName("");
     setIcon("📋");
     setVisibility("private");
-    router.push(`/b/${boardId}`);
+    router.push(`/b/${slug}`);
   };
 
   return (

@@ -95,7 +95,7 @@ export default function BoardPage({
   const { user, loading: authLoading } = useAuth();
 
   const access = useQuery(api.boardMembers.checkAccess, {
-    boardId: boardId as Id<"boards">,
+    slug: boardId,
     shareToken: token,
   });
 
@@ -164,7 +164,7 @@ export default function BoardPage({
         href={rssUrl}
       />
       <div className="absolute inset-0">
-        <ConvexBoardOpsProvider boardId={boardId as Id<"boards">}>
+        <ConvexBoardOpsProvider boardId={access.board._id}>
           <Canvas
             canEdit={access.canEdit}
             settings={boardSettings}
@@ -185,15 +185,15 @@ export default function BoardPage({
               </Link>
               <BoardIcon icon={access.board.icon} className="text-lg flex-shrink-0" size={20} />
               <EditableBoardName
-                boardId={boardId as Id<"boards">}
+                boardId={access.board._id}
                 name={access.board.name}
                 canEdit={access.role === "owner"}
               />
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-              <ChatButton boardId={boardId as Id<"boards">} />
+              <ChatButton boardId={access.board._id} />
               <BoardSettingsPopover
-                boardId={boardId as Id<"boards">}
+                boardId={access.board._id}
                 icon={access.board.icon}
                 settings={boardSettings}
                 canEdit={access.role === "owner"}
@@ -204,7 +204,7 @@ export default function BoardPage({
               />
               {access.role === "owner" && (
                 <DeleteBoardButton
-                  boardId={boardId as Id<"boards">}
+                  boardId={access.board._id}
                   boardName={access.board.name}
                   variant="icon"
                 />

@@ -1,6 +1,5 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
 import TurndownService from "turndown";
 
 const convex = new ConvexHttpClient(
@@ -107,12 +106,12 @@ function extractXmlAttr(xml: string, tag: string, attr: string): string | undefi
 }
 
 export async function getBoardMarkdown(
-  boardId: string,
+  slug: string,
   shareToken?: string
 ): Promise<{ markdown: string; status: number }> {
   try {
     const result = await convex.query(api.boards.getBoardForMarkdown, {
-      boardId: boardId as Id<"boards">,
+      slug,
       shareToken,
     });
 

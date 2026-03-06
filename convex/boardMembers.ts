@@ -95,11 +95,14 @@ export const getMembers = query({
 
 export const checkAccess = query({
   args: {
-    boardId: v.id("boards"),
+    slug: v.string(),
     shareToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const board = await ctx.db.get(args.boardId);
+    const board = await ctx.db
+      .query("boards")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique();
     if (!board) return { canView: false, canEdit: false, board: null };
 
     const identity = await ctx.auth.getUserIdentity();
@@ -118,7 +121,7 @@ export const checkAccess = query({
         membership = await ctx.db
           .query("boardMembers")
           .withIndex("by_boardId_userId", (q) =>
-            q.eq("boardId", args.boardId).eq("userId", user!._id)
+            q.eq("boardId", board!._id).eq("userId", user!._id)
           )
           .unique();
       }

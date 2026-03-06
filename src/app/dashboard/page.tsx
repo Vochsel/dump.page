@@ -103,7 +103,7 @@ export default function DashboardPage() {
                 board && (
                   <Link
                     key={board._id}
-                    href={`/b/${board._id}`}
+                    href={`/b/${board.slug}`}
                     className="group bg-white rounded-xl border border-stone-200 hover:border-stone-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
                   >
                     {/* Board header */}

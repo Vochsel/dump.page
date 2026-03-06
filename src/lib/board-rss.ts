@@ -1,6 +1,5 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
 import TurndownService from "turndown";
 
 const convex = new ConvexHttpClient(
@@ -27,13 +26,13 @@ function escapeXml(str: string): string {
 }
 
 export async function getBoardRss(
-  boardId: string,
+  slug: string,
   shareToken?: string,
   baseUrl?: string
 ): Promise<{ xml: string; status: number }> {
   try {
     const result = await convex.query(api.boards.getBoardForMarkdown, {
-      boardId: boardId as Id<"boards">,
+      slug,
       shareToken,
     });
 
@@ -46,7 +45,7 @@ export async function getBoardRss(
 
     const { board, nodes } = result;
     const siteUrl = baseUrl || "https://magpai.app";
-    const boardUrl = `${siteUrl}/b/${boardId}${shareToken ? `?token=${shareToken}` : ""}`;
+    const boardUrl = `${siteUrl}/b/${slug}${shareToken ? `?token=${shareToken}` : ""}`;
     const now = new Date().toUTCString();
 
     const items = nodes
@@ -90,7 +89,7 @@ export async function getBoardRss(
         return `    <item>
       <title>${escapeXml(title)}</title>
       <description>${escapeXml(description)}</description>${link ? `\n      <link>${escapeXml(link)}</link>` : ""}
-      <guid isPermaLink="false">${boardId}-${node._id}</guid>
+      <guid isPermaLink="false">${slug}-${node._id}</guid>
       <pubDate>${pubDate}</pubDate>
     </item>`;
       });
@@ -102,7 +101,7 @@ export async function getBoardRss(
     <link>${escapeXml(boardUrl)}</link>
     <description>${escapeXml(`${board.name} - a Dump board`)}</description>
     <lastBuildDate>${now}</lastBuildDate>
-    <atom:link href="${escapeXml(`${siteUrl}/b/${boardId}/rss.xml${shareToken ? `?token=${shareToken}` : ""}`)}" rel="self" type="application/rss+xml" />
+    <atom:link href="${escapeXml(`${siteUrl}/b/${slug}/rss.xml${shareToken ? `?token=${shareToken}` : ""}`)}" rel="self" type="application/rss+xml" />
 ${items.join("\n")}
   </channel>
 </rss>`;
