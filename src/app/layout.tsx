@@ -27,8 +27,39 @@ const dynaPuff = DynaPuff({
 });
 
 export const metadata: Metadata = {
-  title: "Dump",
-  description: "Collaborative context boards for teams",
+  title: "Dump — Your team's context dump",
+  description:
+    "Dump links, notes & ideas into shared boards your team and AI tools can actually use.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://dump.magpai.app"
+  ),
+  openGraph: {
+    title: "Dump — Your team's context dump",
+    description:
+      "Dump links, notes & ideas into shared boards your team and AI tools can actually use.",
+    siteName: "Dump",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Dump — collaborative context boards for teams and AI",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dump — Your team's context dump",
+    description:
+      "Dump links, notes & ideas into shared boards your team and AI tools can actually use.",
+    images: ["/opengraph-image.png"],
+  },
+  icons: {
+    icon: "/dump.png",
+    apple: "/dump.png",
+  },
 };
 
 export default function RootLayout({

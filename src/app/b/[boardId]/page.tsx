@@ -129,8 +129,16 @@ export default function BoardPage({
   const headerColor = lightenHex(bgColor, 0.03);
   const headerBorder = darkenHex(bgColor, 0.15);
 
+  const rssUrl = `/b/${boardId}/rss.xml${token ? `?token=${token}` : ""}`;
+
   return (
     <div className="h-screen relative">
+      <link
+        rel="alternate"
+        type="application/rss+xml"
+        title={`${access.board.name} RSS Feed`}
+        href={rssUrl}
+      />
       <div className="absolute inset-0">
         <ConvexBoardOpsProvider boardId={boardId as Id<"boards">}>
           <Canvas

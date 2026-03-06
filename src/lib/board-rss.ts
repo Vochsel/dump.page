@@ -1,0 +1,102 @@
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
+import TurndownService from "turndown";
+
+const convex = new ConvexHttpClient(
+  process.env.NEXT_PUBLIC_CONVEX_URL as string
+);
+
+const turndown = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" });
+
+function stripHtml(content: string): string {
+  if (!content) return "";
+  if (content.trimStart().startsWith("<")) {
+    return turndown.turndown(content);
+  }
+  return content;
+}
+
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+export async function getBoardRss(
+  boardId: string,
+  shareToken?: string,
+  baseUrl?: string
+): Promise<{ xml: string; status: number }> {
+  try {
+    const result = await convex.query(api.boards.getBoardForMarkdown, {
+      boardId: boardId as Id<"boards">,
+      shareToken,
+    });
+
+    if (!result) {
+      return {
+        xml: `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Not Found</title><description>This board is private or does not exist.</description></channel></rss>`,
+        status: 404,
+      };
+    }
+
+    const { board, nodes } = result;
+    const siteUrl = baseUrl || "https://magpai.app";
+    const boardUrl = `${siteUrl}/b/${boardId}${shareToken ? `?token=${shareToken}` : ""}`;
+    const now = new Date().toUTCString();
+
+    const items = nodes
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .map((node) => {
+        let title: string;
+        let description: string;
+        let link: string | undefined;
+
+        if (node.type === "link") {
+          title = node.metadata?.title || node.content;
+          description = node.metadata?.description || node.content;
+          link = node.content;
+        } else if (node.type === "text") {
+          const text = stripHtml(node.content);
+          title = text.slice(0, 100) + (text.length > 100 ? "..." : "");
+          description = text;
+        } else {
+          // checklist
+          title = "Checklist";
+          description = stripHtml(node.content);
+        }
+
+        const pubDate = new Date(node.updatedAt).toUTCString();
+
+        return `    <item>
+      <title>${escapeXml(title)}</title>
+      <description>${escapeXml(description)}</description>${link ? `\n      <link>${escapeXml(link)}</link>` : ""}
+      <guid isPermaLink="false">${boardId}-${node._id}</guid>
+      <pubDate>${pubDate}</pubDate>
+    </item>`;
+      });
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>${escapeXml(`${board.icon} ${board.name}`)}</title>
+    <link>${escapeXml(boardUrl)}</link>
+    <description>${escapeXml(`${board.name} - a Dump board`)}</description>
+    <lastBuildDate>${now}</lastBuildDate>
+    <atom:link href="${escapeXml(`${siteUrl}/b/${boardId}/rss.xml${shareToken ? `?token=${shareToken}` : ""}`)}" rel="self" type="application/rss+xml" />
+${items.join("\n")}
+  </channel>
+</rss>`;
+
+    return { xml, status: 200 };
+  } catch {
+    return {
+      xml: `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Error</title><description>Failed to load board.</description></channel></rss>`,
+      status: 500,
+    };
+  }
+}
