@@ -46,16 +46,18 @@ export const addMember = mutation({
         joinedAt: Date.now(),
       });
 
-      // Send notification email
-      const inviteToken = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-      await ctx.scheduler.runAfter(0, internal.email.sendBoardInviteEmail, {
-        toEmail: normalizedEmail,
-        boardName: board.name,
-        boardId: args.boardId,
-        inviterName: currentUser.name,
-        inviteToken,
-        isExistingUser: true,
-      });
+      // Send notification email (if enabled)
+      if (process.env.ENABLE_EMAILS === "true") {
+        const inviteToken = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+        await ctx.scheduler.runAfter(0, internal.email.sendBoardInviteEmail, {
+          toEmail: normalizedEmail,
+          boardName: board.name,
+          boardId: args.boardId,
+          inviterName: currentUser.name,
+          inviteToken,
+          isExistingUser: true,
+        });
+      }
 
       return { status: "added" as const };
     }
@@ -79,14 +81,16 @@ export const addMember = mutation({
       createdAt: Date.now(),
     });
 
-    await ctx.scheduler.runAfter(0, internal.email.sendBoardInviteEmail, {
-      toEmail: normalizedEmail,
-      boardName: board.name,
-      boardId: args.boardId,
-      inviterName: currentUser.name,
-      inviteToken,
-      isExistingUser: false,
-    });
+    if (process.env.ENABLE_EMAILS === "true") {
+      await ctx.scheduler.runAfter(0, internal.email.sendBoardInviteEmail, {
+        toEmail: normalizedEmail,
+        boardName: board.name,
+        boardId: args.boardId,
+        inviterName: currentUser.name,
+        inviteToken,
+        isExistingUser: false,
+      });
+    }
 
     return { status: "invited" as const };
   },
