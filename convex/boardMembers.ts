@@ -25,7 +25,7 @@ export const addMember = mutation({
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .unique();
-    if (!targetUser) throw new Error("User not found with that email");
+    if (!targetUser) throw new Error("No account found for that email. They need to sign up first.");
 
     const existing = await ctx.db
       .query("boardMembers")

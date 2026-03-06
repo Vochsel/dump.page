@@ -76,7 +76,10 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
       await addMember({ boardId: board._id, email });
       setMemberEmail("");
     } catch (e) {
-      setMemberError(e instanceof Error ? e.message : "Failed to add member");
+      const msg = e instanceof Error ? e.message : "Failed to add member";
+      // Extract the user-facing message from Convex error format
+      const match = msg.match(/Uncaught Error: (.+?)(?:\n|$)/);
+      setMemberError(match ? match[1] : msg);
     }
     setAddingMember(false);
   }, [memberEmail, board._id, addMember]);
