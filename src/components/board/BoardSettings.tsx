@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -9,6 +9,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +27,7 @@ import {
   Grid3X3,
   Map,
   Rss,
+  FileText,
 } from "lucide-react";
 import { IconPicker } from "./IconPicker";
 
@@ -42,8 +49,28 @@ interface BoardShareProps {
 export function BoardShare({ board, isOwner }: BoardShareProps) {
   const [copied, setCopied] = useState(false);
   const [copiedRss, setCopiedRss] = useState(false);
+  const [mdOpen, setMdOpen] = useState(false);
+  const [mdContent, setMdContent] = useState("");
+  const [mdLoading, setMdLoading] = useState(false);
   const updateBoard = useMutation(api.boards.updateBoard);
   const regenerateToken = useMutation(api.boards.regenerateShareToken);
+
+  const fetchMarkdown = useCallback(async () => {
+    setMdLoading(true);
+    try {
+      const token = board.visibility === "shared" && board.shareToken ? board.shareToken : undefined;
+      const url = `/api/board-markdown/${board._id}${token ? `?token=${token}` : ""}`;
+      const res = await fetch(url);
+      setMdContent(await res.text());
+    } catch {
+      setMdContent("Failed to load markdown.");
+    }
+    setMdLoading(false);
+  }, [board._id, board.visibility, board.shareToken]);
+
+  useEffect(() => {
+    if (mdOpen) fetchMarkdown();
+  }, [mdOpen, fetchMarkdown]);
 
   if (!isOwner) return null;
 
@@ -154,8 +181,29 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
               </div>
             </div>
           )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-2 text-xs"
+            onClick={() => setMdOpen(true)}
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Preview Markdown
+          </Button>
         </div>
       </PopoverContent>
+
+      <Dialog open={mdOpen} onOpenChange={setMdOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Markdown Preview</DialogTitle>
+          </DialogHeader>
+          <pre className="flex-1 overflow-auto text-xs font-mono bg-muted p-3 rounded-md whitespace-pre-wrap">
+            {mdLoading ? "Loading..." : mdContent}
+          </pre>
+        </DialogContent>
+      </Dialog>
     </Popover>
   );
 }
