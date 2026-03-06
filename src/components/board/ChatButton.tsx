@@ -31,14 +31,14 @@ const PROVIDERS = [
   {
     id: "gemini",
     name: "Gemini",
-    favicon: "https://gemini.google.com/favicon.ico",
+    favicon: "https://www.google.com/s2/favicons?domain=gemini.google.com&sz=32",
     buildUrl: (prompt: string) =>
       `https://gemini.google.com/app?q=${encodeURIComponent(prompt)}`,
   },
   {
     id: "grok",
     name: "Grok",
-    favicon: "https://grok.com/favicon.ico",
+    favicon: "https://grok.com/images/favicon.svg",
     buildUrl: (prompt: string) =>
       `https://grok.com/?q=${encodeURIComponent(prompt)}`,
   },
