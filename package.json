@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "admin": "npx tsx scripts/admin.ts"
+    "admin": "npx tsx scripts/admin.ts",
+    "deploy:convex": "npx convex deploy"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
