@@ -4,6 +4,7 @@ import { useAuth } from "@/context/auth-context";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
+import { BoardCounter } from "@/components/BoardCounter";
 
 function DraggableCard({
   children,
@@ -161,6 +162,7 @@ export default function Home() {
         >
           Start dumping — it&apos;s free
         </button>
+        <BoardCounter />
       </div>
 
       {/* Pain points — whiteboard scribbles */}

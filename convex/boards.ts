@@ -473,6 +473,14 @@ export const persistLocalBoard = mutation({
   },
 });
 
+export const getBoardCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const boards = await ctx.db.query("boards").collect();
+    return boards.length;
+  },
+});
+
 export const getBoardForMarkdown = query({
   args: {
     boardId: v.id("boards"),
