@@ -104,12 +104,6 @@ const features = [
   },
 ];
 
-const painPoints = [
-  { text: "Where is that doc again?", rotate: "rotate-1" },
-  { text: "Can you reshare that prompt?", rotate: "-rotate-2" },
-  { text: "I bookmarked it somewhere…", rotate: "rotate-2" },
-  { text: "Which channel was that in?", rotate: "-rotate-1" },
-];
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -166,25 +160,9 @@ export default function Home() {
         <BoardCounter />
       </div>
 
-      {/* Pain points — whiteboard scribbles */}
-      <div className="mt-16 max-w-md w-full">
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {painPoints.map((item) => (
-            <DraggableCard
-              key={item.text}
-              className={`${item.rotate} inline-block bg-white/60 border border-dashed border-gray-300 rounded px-3 py-1.5 text-sm text-gray-400 line-through decoration-red-400/60 decoration-2 font-[family-name:var(--font-poppins)]`}
-            >
-              {item.text}
-            </DraggableCard>
-          ))}
-        </div>
-        <p className="text-center text-sm text-gray-600 font-medium font-[family-name:var(--font-poppins)] mt-4">
-          One place for links your team, agents, and chatbots can all reach.
-        </p>
-      </div>
 
       {/* Feature cards */}
-      <p className="mt-16 text-center text-xs font-[family-name:var(--font-poppins)] text-gray-400 uppercase tracking-widest mb-6">
+      <p className="mt-16 text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 uppercase tracking-widest mb-6">
         How it works
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 max-w-2xl w-full px-2">
@@ -205,7 +183,7 @@ export default function Home() {
 
       {/* Use cases */}
       <div className="mt-16 max-w-2xl w-full px-2">
-        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-400 uppercase tracking-widest mb-6">
+        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 uppercase tracking-widest mb-6">
           How people use Dump
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -265,7 +243,7 @@ export default function Home() {
 
       {/* Works with AI */}
       <div className="mt-16 max-w-xl w-full space-y-3 px-2">
-        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-400 uppercase tracking-widest">
+        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 uppercase tracking-widest">
           Works with your favorite AI
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
@@ -294,7 +272,7 @@ export default function Home() {
 
       {/* Why we built this */}
       <div className="mt-16 max-w-xl w-full px-2 space-y-4">
-        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-400 uppercase tracking-widest">
+        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 uppercase tracking-widest">
           Why we built this
         </p>
         <div className="bg-white/70 border border-gray-200 rounded-xl p-6 space-y-3">
