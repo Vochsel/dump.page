@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2",
     "@tiptap/extension-task-item": "^3.20.0",
     "@tiptap/extension-task-list": "^3.20.0",
     "@tiptap/pm": "^3.20.0",
@@ -20,13 +21,15 @@
     "convex": "^1.32.0",
     "firebase": "^12.10.0",
     "lucide-react": "^0.576.0",
+    "mcp-handler": "^1.0.7",
     "next": "16.1.6",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-textarea-autosize": "^8.5.9",
     "tailwind-merge": "^3.5.0",
-    "turndown": "^7.2.2"
+    "turndown": "^7.2.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

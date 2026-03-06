@@ -21,6 +21,7 @@ import {
   Grid3X3,
   Map,
   Rss,
+  Bot,
 } from "lucide-react";
 import { IconPicker } from "./IconPicker";
 
@@ -42,6 +43,7 @@ interface BoardShareProps {
 export function BoardShare({ board, isOwner }: BoardShareProps) {
   const [copied, setCopied] = useState(false);
   const [copiedRss, setCopiedRss] = useState(false);
+  const [copiedMcp, setCopiedMcp] = useState(false);
   const updateBoard = useMutation(api.boards.updateBoard);
   const regenerateToken = useMutation(api.boards.regenerateShareToken);
 
@@ -61,6 +63,13 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
       ? `${origin}/b/${board._id}/rss.xml?token=${board.shareToken}`
       : board.visibility === "public"
         ? `${origin}/b/${board._id}/rss.xml`
+        : null;
+
+  const mcpUrl =
+    board.visibility === "shared" && board.shareToken
+      ? `${origin}/api/mcp/b/${board._id}/mcp?token=${board.shareToken}`
+      : board.visibility === "public"
+        ? `${origin}/api/mcp/b/${board._id}/mcp`
         : null;
 
   const copyShareUrl = async () => {
@@ -149,6 +158,35 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
                     <Check className="h-4 w-4" />
                   ) : (
                     <Rss className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {mcpUrl && (
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                MCP Server
+              </label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Connect this board to Claude, ChatGPT, or other AI clients.
+              </p>
+              <div className="flex gap-2">
+                <Input value={mcpUrl} readOnly className="text-xs" />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(mcpUrl);
+                    setCopiedMcp(true);
+                    setTimeout(() => setCopiedMcp(false), 2000);
+                  }}
+                >
+                  {copiedMcp ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Bot className="h-4 w-4" />
                   )}
                 </Button>
               </div>
