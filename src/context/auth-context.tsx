@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   ReactNode,
 } from "react";
 import {
@@ -14,7 +15,7 @@ import {
   User,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { useMutation } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 interface AuthContextType {
@@ -33,30 +34,40 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [firebaseLoading, setFirebaseLoading] = useState(true);
+  const { isAuthenticated: convexAuthenticated } = useConvexAuth();
   const getOrCreateUser = useMutation(api.users.getOrCreateUser);
+  const syncedUid = useRef<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
-      setLoading(false);
-
-      if (firebaseUser) {
-        try {
-          await getOrCreateUser({
-            firebaseUid: firebaseUser.uid,
-            email: firebaseUser.email ?? "",
-            name: firebaseUser.displayName ?? "",
-            profileImage: firebaseUser.photoURL ?? undefined,
-          });
-        } catch {
-          // User sync will retry on next auth state change
-        }
+      setFirebaseLoading(false);
+      if (!firebaseUser) {
+        syncedUid.current = null;
       }
     });
-
     return () => unsubscribe();
-  }, [getOrCreateUser]);
+  }, []);
+
+  // Sync user to Convex only after Convex auth is ready
+  useEffect(() => {
+    if (!convexAuthenticated || !user) return;
+    if (syncedUid.current === user.uid) return;
+    syncedUid.current = user.uid;
+
+    getOrCreateUser({
+      firebaseUid: user.uid,
+      email: user.email ?? "",
+      name: user.displayName ?? "",
+      profileImage: user.photoURL ?? undefined,
+    }).catch(() => {
+      // Reset so it retries on next render
+      syncedUid.current = null;
+    });
+  }, [convexAuthenticated, user, getOrCreateUser]);
+
+  const loading = firebaseLoading || (!!user && !convexAuthenticated);
 
   const signInWithGoogle = async () => {
     await signInWithPopup(auth, googleProvider);

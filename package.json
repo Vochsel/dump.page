@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "env-cmd -f .env.local next dev",
+    "dev:prod": "env-cmd -f .env.production next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "admin": "npx tsx scripts/admin.ts",
-    "deploy:convex": "npx convex deploy"
+    "deploy:convex:dev": "npx convex dev",
+    "deploy:convex": "env-cmd -f .env.production npx convex deploy"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -39,6 +41,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/turndown": "^5.0.6",
+    "env-cmd": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "shadcn": "^3.8.5",
