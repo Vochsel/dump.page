@@ -28,16 +28,16 @@ const dynaPuff = DynaPuff({
 });
 
 export const metadata: Metadata = {
-  title: "Dump — Your team's context dump",
+  title: "Dump — The context dump for humans and AI",
   description:
-    "Dump links, notes & ideas into shared boards your team and AI tools can actually use.",
+    "Shared whiteboards of links and text, accessible to all agents and chatbots.",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://dump.magpai.app"
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.get-dump.com"
   ),
   openGraph: {
-    title: "Dump — Your team's context dump",
+    title: "Dump — The context dump for humans and AI",
     description:
-      "Dump links, notes & ideas into shared boards your team and AI tools can actually use.",
+      "Shared whiteboards of links and text, accessible to all agents and chatbots.",
     siteName: "Dump",
     locale: "en_US",
     type: "website",
@@ -52,9 +52,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Dump — Your team's context dump",
+    title: "Dump — The context dump for humans and AI",
     description:
-      "Dump links, notes & ideas into shared boards your team and AI tools can actually use.",
+      "Shared whiteboards of links and text, accessible to all agents and chatbots.",
     images: ["/opengraph-image.png"],
   },
   icons: {
