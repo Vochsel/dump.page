@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { BoardIcon } from "@/components/board/BoardIcon";
 import { darkenHex, lightenHex } from "@/lib/utils";
+import { toast } from "sonner";
+import { QuickTips } from "@/components/board/QuickTips";
 
 function EditableBoardName({
   boardId,
@@ -148,6 +150,37 @@ export default function BoardPage({
     );
   }
 
+  // Cmd/Ctrl+C with nothing selected → copy share URL
+  const shareUrl = (() => {
+    const slug = access.board.slug ?? boardId;
+    const base = `https://www.get-dump.com/b/${slug}`;
+    if (access.board.visibility === "shared" && access.board.shareToken) {
+      return `${base}/llms.txt?token=${access.board.shareToken}`;
+    }
+    if (access.board.visibility === "public") {
+      return `${base}/llms.txt`;
+    }
+    return `${base}/llms.txt`;
+  })();
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "c" || !(e.metaKey || e.ctrlKey)) return;
+      const sel = window.getSelection()?.toString();
+      if (sel && sel.length > 0) return; // native copy
+      // Check if focus is in an input/textarea
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+      e.preventDefault();
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast.success("Board link copied to clipboard");
+      });
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [shareUrl]);
+
   const boardSettings = access.board.settings ?? {};
   const bgColor = boardSettings.backgroundColor ?? "#f9fafb";
   const headerColor = lightenHex(bgColor, 0.03);
@@ -219,6 +252,7 @@ export default function BoardPage({
           </div>
         </div>
       </header>
+      <QuickTips />
     </div>
   );
 }
