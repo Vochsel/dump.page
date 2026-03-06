@@ -11,6 +11,7 @@
 import type * as admin from "../admin.js";
 import type * as boardMembers from "../boardMembers.js";
 import type * as boards from "../boards.js";
+import type * as featureRequests from "../featureRequests.js";
 import type * as migrations from "../migrations.js";
 import type * as nodes from "../nodes.js";
 import type * as users from "../users.js";
@@ -25,6 +26,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   boardMembers: typeof boardMembers;
   boards: typeof boards;
+  featureRequests: typeof featureRequests;
   migrations: typeof migrations;
   nodes: typeof nodes;
   users: typeof users;

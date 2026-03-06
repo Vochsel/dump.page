@@ -56,6 +56,15 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_boardId_userId", ["boardId", "userId"]),
 
+  featureRequests: defineTable({
+    type: v.union(v.literal("feature"), v.literal("fix")),
+    kind: v.union(v.literal("request"), v.literal("prompt")),
+    description: v.string(),
+    email: v.optional(v.string()),
+    creditOptIn: v.optional(v.boolean()),
+    createdAt: v.number(),
+  }),
+
   nodes: defineTable({
     boardId: v.id("boards"),
     type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),

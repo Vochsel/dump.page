@@ -5,6 +5,7 @@ import { LoginButton } from "@/components/auth/LoginButton";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { BoardCounter } from "@/components/BoardCounter";
+import { SuggestFeatureButton } from "@/components/SuggestFeatureButton";
 
 function DraggableCard({
   children,
@@ -331,6 +332,7 @@ export default function Home() {
         <p className="text-xs text-gray-400 font-[family-name:var(--font-poppins)]">
           Free to use &middot; No credit card required
         </p>
+        <SuggestFeatureButton />
       </div>
     </div>
   );

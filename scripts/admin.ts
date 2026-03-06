@@ -7,6 +7,7 @@
  *   pnpm admin users          - Recent users (last 20)
  *   pnpm admin boards         - Recently created boards (last 20)
  *   pnpm admin active         - Recently active boards (last 20)
+ *   pnpm admin suggestions    - View feature suggestions
  *   pnpm admin help           - Show this help
  */
 
@@ -165,6 +166,24 @@ async function main() {
       break;
     }
 
+    case "suggestions": {
+      const reqs = await convex.query(api.featureRequests.list);
+      console.log(`\n💡 Feature Suggestions (${reqs.length})\n`);
+      table(
+        reqs.map((r) => ({
+          type: r.type,
+          kind: r.kind,
+          description: r.description.length > 60 ? r.description.slice(0, 57) + "..." : r.description,
+          email: r.email ?? "-",
+          credit: r.creditOptIn ? "yes" : "-",
+          submitted: timeAgo(new Date(r.createdAt).toISOString()),
+        })),
+        ["type", "kind", "description", "email", "credit", "submitted"]
+      );
+      console.log();
+      break;
+    }
+
     case "help":
     case "--help":
     case "-h":
@@ -175,8 +194,9 @@ Commands:
   stats     Overview of usage metrics, growth, and top boards
   users     Last 20 users who signed up
   boards    Last 20 boards created
-  active    Last 20 boards by recent activity
-  help      Show this help
+  active        Last 20 boards by recent activity
+  suggestions   View feature suggestions
+  help          Show this help
 
 Usage:
   pnpm admin <command>
