@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "admin": "npx tsx scripts/admin.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
