@@ -1,16 +1,8 @@
 import { useCallback, useRef, useState } from "react";
-import { Id } from "../../convex/_generated/dataModel";
-
-type Position = { x: number; y: number };
-
-type Metadata = {
-  title?: string;
-  favicon?: string;
-  description?: string;
-};
+import type { Position, Metadata, BoardNode } from "@/context/board-ops-context";
 
 type NodeSnapshot = {
-  boardId: Id<"boards">;
+  boardId: string;
   type: "text" | "link" | "checklist";
   content: string;
   position: Position;
@@ -18,34 +10,25 @@ type NodeSnapshot = {
 };
 
 export type UndoAction =
-  | { type: "create"; nodeId: Id<"nodes"> }
-  | { type: "delete"; deletedNodeId: Id<"nodes">; snapshot: NodeSnapshot }
-  | { type: "move"; nodeId: Id<"nodes">; oldPosition: Position; newPosition: Position }
-  | { type: "edit"; nodeId: Id<"nodes">; oldContent: string; newContent: string; oldMetadata?: Metadata; newMetadata?: Metadata };
+  | { type: "create"; nodeId: string }
+  | { type: "delete"; deletedNodeId: string; snapshot: NodeSnapshot }
+  | { type: "move"; nodeId: string; oldPosition: Position; newPosition: Position }
+  | { type: "edit"; nodeId: string; oldContent: string; newContent: string; oldMetadata?: Metadata; newMetadata?: Metadata };
 
 const MAX_HISTORY = 50;
 
-type ConvexNode = {
-  _id: Id<"nodes">;
-  boardId: Id<"boards">;
-  type: "text" | "link" | "checklist";
-  content: string;
-  position: Position;
-  metadata?: Metadata;
-};
-
 interface UseUndoRedoArgs {
-  convexNodes: ConvexNode[] | undefined;
+  convexNodes: BoardNode[] | undefined;
   createNode: (args: {
-    boardId: Id<"boards">;
+    boardId: string;
     type: "text" | "link" | "checklist";
     content: string;
     position: Position;
     metadata?: Metadata;
-  }) => Promise<Id<"nodes">>;
-  deleteNode: (args: { nodeId: Id<"nodes"> }) => Promise<null>;
-  updateNode: (args: { nodeId: Id<"nodes">; content?: string; metadata?: Metadata }) => Promise<null>;
-  updateNodePosition: (args: { nodeId: Id<"nodes">; position: Position }) => Promise<null>;
+  }) => Promise<string>;
+  deleteNode: (args: { nodeId: string }) => Promise<null>;
+  updateNode: (args: { nodeId: string; content?: string; metadata?: Metadata }) => Promise<null>;
+  updateNodePosition: (args: { nodeId: string; position: Position }) => Promise<null>;
 }
 
 export function useUndoRedo({
@@ -74,7 +57,6 @@ export function useUndoRedo({
     try {
       switch (action.type) {
         case "create": {
-          // Snapshot the node before deleting
           const node = convexNodes?.find((n) => n._id === action.nodeId);
           if (!node) break;
           const snapshot: NodeSnapshot = {
@@ -110,7 +92,7 @@ export function useUndoRedo({
           break;
         }
         case "edit": {
-          const updateArgs: { nodeId: Id<"nodes">; content?: string; metadata?: Metadata } = {
+          const updateArgs: { nodeId: string; content?: string; metadata?: Metadata } = {
             nodeId: action.nodeId,
           };
           if (action.oldContent !== action.newContent) {
@@ -183,7 +165,7 @@ export function useUndoRedo({
           break;
         }
         case "edit": {
-          const updateArgs: { nodeId: Id<"nodes">; content?: string; metadata?: Metadata } = {
+          const updateArgs: { nodeId: string; content?: string; metadata?: Metadata } = {
             nodeId: action.nodeId,
           };
           if (action.oldContent !== action.newContent) {

@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Canvas } from "@/components/canvas/Canvas";
+import { ConvexBoardOpsProvider } from "@/context/convex-board-ops";
 import { BoardShare, BoardSettingsPopover } from "@/components/board/BoardSettings";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { useAuth } from "@/context/auth-context";
@@ -131,11 +132,12 @@ export default function BoardPage({
   return (
     <div className="h-screen relative">
       <div className="absolute inset-0">
-        <Canvas
-          boardId={boardId as Id<"boards">}
-          canEdit={access.canEdit}
-          settings={boardSettings}
-        />
+        <ConvexBoardOpsProvider boardId={boardId as Id<"boards">}>
+          <Canvas
+            canEdit={access.canEdit}
+            settings={boardSettings}
+          />
+        </ConvexBoardOpsProvider>
       </div>
       <header className="absolute top-0 left-0 right-0 z-10 md:flex md:justify-center md:px-4 md:mt-4">
         <div

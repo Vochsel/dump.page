@@ -2,26 +2,24 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { NodeProps } from "@xyflow/react";
-import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
 import { Trash2 } from "lucide-react";
 import { TipTapEditor } from "./TipTapEditor";
+import { useBoardOps } from "@/context/board-ops-context";
 
 import type { UndoAction } from "@/hooks/useUndoRedo";
 
 type TextNodeData = {
   content: string;
-  nodeId: Id<"nodes">;
+  nodeId: string;
   canEdit: boolean;
   pushAction: (action: UndoAction) => void;
-  deleteNodeWithUndo: (nodeId: Id<"nodes">) => void;
+  deleteNodeWithUndo: (nodeId: string) => void;
 };
 
 export function TextNode({ data }: NodeProps) {
   const { content, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as TextNodeData;
   const [editing, setEditing] = useState(!content && canEdit);
-  const updateNode = useMutation(api.nodes.updateNode);
+  const { updateNode } = useBoardOps();
 
   // If content becomes non-empty externally while we were in auto-edit mode, stop editing
   useEffect(() => {

@@ -2,10 +2,8 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { NodeProps } from "@xyflow/react";
-import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
 import { Trash2, GripVertical, X } from "lucide-react";
+import { useBoardOps } from "@/context/board-ops-context";
 
 type ChecklistItem = {
   id: string;
@@ -17,10 +15,10 @@ import type { UndoAction } from "@/hooks/useUndoRedo";
 
 type ChecklistNodeData = {
   content: string;
-  nodeId: Id<"nodes">;
+  nodeId: string;
   canEdit: boolean;
   pushAction: (action: UndoAction) => void;
-  deleteNodeWithUndo: (nodeId: Id<"nodes">) => void;
+  deleteNodeWithUndo: (nodeId: string) => void;
 };
 
 function generateId() {
@@ -39,7 +37,7 @@ function parseItems(content: string): ChecklistItem[] {
 
 export function ChecklistNode({ data }: NodeProps) {
   const { content, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as ChecklistNodeData;
-  const updateNode = useMutation(api.nodes.updateNode);
+  const { updateNode } = useBoardOps();
 
   const [items, setItems] = useState<ChecklistItem[]>(() => {
     const parsed = parseItems(content);

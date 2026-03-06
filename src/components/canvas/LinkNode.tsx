@@ -2,10 +2,8 @@
 
 import { useState, useCallback } from "react";
 import { NodeProps } from "@xyflow/react";
-import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
 import { ExternalLink, Trash2, Pencil, Rss } from "lucide-react";
+import { useBoardOps } from "@/context/board-ops-context";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -25,7 +23,7 @@ import type { UndoAction } from "@/hooks/useUndoRedo";
 
 type LinkNodeData = {
   content: string;
-  nodeId: Id<"nodes">;
+  nodeId: string;
   canEdit: boolean;
   metadataLoading: boolean;
   metadata?: {
@@ -34,7 +32,7 @@ type LinkNodeData = {
     description?: string;
   };
   pushAction: (action: UndoAction) => void;
-  deleteNodeWithUndo: (nodeId: Id<"nodes">) => void;
+  deleteNodeWithUndo: (nodeId: string) => void;
 };
 
 function getFaviconUrl(url: string): string {
@@ -262,7 +260,7 @@ function EmbedNode({
 export function LinkNode({ data }: NodeProps) {
   const { content, nodeId, canEdit, metadata, metadataLoading, pushAction, deleteNodeWithUndo } =
     data as unknown as LinkNodeData;
-  const updateNode = useMutation(api.nodes.updateNode);
+  const { updateNode } = useBoardOps();
 
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");

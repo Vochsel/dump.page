@@ -1,9 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useAction } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,21 +10,20 @@ import {
 } from "@/components/ui/popover";
 import { Type, Link, Plus, CheckSquare, Undo2, Redo2 } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
+import { useBoardOps } from "@/context/board-ops-context";
 
 interface ToolbarProps {
-  boardId: Id<"boards">;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
-  onNodeCreated: (nodeId: Id<"nodes">) => void;
+  onNodeCreated: (nodeId: string) => void;
 }
 
-export function Toolbar({ boardId, canUndo, canRedo, onUndo, onRedo, onNodeCreated }: ToolbarProps) {
+export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: ToolbarProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
-  const createNode = useMutation(api.nodes.createNode);
-  const fetchMetadata = useAction(api.nodes.fetchLinkMetadata);
+  const { createNode, fetchLinkMetadata: fetchMetadata, boardId } = useBoardOps();
   const { screenToFlowPosition } = useReactFlow();
 
   const getCenter = () => {

@@ -15,9 +15,6 @@ import {
 } from "@xyflow/react";
 import type { BoardSettingsData } from "@/components/board/BoardSettings";
 import "@xyflow/react/dist/style.css";
-import { useQuery, useMutation, useAction } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
 import { TextNode } from "./TextNode";
 import { LinkNode } from "./LinkNode";
 import { ChecklistNode } from "./ChecklistNode";
@@ -40,6 +37,7 @@ import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2 } from "lucide-re
 
 import { darkenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
+import { useBoardOps } from "@/context/board-ops-context";
 
 const nodeTypes: NodeTypes = {
   text: TextNode,
@@ -51,17 +49,12 @@ const URL_REGEX = /^https?:\/\/.+/i;
 const LOOSE_URL_REGEX = /^(https?:\/\/|www\.)\S+\.\S+/i;
 
 interface CanvasInnerProps {
-  boardId: Id<"boards">;
   canEdit: boolean;
   settings: BoardSettingsData;
 }
 
-function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
-  const convexNodes = useQuery(api.nodes.getNodesByBoard, { boardId });
-  const updateNodePosition = useMutation(api.nodes.updateNodePosition);
-  const createNode = useMutation(api.nodes.createNode);
-  const updateNode = useMutation(api.nodes.updateNode);
-  const fetchMetadata = useAction(api.nodes.fetchLinkMetadata);
+function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
+  const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata } = useBoardOps();
   const { screenToFlowPosition, fitView } = useReactFlow();
   const mousePosRef = useRef({ x: 0, y: 0 });
   const contextMenuPosRef = useRef({ x: 0, y: 0 });
@@ -76,11 +69,10 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
     x: number;
     y: number;
   } | null>(null);
-  const deleteNode = useMutation(api.nodes.deleteNode);
 
   // Undo/Redo
   const { pushAction, undo, redo, canUndo, canRedo } = useUndoRedo({
-    convexNodes,
+    convexNodes: boardNodes,
     createNode,
     deleteNode,
     updateNode,
@@ -88,8 +80,8 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
   });
 
   const deleteNodeWithUndo = useCallback(
-    async (nodeId: Id<"nodes">) => {
-      const node = convexNodes?.find((n) => n._id === nodeId);
+    async (nodeId: string) => {
+      const node = boardNodes?.find((n) => n._id === nodeId);
       if (!node) {
         await deleteNode({ nodeId });
         return;
@@ -107,20 +99,20 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
       });
       await deleteNode({ nodeId });
     },
-    [convexNodes, deleteNode, pushAction]
+    [boardNodes, deleteNode, pushAction]
   );
 
   // Local node state for optimistic updates
   const [localNodes, setLocalNodes] = useState<Node[]>([]);
 
-  // Sync from Convex → local, but preserve positions of nodes being dragged
+  // Sync from source → local, but preserve positions of nodes being dragged
   const draggingRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!convexNodes) return;
+    if (!boardNodes) return;
     setLocalNodes((prev) => {
       const prevMap = new Map(prev.map((n) => [n.id, n]));
-      return convexNodes.map((n) => {
+      return boardNodes.map((n) => {
         const existing = prevMap.get(n._id);
         // If currently dragging this node, keep local position
         const position = draggingRef.current.has(n._id) && existing
@@ -142,7 +134,7 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
         };
       });
     });
-  }, [convexNodes, canEdit, pushAction, deleteNodeWithUndo]);
+  }, [boardNodes, canEdit, pushAction, deleteNodeWithUndo]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -160,12 +152,12 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
                 n.id === change.id ? { ...n, position: change.position! } : n
               );
             }
-            // On drag end, persist to Convex
+            // On drag end, persist
             if (change.dragging === false && change.position) {
               draggingRef.current.delete(change.id);
-              const nodeId = change.id as Id<"nodes">;
-              const convexNode = convexNodes?.find((n) => n._id === nodeId);
-              const oldPosition = convexNode?.position ?? change.position;
+              const nodeId = change.id;
+              const sourceNode = boardNodes?.find((n) => n._id === nodeId);
+              const oldPosition = sourceNode?.position ?? change.position;
               const newPosition = { x: change.position.x, y: change.position.y };
               pushAction({
                 type: "move",
@@ -190,7 +182,7 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
         return updated;
       });
     },
-    [canEdit, updateNodePosition, convexNodes, pushAction]
+    [canEdit, updateNodePosition, boardNodes, pushAction]
   );
 
   // Track mouse position for paste
@@ -391,7 +383,7 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
 
   const handleNodeDelete = useCallback(() => {
     if (!nodeMenu) return;
-    deleteNodeWithUndo(nodeMenu.nodeId as Id<"nodes">);
+    deleteNodeWithUndo(nodeMenu.nodeId);
     setNodeMenu(null);
   }, [nodeMenu, deleteNodeWithUndo]);
 
@@ -444,7 +436,6 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
       {controlsVariant === "default" && <Controls />}
       {canEdit && (
         <Toolbar
-          boardId={boardId}
           canUndo={canUndo}
           canRedo={canRedo}
           onUndo={undo}
@@ -556,15 +547,14 @@ function CanvasInner({ boardId, canEdit, settings }: CanvasInnerProps) {
 }
 
 interface CanvasProps {
-  boardId: Id<"boards">;
   canEdit: boolean;
   settings?: BoardSettingsData;
 }
 
-export function Canvas({ boardId, canEdit, settings = {} }: CanvasProps) {
+export function Canvas({ canEdit, settings = {} }: CanvasProps) {
   return (
     <ReactFlowProvider>
-      <CanvasInner boardId={boardId} canEdit={canEdit} settings={settings} />
+      <CanvasInner canEdit={canEdit} settings={settings} />
     </ReactFlowProvider>
   );
 }

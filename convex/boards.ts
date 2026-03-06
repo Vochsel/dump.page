@@ -408,6 +408,71 @@ export const getMyBoardsWithRecentNodes = query({
   },
 });
 
+export const persistLocalBoard = mutation({
+  args: {
+    name: v.string(),
+    icon: v.string(),
+    nodes: v.array(
+      v.object({
+        type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),
+        content: v.string(),
+        position: v.object({ x: v.number(), y: v.number() }),
+        metadata: v.optional(
+          v.object({
+            title: v.optional(v.string()),
+            favicon: v.optional(v.string()),
+            description: v.optional(v.string()),
+          })
+        ),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const now = Date.now();
+
+    const boardId = await ctx.db.insert("boards", {
+      name: args.name,
+      icon: args.icon,
+      ownerId: user._id,
+      visibility: "private",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("boardMembers", {
+      boardId,
+      userId: user._id,
+      role: "owner",
+      joinedAt: now,
+    });
+
+    for (const node of args.nodes) {
+      await ctx.db.insert("nodes", {
+        boardId,
+        type: node.type,
+        content: node.content,
+        position: node.position,
+        dimensions: { width: 280, height: 120 },
+        metadata: node.metadata,
+        createdBy: user._id,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return boardId;
+  },
+});
+
 export const getBoardForMarkdown = query({
   args: {
     boardId: v.id("boards"),
