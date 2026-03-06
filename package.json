@@ -20,6 +20,7 @@
     "clsx": "^2.1.1",
     "convex": "^1.32.0",
     "firebase": "^12.10.0",
+    "jose": "^6.2.0",
     "lucide-react": "^0.576.0",
     "mcp-handler": "^1.0.7",
     "next": "16.1.6",

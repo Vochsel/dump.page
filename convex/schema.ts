@@ -54,6 +54,24 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_boardId_userId", ["boardId", "userId"]),
 
+  oauthClients: defineTable({
+    clientId: v.string(),
+    clientSecret: v.string(),
+    redirectUris: v.array(v.string()),
+    clientName: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_clientId", ["clientId"]),
+
+  oauthCodes: defineTable({
+    code: v.string(),
+    clientId: v.string(),
+    userId: v.id("users"),
+    codeChallenge: v.string(),
+    codeChallengeMethod: v.string(),
+    redirectUri: v.string(),
+    expiresAt: v.number(),
+  }).index("by_code", ["code"]),
+
   nodes: defineTable({
     boardId: v.id("boards"),
     type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),

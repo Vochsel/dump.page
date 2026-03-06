@@ -10,6 +10,7 @@
 
 import type * as boardMembers from "../boardMembers.js";
 import type * as boards from "../boards.js";
+import type * as mcp from "../mcp.js";
 import type * as nodes from "../nodes.js";
 import type * as users from "../users.js";
 
@@ -22,6 +23,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   boardMembers: typeof boardMembers;
   boards: typeof boards;
+  mcp: typeof mcp;
   nodes: typeof nodes;
   users: typeof users;
 }>;
