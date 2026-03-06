@@ -141,24 +141,25 @@ export default function Home() {
         </span>
       </div>
 
-      {/* Tagline */}
-      <div className="text-center space-y-1.5 max-w-lg mt-8">
-        <p className="font-[family-name:var(--font-poppins)] text-lg sm:text-xl text-gray-600 font-medium">
+      {/* CTA Heading */}
+      <div className="text-center space-y-3 max-w-xl mt-8">
+        <h1 className="font-[family-name:var(--font-poppins)] text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
+          One place for every link, note &amp; idea{" "}
+          <span className="inline-block landing-sparkle">&#10024;</span>
+        </h1>
+        <p className="font-[family-name:var(--font-poppins)] text-base sm:text-lg text-gray-500 font-medium">
           Your team&apos;s{" "}
           <span className="landing-underline relative text-gray-900 font-semibold">
             context dump
           </span>{" "}
-          <span className="inline-block landing-sparkle">&#10024;</span>
-        </p>
-        <p className="text-sm text-gray-400 font-[family-name:var(--font-poppins)]">
-          Dump links, notes &amp; ideas — make them useful for humans and AI.
+          — shared boards that humans and AI can actually use.
         </p>
         <button
           onClick={signInWithGoogle}
           className="mt-4 px-8 py-3 text-white text-lg font-semibold rounded-full font-[family-name:var(--font-poppins)] transition-all hover:scale-105 shadow-md"
           style={{ backgroundColor: "#7bd096", outline: "3px solid white", outlineOffset: "-1px", boxShadow: "0 2px 8px rgba(123, 208, 150, 0.4)" }}
         >
-          Start dumping!
+          Start dumping — it&apos;s free
         </button>
       </div>
 
