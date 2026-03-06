@@ -50,15 +50,17 @@ export function DeleteBoardButton({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         {variant === "icon" ? (
-          <button
-            className="p-1 rounded-md text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-stone-400 hover:text-red-500 hover:bg-red-50"
             title="Delete board"
             onClick={(e) => {
               e.stopPropagation();
             }}
           >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         ) : (
           <Button variant="destructive" size="sm" className="gap-2">
             <Trash2 className="h-4 w-4" />
