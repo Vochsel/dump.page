@@ -1,7 +1,28 @@
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, MutationCtx } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { UserIdentity } from "convex/server";
+
+async function ensureUser(ctx: MutationCtx, identity: UserIdentity) {
+  const existing = await ctx.db
+    .query("users")
+    .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
+    .unique();
+  if (existing) return existing;
+
+  const userId = await ctx.db.insert("users", {
+    firebaseUid: identity.subject,
+    email: identity.email ?? "",
+    name: identity.name ?? identity.email ?? "Anonymous",
+    profileImage: identity.pictureUrl,
+    createdAt: Date.now(),
+  });
+
+  await ctx.scheduler.runAfter(0, internal.boards.seedDefaultBoard, { userId });
+
+  return (await ctx.db.get(userId))!;
+}
 
 function generateSlug(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -26,11 +47,7 @@ export const createBoard = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
-    if (!user) throw new Error("User not found");
+    const user = await ensureUser(ctx, identity);
 
     const now = Date.now();
     const shareToken =
@@ -445,11 +462,7 @@ export const persistLocalBoard = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
-    if (!user) throw new Error("User not found");
+    const user = await ensureUser(ctx, identity);
 
     const now = Date.now();
 
