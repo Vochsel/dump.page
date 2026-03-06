@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useRef, useEffect } from "react";
+import { use, useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -124,6 +124,25 @@ export default function BoardPage({
       </div>
     );
   }
+
+  // Debug: log board markdown to console
+  const markdownLogged = useRef(false);
+  const logMarkdown = useCallback(async () => {
+    if (markdownLogged.current) return;
+    markdownLogged.current = true;
+    try {
+      const url = `/api/board-markdown/${boardId}${token ? `?token=${token}` : ""}`;
+      const res = await fetch(url);
+      const md = await res.text();
+      console.log(`📋 Board markdown for ${access.board?.name}:\n${md}`);
+    } catch (e) {
+      console.warn("Failed to fetch board markdown:", e);
+    }
+  }, [boardId, token, access.board?.name]);
+
+  useEffect(() => {
+    logMarkdown();
+  }, [logMarkdown]);
 
   const boardSettings = access.board.settings ?? {};
   const bgColor = boardSettings.backgroundColor ?? "#f9fafb";

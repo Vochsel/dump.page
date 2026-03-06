@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const BOT_USER_AGENTS = [
   "GPTBot",
   "ChatGPT-User",
+  "OAI-SearchBot",
   "Claude-Web",
   "ClaudeBot",
   "Anthropic",
@@ -14,6 +15,10 @@ const BOT_USER_AGENTS = [
   "DuckDuckBot",
   "Baiduspider",
   "YandexBot",
+  "PerplexityBot",
+  "YouBot",
+  "Bytespider",
+  "cohere-ai",
   "facebookexternalhit",
   "Twitterbot",
   "LinkedInBot",
@@ -30,6 +35,9 @@ const BOT_USER_AGENTS = [
   "node-fetch",
   "axios",
   "httpx",
+  "undici",
+  "got/",
+  "MagpaiBot",
 ];
 
 function isBot(userAgent: string): boolean {
@@ -43,12 +51,21 @@ export function middleware(request: NextRequest) {
   // Only intercept board pages
   if (!pathname.startsWith("/b/")) return NextResponse.next();
 
+  // Skip sub-paths like /b/[boardId]/llms.txt or /b/[boardId]/rss.xml
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length > 2) return NextResponse.next();
+
   const userAgent = request.headers.get("user-agent") ?? "";
-  if (!isBot(userAgent)) return NextResponse.next();
+  const accept = request.headers.get("accept") ?? "";
+
+  // Serve markdown if: bot user agent, or client prefers text/markdown or text/plain (not HTML)
+  const prefersText = (accept.includes("text/markdown") || accept.includes("text/plain")) &&
+    !accept.includes("text/html");
+
+  if (!isBot(userAgent) && !prefersText) return NextResponse.next();
 
   // Extract board ID from path: /b/[boardId]
-  const segments = pathname.split("/");
-  const boardId = segments[2];
+  const boardId = segments[1];
   if (!boardId) return NextResponse.next();
 
   const token = request.nextUrl.searchParams.get("token") ?? undefined;
