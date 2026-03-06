@@ -122,8 +122,14 @@ export const patchNodeMetadata = internalMutation({
   handler: async (ctx, args) => {
     const node = await ctx.db.get(args.nodeId);
     if (!node) return;
+    // Merge with existing metadata — only overwrite fields the fetch actually found
+    const existing = node.metadata ?? {};
+    const merged = { ...existing, ...args.metadata };
+    // Keep existing values for fields the fetch didn't find
+    if (!args.metadata.title && existing.title) merged.title = existing.title;
+    if (!args.metadata.description && existing.description) merged.description = existing.description;
     await ctx.db.patch(args.nodeId, {
-      metadata: args.metadata,
+      metadata: merged,
       updatedAt: Date.now(),
     });
   },
