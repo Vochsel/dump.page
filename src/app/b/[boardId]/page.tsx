@@ -175,7 +175,7 @@ export default function BoardPage({
           className="border-b md:border md:rounded-2xl md:w-1/2 md:min-w-[480px] md:max-w-[720px]"
           style={{ backgroundColor: headerColor, borderColor: headerBorder }}
         >
-          <div className="px-4 h-12 flex items-center relative">
+          <div className="px-2 h-12 flex items-center relative">
             <div className="flex items-center gap-2 flex-shrink-0">
               <Link href="/dashboard">
                 <Button variant="ghost" size="icon" className="h-8 w-8">
