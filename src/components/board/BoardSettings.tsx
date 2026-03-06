@@ -212,23 +212,32 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
               Members
             </label>
             <div className="space-y-1.5 mb-2">
-              {members?.map((m) => (
-                <div key={m._id} className="flex items-center gap-2 text-xs">
-                  <span className="flex-1 truncate text-muted-foreground">
-                    {m.user?.email ?? "Unknown"}
-                  </span>
-                  {m.role === "owner" ? (
-                    <Crown className="h-3 w-3 text-amber-500 flex-shrink-0" />
-                  ) : (
-                    <button
-                      onClick={() => removeMember({ boardId: board._id, userId: m.userId })}
-                      className="p-0.5 rounded hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-              ))}
+              {members?.map((m) => {
+                const name = m.user?.name ?? m.user?.email ?? "Unknown";
+                const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+                return (
+                  <div key={m._id} className="flex items-center gap-2 text-xs">
+                    {m.user?.profileImage ? (
+                      <img src={m.user.profileImage} alt="" className="h-5 w-5 rounded-full flex-shrink-0" />
+                    ) : (
+                      <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-medium text-muted-foreground flex-shrink-0">
+                        {initials}
+                      </div>
+                    )}
+                    <span className="flex-1 truncate">{name}</span>
+                    {m.role === "owner" ? (
+                      <Crown className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                    ) : (
+                      <button
+                        onClick={() => removeMember({ boardId: board._id, userId: m.userId })}
+                        className="p-0.5 rounded hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <form
               onSubmit={(e) => {
