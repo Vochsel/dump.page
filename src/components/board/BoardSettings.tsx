@@ -126,6 +126,8 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
     return md;
   })();
 
+  if (!isOwner) return null;
+
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
   const shareUrl =
@@ -158,28 +160,26 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
-          {isOwner && (
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Visibility
-              </label>
-              <div className="flex gap-2">
-                {(["private", "shared", "public"] as const).map((v) => (
-                  <Button
-                    key={v}
-                    variant={board.visibility === v ? "default" : "outline"}
-                    size="sm"
-                    onClick={() =>
-                      updateBoard({ boardId: board._id, visibility: v })
-                    }
-                    className="capitalize"
-                  >
-                    {v}
-                  </Button>
-                ))}
-              </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Visibility
+            </label>
+            <div className="flex gap-2">
+              {(["private", "shared", "public"] as const).map((v) => (
+                <Button
+                  key={v}
+                  variant={board.visibility === v ? "default" : "outline"}
+                  size="sm"
+                  onClick={() =>
+                    updateBoard({ boardId: board._id, visibility: v })
+                  }
+                  className="capitalize"
+                >
+                  {v}
+                </Button>
+              ))}
             </div>
-          )}
+          </div>
 
           {shareUrl && (
             <div>
@@ -196,7 +196,7 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
                   )}
                 </Button>
               </div>
-              {isOwner && board.visibility === "shared" && (
+              {board.visibility === "shared" && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -258,42 +258,38 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
                     <span className="flex-1 truncate">{name}</span>
                     {m.role === "owner" ? (
                       <Crown className="h-3 w-3 text-amber-500 flex-shrink-0" />
-                    ) : isOwner ? (
+                    ) : (
                       <button
                         onClick={() => removeMember({ boardId: board._id, userId: m.userId })}
                         className="p-0.5 rounded hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0"
                       >
                         <X className="h-3 w-3" />
                       </button>
-                    ) : null}
+                    )}
                   </div>
                 );
               })}
             </div>
-            {isOwner && (
-              <>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleAddMember();
-                  }}
-                  className="flex gap-2"
-                >
-                  <Input
-                    value={memberEmail}
-                    onChange={(e) => { setMemberEmail(e.target.value); setMemberError(""); }}
-                    placeholder="Email address"
-                    type="email"
-                    className="text-xs"
-                  />
-                  <Button variant="outline" size="icon" disabled={addingMember || !memberEmail.trim()}>
-                    <UserPlus className="h-3.5 w-3.5" />
-                  </Button>
-                </form>
-                {memberError && (
-                  <p className="text-xs text-destructive mt-1">{memberError}</p>
-                )}
-              </>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAddMember();
+              }}
+              className="flex gap-2"
+            >
+              <Input
+                value={memberEmail}
+                onChange={(e) => { setMemberEmail(e.target.value); setMemberError(""); }}
+                placeholder="Email address"
+                type="email"
+                className="text-xs"
+              />
+              <Button variant="outline" size="icon" disabled={addingMember || !memberEmail.trim()}>
+                <UserPlus className="h-3.5 w-3.5" />
+              </Button>
+            </form>
+            {memberError && (
+              <p className="text-xs text-destructive mt-1">{memberError}</p>
             )}
           </div>
 
