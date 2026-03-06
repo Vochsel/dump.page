@@ -226,12 +226,13 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
     if (!canEdit) return;
 
     const handlePaste = (e: ClipboardEvent) => {
-      // Don't intercept paste when editing a text input/textarea
+      // Don't intercept paste when editing a text input/textarea/contenteditable
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
-        target.isContentEditable
+        target.isContentEditable ||
+        target.closest("[contenteditable]")
       ) {
         return;
       }
