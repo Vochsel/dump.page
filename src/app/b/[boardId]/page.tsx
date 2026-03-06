@@ -155,12 +155,9 @@ export default function BoardPage({
     const slug = access.board.slug ?? boardId;
     const base = `https://www.get-dump.com/b/${slug}`;
     if (access.board.visibility === "shared" && access.board.shareToken) {
-      return `${base}/llms.txt?token=${access.board.shareToken}`;
+      return `${base}?token=${access.board.shareToken}`;
     }
-    if (access.board.visibility === "public") {
-      return `${base}/llms.txt`;
-    }
-    return `${base}/llms.txt`;
+    return base;
   })();
 
   useEffect(() => {
