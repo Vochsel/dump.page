@@ -16,7 +16,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 interface DeleteBoardButtonProps {
@@ -32,6 +31,7 @@ export function DeleteBoardButton({
   redirectTo = "/dashboard",
   variant = "icon",
 }: DeleteBoardButtonProps) {
+  const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const deleteBoard = useMutation(api.boards.deleteBoard);
   const router = useRouter();
@@ -47,27 +47,32 @@ export function DeleteBoardButton({
   };
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        {variant === "icon" ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-stone-400 hover:text-red-500 hover:bg-red-50"
-            title="Delete board"
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button variant="destructive" size="sm" className="gap-2">
-            <Trash2 className="h-4 w-4" />
-            Delete board
-          </Button>
-        )}
-      </AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      {variant === "icon" ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-stone-400 hover:text-red-500 hover:bg-red-50"
+          title="Delete board"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(true);
+          }}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      ) : (
+        <Button
+          variant="destructive"
+          size="sm"
+          className="gap-2"
+          onClick={() => setOpen(true)}
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete board
+        </Button>
+      )}
       <AlertDialogContent onClick={(e) => e.stopPropagation()}>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete &ldquo;{boardName}&rdquo;?</AlertDialogTitle>
