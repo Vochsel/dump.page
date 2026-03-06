@@ -15,6 +15,7 @@ interface TipTapEditorProps {
 export function TipTapEditor({ content, onSave, onCancel }: TipTapEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
+    autofocus: "end",
     extensions: [StarterKit, TaskList, TaskItem.configure({ nested: true })],
     content,
     editorProps: {
