@@ -11,6 +11,8 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Users, Plus, Globe, Link as LinkIcon, FileText, ExternalLink, CheckSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
+import { Id } from "../../../convex/_generated/dataModel";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -179,9 +181,19 @@ export default function DashboardPage() {
                         <Users className="h-3 w-3" />
                         {board.memberCount} {board.memberCount === 1 ? "member" : "members"}
                       </span>
-                      <span className="text-[11px] text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                        Open <ExternalLink className="h-2.5 w-2.5" />
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                          Open <ExternalLink className="h-2.5 w-2.5" />
+                        </span>
+                        {board.role === "owner" && (
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <DeleteBoardButton
+                              boardId={board._id as Id<"boards">}
+                              boardName={board.name}
+                            />
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </Link>
                 )

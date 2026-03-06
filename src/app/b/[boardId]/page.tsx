@@ -12,6 +12,7 @@ import { useAuth } from "@/context/auth-context";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { Button } from "@/components/ui/button";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { BoardIcon } from "@/components/board/BoardIcon";
@@ -181,6 +182,13 @@ export default function BoardPage({
                 board={access.board}
                 isOwner={access.role === "owner"}
               />
+              {access.role === "owner" && (
+                <DeleteBoardButton
+                  boardId={boardId as Id<"boards">}
+                  boardName={access.board.name}
+                  variant="icon"
+                />
+              )}
               <UserMenu />
             </div>
           </div>
