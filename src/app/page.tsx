@@ -140,15 +140,11 @@ export default function Home() {
       {/* CTA Heading */}
       <div className="text-center space-y-3 max-w-xl mt-8">
         <h1 className="font-[family-name:var(--font-poppins)] text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
-          One place for every link, note &amp; idea{" "}
+          The context dump for humans and AI{" "}
           <span className="inline-block landing-sparkle">&#10024;</span>
         </h1>
         <p className="font-[family-name:var(--font-poppins)] text-base sm:text-lg text-gray-500 font-medium">
-          Your team&apos;s{" "}
-          <span className="landing-underline relative text-gray-900 font-semibold">
-            context dump
-          </span>{" "}
-          — shared boards that humans and AI can actually use.
+          Shared whiteboards of links and text, accessible to all agents and chatbots.
         </p>
         <button
           onClick={() => router.push('/new')}
