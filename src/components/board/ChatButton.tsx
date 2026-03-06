@@ -28,14 +28,7 @@ const PROVIDERS = [
     buildUrl: (prompt: string) =>
       `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`,
   },
-  {
-    id: "gemini",
-    name: "Gemini",
-    favicon: "https://www.google.com/s2/favicons?domain=gemini.google.com&sz=32",
-    buildUrl: (prompt: string) =>
-      `https://gemini.google.com/app?q=${encodeURIComponent(prompt)}`,
-  },
-  {
+{
     id: "grok",
     name: "Grok",
     favicon: "https://grok.com/images/favicon.svg",
