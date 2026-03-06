@@ -511,6 +511,14 @@ export const getBoardForMarkdown = query({
         .query("boards")
         .withIndex("by_slug", (q) => q.eq("slug", args.slug!))
         .unique();
+      if (!board) {
+        try {
+          const byId = await ctx.db.get(args.slug as any);
+          if (byId) board = byId;
+        } catch {
+          // Not a valid ID, ignore
+        }
+      }
     }
     if (!board) return null;
 

@@ -99,10 +99,19 @@ export const checkAccess = query({
     shareToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const board = await ctx.db
+    // Try lookup by slug first, then fall back to treating it as a board ID
+    let board = await ctx.db
       .query("boards")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .unique();
+    if (!board) {
+      try {
+        const byId = await ctx.db.get(args.slug as any);
+        if (byId) board = byId;
+      } catch {
+        // Not a valid ID, ignore
+      }
+    }
     if (!board) return { canView: false, canEdit: false, board: null };
 
     const identity = await ctx.auth.getUserIdentity();

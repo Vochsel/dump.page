@@ -134,16 +134,16 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
 
   const shareUrl =
     board.visibility === "shared" && board.shareToken
-      ? `${origin}/b/${board.slug}?token=${board.shareToken}`
+      ? `${origin}/b/${board.slug ?? board._id}?token=${board.shareToken}`
       : board.visibility === "public"
-        ? `${origin}/b/${board.slug}`
+        ? `${origin}/b/${board.slug ?? board._id}`
         : null;
 
   const rssUrl =
     board.visibility === "shared" && board.shareToken
-      ? `${origin}/b/${board.slug}/rss.xml?token=${board.shareToken}`
+      ? `${origin}/b/${board.slug ?? board._id}/rss.xml?token=${board.shareToken}`
       : board.visibility === "public"
-        ? `${origin}/b/${board.slug}/rss.xml`
+        ? `${origin}/b/${board.slug ?? board._id}/rss.xml`
         : null;
 
   const copyShareUrl = async () => {
