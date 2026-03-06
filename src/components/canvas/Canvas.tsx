@@ -5,7 +5,6 @@ import {
   ReactFlow,
   Background,
   BackgroundVariant,
-  Controls,
   SelectionMode,
   Node,
   NodeChange,
@@ -33,7 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff } from "lucide-react";
 
 import { darkenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
@@ -63,6 +62,9 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
   // Link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+
+  // Mute state
+  const [isMuted, setIsMuted] = useState(() => sfx.isMuted());
 
   // Node context menu state
   const [nodeMenu, setNodeMenu] = useState<{
@@ -619,7 +621,6 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
       style={{ backgroundColor: bgColor }}
     >
       {renderBackground()}
-      {controlsVariant === "default" && <Controls />}
       {canEdit && (
         <Toolbar
           canUndo={canUndo}
@@ -632,10 +633,24 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
     </ReactFlow>
   );
 
+  const muteButton = (
+    <button
+      onClick={() => {
+        if (isMuted) { sfx.unmute(); } else { sfx.mute(); }
+        setIsMuted(!isMuted);
+      }}
+      className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm hover:bg-white transition-colors text-gray-500 hover:text-gray-700"
+      title={isMuted ? "Unmute sounds" : "Mute sounds"}
+    >
+      {isMuted ? <VolumeOff className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+    </button>
+  );
+
   if (!canEdit) {
     return (
       <div className="w-full h-full relative" onMouseMove={onMouseMove}>
         {flowContent}
+        {muteButton}
       </div>
     );
   }
@@ -662,6 +677,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
                 </div>
               </div>
             )}
+            {muteButton}
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">
