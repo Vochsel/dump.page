@@ -38,6 +38,7 @@ import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload } from "l
 import { darkenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
 import { useBoardOps } from "@/context/board-ops-context";
+import { sfx } from "@/lib/sfx";
 
 const nodeTypes: NodeTypes = {
   text: TextNode,
@@ -97,6 +98,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
           metadata: node.metadata,
         },
       });
+      sfx.delete();
       await deleteNode({ nodeId });
     },
     [boardNodes, deleteNode, pushAction]
@@ -144,6 +146,9 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
         let updated = [...nds];
         for (const change of changes) {
           if (change.type === "position") {
+            if (change.dragging && !draggingRef.current.has(change.id)) {
+              sfx.dragStart();
+            }
             if (change.dragging) {
               draggingRef.current.add(change.id);
             }
@@ -155,6 +160,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
             // On drag end, persist
             if (change.dragging === false && change.position) {
               draggingRef.current.delete(change.id);
+              sfx.dragEnd();
               const nodeId = change.id;
               const sourceNode = boardNodes?.find((n) => n._id === nodeId);
               const oldPosition = sourceNode?.position ?? change.position;
@@ -229,6 +235,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
           position: { x: pos.x - 140, y: pos.y - 30 },
         }).then((nodeId) => {
           pushAction({ type: "create", nodeId });
+          sfx.add();
           fetchMetadata({ nodeId, url });
         });
       } else {
@@ -239,6 +246,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
           position: { x: pos.x - 120, y: pos.y - 40 },
         }).then((nodeId) => {
           pushAction({ type: "create", nodeId });
+          sfx.add();
         });
       }
     };
@@ -298,6 +306,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
             position: nodePos,
           }).then((nodeId) => {
             pushAction({ type: "create", nodeId });
+            sfx.add();
             fetchMetadata({ nodeId, url });
           });
           offsetY += 80;
@@ -331,6 +340,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
             position: nodePos,
           });
           pushAction({ type: "create", nodeId });
+          sfx.add();
           offsetY += 120;
         }
         return;
@@ -349,6 +359,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
           position: { x: pos.x - 140, y: pos.y - 30 },
         }).then((nodeId) => {
           pushAction({ type: "create", nodeId });
+          sfx.add();
           fetchMetadata({ nodeId, url });
         });
         return;
@@ -363,6 +374,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
           position: { x: pos.x - 120, y: pos.y - 40 },
         }).then((nodeId) => {
           pushAction({ type: "create", nodeId });
+          sfx.add();
         });
       }
     },
@@ -423,7 +435,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
       type: "text",
       content: "",
       position: { x: pos.x - 90, y: pos.y - 20 },
-    }).then((nodeId) => pushAction({ type: "create", nodeId }));
+    }).then((nodeId) => { pushAction({ type: "create", nodeId }); sfx.add(); });
   }, [boardId, createNode, screenToFlowPosition, pushAction]);
 
   const addChecklistNodeAtCursor = useCallback(() => {
@@ -433,7 +445,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
       type: "checklist",
       content: "[]",
       position: { x: pos.x - 110, y: pos.y - 20 },
-    }).then((nodeId) => pushAction({ type: "create", nodeId }));
+    }).then((nodeId) => { pushAction({ type: "create", nodeId }); sfx.add(); });
   }, [boardId, createNode, screenToFlowPosition, pushAction]);
 
   const addLinkNodeAtCursor = useCallback(() => {
@@ -455,6 +467,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
       position: { x: pos.x - 140, y: pos.y - 30 },
     }).then((nodeId) => {
       pushAction({ type: "create", nodeId });
+      sfx.add();
       fetchMetadata({ nodeId, url });
     });
     setLinkDialogOpen(false);
@@ -500,6 +513,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
       position: { x: node.position.x + 30, y: node.position.y + 30 },
     }).then((newNodeId) => {
       pushAction({ type: "create", nodeId: newNodeId });
+      sfx.add();
       if (node.type === "link" && data.content) {
         fetchMetadata({ nodeId: newNodeId, url: data.content });
       }
@@ -566,7 +580,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
           canRedo={canRedo}
           onUndo={undo}
           onRedo={redo}
-          onNodeCreated={(nodeId) => pushAction({ type: "create", nodeId })}
+          onNodeCreated={(nodeId) => { pushAction({ type: "create", nodeId }); sfx.add(); }}
         />
       )}
     </ReactFlow>

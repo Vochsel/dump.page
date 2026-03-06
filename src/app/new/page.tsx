@@ -15,11 +15,52 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Share2 } from "lucide-react";
+import { Share2, LogIn } from "lucide-react";
 import { LoginButton } from "@/components/auth/LoginButton";
 import Link from "next/link";
 
+const EXAMPLE_NODES = [
+  {
+    type: "text" as const,
+    content: "<p><strong>Welcome to Dump!</strong> </p><p>This is a note, dump can store notes, links, or todo lists.</p>",
+    position: { x: 80, y: 180 },
+  },
+  {
+    type: "text" as const,
+    content: "<p>Paste in things, drag in things, go nuts!</p>",
+    position: { x: 123.08, y: 316.11 },
+  },
+  {
+    type: "link" as const,
+    content: "https://news.ycombinator.com",
+    position: { x: 148.48, y: 430.59 },
+    metadata: { title: "Hacker News", description: "Links for the intellectually curious", favicon: "https://news.ycombinator.com/favicon.ico" },
+  },
+  {
+    type: "link" as const,
+    content: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+    position: { x: 519.73, y: 52.39 },
+    metadata: { title: "Me at the zoo", description: "The first video on YouTube", favicon: "https://www.youtube.com/s/desktop/favicon.ico" },
+  },
+];
+
 const STORAGE_KEY = "dump-local-board";
+
+if (typeof window !== "undefined") {
+  const w = window as Window & { dumpReset?: () => void; dumpExport?: () => unknown[] };
+  w.dumpReset = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    window.location.reload();
+  };
+  w.dumpExport = () => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const nodes = raw ? JSON.parse(raw) : [];
+    const json = JSON.stringify(nodes, null, 2);
+    console.log(json);
+    return nodes;
+  };
+  console.log("Dump console commands:\n  dumpReset()  — clear local board & reload\n  dumpExport() — print board JSON to console");
+}
 
 export default function NewBoardPage() {
   const { user } = useAuth();
@@ -73,7 +114,7 @@ export default function NewBoardPage() {
   return (
     <div className="h-screen relative">
       <div className="absolute inset-0">
-        <LocalBoardOpsProvider>
+        <LocalBoardOpsProvider seedNodes={EXAMPLE_NODES}>
           <Canvas canEdit={true} />
         </LocalBoardOpsProvider>
       </div>
@@ -92,6 +133,17 @@ export default function NewBoardPage() {
               </h1>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+              {!user && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-gray-600"
+                  onClick={() => setShareDialogOpen(true)}
+                >
+                  <LogIn className="h-4 w-4" />
+                  Log in
+                </Button>
+              )}
               <Button
                 variant="default"
                 size="sm"

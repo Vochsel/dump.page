@@ -32,8 +32,17 @@ export function clearLocalBoard() {
   }
 }
 
-export function LocalBoardOpsProvider({ children }: { children: ReactNode }) {
-  const [nodes, setNodes] = useState<BoardNode[]>(() => loadNodes());
+export function LocalBoardOpsProvider({ children, seedNodes }: { children: ReactNode; seedNodes?: Omit<BoardNode, "_id" | "boardId">[] }) {
+  const [nodes, setNodes] = useState<BoardNode[]>(() => {
+    const existing = loadNodes();
+    if (existing.length > 0) return existing;
+    if (!seedNodes || seedNodes.length === 0) return [];
+    return seedNodes.map((n) => ({
+      _id: crypto.randomUUID(),
+      boardId: "local",
+      ...n,
+    }));
+  });
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
 
