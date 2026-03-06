@@ -53,8 +53,6 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
   const [copied, setCopied] = useState(false);
   const [copiedRss, setCopiedRss] = useState(false);
   const [mdOpen, setMdOpen] = useState(false);
-  const [mdContent, setMdContent] = useState("");
-  const [mdLoading, setMdLoading] = useState(false);
   const [memberEmail, setMemberEmail] = useState("");
   const [memberError, setMemberError] = useState("");
   const [addingMember, setAddingMember] = useState(false);
@@ -63,6 +61,10 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
   const addMember = useMutation(api.boardMembers.addMember);
   const removeMember = useMutation(api.boardMembers.removeMember);
   const members = useQuery(api.boardMembers.getMembers, { boardId: board._id });
+  const markdownData = useQuery(
+    api.boards.getBoardForMarkdown,
+    mdOpen ? { boardId: board._id } : "skip"
+  );
 
   const handleAddMember = useCallback(async () => {
     const email = memberEmail.trim();
@@ -78,22 +80,50 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
     setAddingMember(false);
   }, [memberEmail, board._id, addMember]);
 
-  const fetchMarkdown = useCallback(async () => {
-    setMdLoading(true);
-    try {
-      const token = board.visibility === "shared" && board.shareToken ? board.shareToken : undefined;
-      const url = `/api/board-markdown/${board._id}${token ? `?token=${token}` : ""}`;
-      const res = await fetch(url);
-      setMdContent(await res.text());
-    } catch {
-      setMdContent("Failed to load markdown.");
+  const mdContent = (() => {
+    if (!mdOpen || !markdownData) return null;
+    const { board: b, nodes } = markdownData;
+    let md = `# ${b.icon} ${b.name}\n\n`;
+    const textNodes = nodes.filter((n) => n.type === "text");
+    const linkNodes = nodes.filter((n) => n.type === "link");
+    const checklistNodes = nodes.filter((n) => n.type === "checklist");
+    if (textNodes.length > 0) {
+      md += "## Notes\n\n";
+      for (const n of textNodes) {
+        if (n.title) md += `### ${n.title}\n\n`;
+        const content = n.content.trimStart().startsWith("<")
+          ? n.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+          : n.content;
+        md += `${content}\n\n`;
+      }
     }
-    setMdLoading(false);
-  }, [board._id, board.visibility, board.shareToken]);
-
-  useEffect(() => {
-    if (mdOpen) fetchMarkdown();
-  }, [mdOpen, fetchMarkdown]);
+    if (checklistNodes.length > 0) {
+      md += "## Checklists\n\n";
+      for (const n of checklistNodes) {
+        if (n.title) md += `### ${n.title}\n\n`;
+        try {
+          const items = JSON.parse(n.content);
+          if (Array.isArray(items)) {
+            for (const item of items) {
+              md += `- [${item.checked ? "x" : " "}] ${item.text}\n`;
+            }
+            md += "\n";
+          }
+        } catch { md += `${n.content}\n\n`; }
+      }
+    }
+    if (linkNodes.length > 0) {
+      md += "## Links\n\n";
+      for (const n of linkNodes) {
+        const title = n.metadata?.title || n.content;
+        md += `- [${title}](${n.content})`;
+        if (n.metadata?.description) md += ` - ${n.metadata.description}`;
+        md += "\n";
+      }
+    }
+    if (nodes.length === 0) md += "*This board is empty.*\n";
+    return md;
+  })();
 
   if (!isOwner) return null;
 
@@ -280,7 +310,7 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
             <DialogTitle>Markdown Preview</DialogTitle>
           </DialogHeader>
           <pre className="flex-1 overflow-auto text-xs font-mono bg-muted p-3 rounded-md whitespace-pre-wrap">
-            {mdLoading ? "Loading..." : mdContent}
+            {mdContent ?? "Loading..."}
           </pre>
         </DialogContent>
       </Dialog>

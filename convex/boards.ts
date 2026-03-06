@@ -491,17 +491,38 @@ export const getBoardForMarkdown = query({
     const board = await ctx.db.get(args.boardId);
     if (!board) return null;
 
-    // Only public or shared (with valid token) boards are bot-accessible
-    if (board.visibility === "public") {
-      // ok
-    } else if (
-      board.visibility === "shared" &&
-      args.shareToken &&
-      board.shareToken === args.shareToken
-    ) {
-      // ok
-    } else {
-      return null;
+    // Check if authenticated user is a member
+    let isMember = false;
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
+        .unique();
+      if (user) {
+        const membership = await ctx.db
+          .query("boardMembers")
+          .withIndex("by_boardId_userId", (q) =>
+            q.eq("boardId", args.boardId).eq("userId", user._id)
+          )
+          .unique();
+        if (membership) isMember = true;
+      }
+    }
+
+    // Allow: members, public boards, shared boards with valid token
+    if (!isMember) {
+      if (board.visibility === "public") {
+        // ok
+      } else if (
+        board.visibility === "shared" &&
+        args.shareToken &&
+        board.shareToken === args.shareToken
+      ) {
+        // ok
+      } else {
+        return null;
+      }
     }
 
     const nodes = await ctx.db
