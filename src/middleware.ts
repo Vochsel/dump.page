@@ -70,11 +70,11 @@ export function middleware(request: NextRequest) {
 
   const token = request.nextUrl.searchParams.get("token") ?? undefined;
 
-  // Redirect bots to the markdown API route
-  const markdownUrl = new URL(`/api/board-markdown/${boardId}`, request.url);
-  if (token) markdownUrl.searchParams.set("token", token);
+  // Redirect bots to the llms.txt route (plain text, no API hop — works with restricted fetch layers)
+  const llmsUrl = new URL(`/b/${boardId}/llms.txt`, request.url);
+  if (token) llmsUrl.searchParams.set("token", token);
 
-  return NextResponse.rewrite(markdownUrl);
+  return NextResponse.rewrite(llmsUrl);
 }
 
 export const config = {
