@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2 } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload } from "lucide-react";
 
 import { darkenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
@@ -185,6 +185,10 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
     [canEdit, updateNodePosition, boardNodes, pushAction]
   );
 
+  // Drag-and-drop state
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounterRef = useRef(0);
+
   // Track mouse position for paste
   const onMouseMove = useCallback((e: React.MouseEvent) => {
     mousePosRef.current = { x: e.clientX, y: e.clientY };
@@ -242,6 +246,128 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
   }, [canEdit, boardId, createNode, fetchMetadata, screenToFlowPosition, pushAction]);
+
+  // Drag-and-drop handlers for external files and links
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current++;
+    if (dragCounterRef.current === 1) {
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current = 0;
+      setIsDragOver(false);
+
+      if (!canEdit) return;
+
+      const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+
+      // Check for dropped URL (from browser address bar, bookmark, or link drag)
+      const uriList = e.dataTransfer.getData("text/uri-list");
+      const plainText = e.dataTransfer.getData("text/plain")?.trim();
+
+      if (uriList) {
+        // text/uri-list can contain multiple URLs separated by newlines
+        const urls = uriList.split("\n").filter((line) => line.trim() && !line.startsWith("#"));
+        let offsetY = 0;
+        for (const rawUrl of urls) {
+          const url = rawUrl.trim();
+          if (!url) continue;
+          const nodePos = { x: pos.x - 140, y: pos.y - 30 + offsetY };
+          createNode({
+            boardId,
+            type: "link",
+            content: url,
+            position: nodePos,
+          }).then((nodeId) => {
+            pushAction({ type: "create", nodeId });
+            fetchMetadata({ nodeId, url });
+          });
+          offsetY += 80;
+        }
+        return;
+      }
+
+      // Check for dropped files (.txt, .md, .markdown)
+      const files = Array.from(e.dataTransfer.files);
+      const textFiles = files.filter((f) => {
+        const name = f.name.toLowerCase();
+        return (
+          name.endsWith(".txt") ||
+          name.endsWith(".md") ||
+          name.endsWith(".markdown") ||
+          f.type === "text/plain" ||
+          f.type === "text/markdown"
+        );
+      });
+
+      if (textFiles.length > 0) {
+        let offsetY = 0;
+        for (const file of textFiles) {
+          const text = await file.text();
+          if (!text.trim()) continue;
+          const nodePos = { x: pos.x - 120, y: pos.y - 40 + offsetY };
+          const nodeId = await createNode({
+            boardId,
+            type: "text",
+            content: text,
+            position: nodePos,
+          });
+          pushAction({ type: "create", nodeId });
+          offsetY += 120;
+        }
+        return;
+      }
+
+      // Fallback: plain text that looks like a URL
+      if (plainText && (URL_REGEX.test(plainText) || LOOSE_URL_REGEX.test(plainText))) {
+        let url = plainText;
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+          url = "https://" + url;
+        }
+        createNode({
+          boardId,
+          type: "link",
+          content: url,
+          position: { x: pos.x - 140, y: pos.y - 30 },
+        }).then((nodeId) => {
+          pushAction({ type: "create", nodeId });
+          fetchMetadata({ nodeId, url });
+        });
+        return;
+      }
+
+      // Fallback: plain text (non-URL)
+      if (plainText) {
+        createNode({
+          boardId,
+          type: "text",
+          content: plainText,
+          position: { x: pos.x - 120, y: pos.y - 40 },
+        }).then((nodeId) => {
+          pushAction({ type: "create", nodeId });
+        });
+      }
+    },
+    [canEdit, boardId, createNode, fetchMetadata, screenToFlowPosition, pushAction]
+  );
 
   // "f" key: fit selected nodes, or all nodes if none selected
   useEffect(() => {
@@ -462,8 +588,20 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
             className="w-full h-full relative"
             onMouseMove={onMouseMove}
             onContextMenu={handleContextMenu}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
             {flowContent}
+            {isDragOver && (
+              <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center bg-blue-500/10 border-2 border-dashed border-blue-400 rounded-lg">
+                <div className="flex flex-col items-center gap-2 text-blue-600 bg-white/90 px-6 py-4 rounded-xl shadow-lg">
+                  <Upload className="h-8 w-8" />
+                  <span className="text-sm font-medium">Drop links or text files here</span>
+                </div>
+              </div>
+            )}
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">
