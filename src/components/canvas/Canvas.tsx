@@ -279,29 +279,39 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
   }, [canEdit, boardId, createNode, fetchMetadata, screenToFlowPosition, pushAction]);
 
   // Drag-and-drop handlers for external files and links
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
+  // Skip when drag originates from internal checklist reorder
+  const isExternalDrag = useCallback((e: React.DragEvent) => {
+    const types = Array.from(e.dataTransfer.types);
+    return types.includes("Files") || types.includes("text/uri-list");
   }, []);
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (!isExternalDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }, [isExternalDrag]);
+
   const handleDragEnter = useCallback((e: React.DragEvent) => {
+    if (!isExternalDrag(e)) return;
     e.preventDefault();
     dragCounterRef.current++;
     if (dragCounterRef.current === 1) {
       setIsDragOver(true);
     }
-  }, []);
+  }, [isExternalDrag]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
+    if (!isExternalDrag(e)) return;
     e.preventDefault();
     dragCounterRef.current--;
     if (dragCounterRef.current === 0) {
       setIsDragOver(false);
     }
-  }, []);
+  }, [isExternalDrag]);
 
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
+      if (!isExternalDrag(e)) return;
       e.preventDefault();
       dragCounterRef.current = 0;
       setIsDragOver(false);
@@ -405,7 +415,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
         });
       }
     },
-    [canEdit, boardId, createNode, fetchMetadata, screenToFlowPosition, pushAction]
+    [canEdit, boardId, createNode, fetchMetadata, screenToFlowPosition, pushAction, isExternalDrag]
   );
 
   // "f" key: fit selected nodes, or all nodes if none selected
