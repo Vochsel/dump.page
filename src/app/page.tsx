@@ -291,6 +291,40 @@ export default function Home() {
         </p>
       </div>
 
+      {/* Why we built this */}
+      <div className="mt-16 max-w-xl w-full px-2 space-y-4">
+        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-400 uppercase tracking-widest">
+          Why we built this
+        </p>
+        <div className="bg-white/70 border border-gray-200 rounded-xl p-6 space-y-3">
+          <ul className="space-y-2 text-sm text-gray-600 font-[family-name:var(--font-poppins)] leading-relaxed">
+            <li className="flex gap-2">
+              <span className="text-gray-400 flex-shrink-0">1.</span>
+              To quickly store <span className="font-semibold text-gray-800">reusable context</span> outside of any one LLM.
+            </li>
+            <li className="flex gap-2">
+              <span className="text-gray-400 flex-shrink-0">2.</span>
+              To share <span className="font-semibold text-gray-800">multimodal context</span> between team members.
+            </li>
+            <li className="flex gap-2">
+              <span className="text-gray-400 flex-shrink-0">3.</span>
+              To <span className="font-semibold text-gray-800">regain control of our tokens</span>.
+            </li>
+          </ul>
+          <p className="text-sm text-gray-500 font-[family-name:var(--font-poppins)] pt-2 border-t border-gray-100">
+            See the dump we use for making Dump!{" "}
+            <a
+              href="https://www.get-dump.com/b/hy0rfopn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-800 font-semibold underline decoration-gray-300 hover:decoration-gray-500 transition-colors"
+            >
+              Take a look &rarr;
+            </a>
+          </p>
+        </div>
+      </div>
+
       {/* Login */}
       <div className="mt-16 flex flex-col items-center gap-3">
         <LoginButton />
