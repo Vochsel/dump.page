@@ -79,7 +79,7 @@ export function TextNode({ data }: NodeProps) {
             ref={titleInputRef}
             className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-yellow-900/80 dark:text-yellow-100/80 placeholder:text-yellow-600/40 dark:placeholder:text-yellow-400/30"
             value={titleValue}
-            placeholder="Untitled"
+            placeholder=""
             onChange={(e) => setTitleValue(e.target.value)}
             onBlur={commitTitle}
             onKeyDown={(e) => {
@@ -92,14 +92,14 @@ export function TextNode({ data }: NodeProps) {
           />
         ) : (
           <div
-            className={`text-xs font-semibold truncate ${
+            className={`text-xs font-semibold truncate min-h-[1em] ${
               title
                 ? "text-yellow-900/80 dark:text-yellow-100/80"
-                : "text-yellow-600/30 dark:text-yellow-400/20 italic"
-            } ${canEdit ? "cursor-text hover:text-yellow-900/60 dark:hover:text-yellow-100/60 transition-colors" : ""}`}
+                : ""
+            } ${canEdit ? "cursor-text" : ""}`}
             onClick={() => canEdit && setEditingTitle(true)}
           >
-            {title || "Untitled"}
+            {title || ""}
           </div>
         )}
       </div>

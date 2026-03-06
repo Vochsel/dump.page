@@ -246,7 +246,7 @@ export function ChecklistNode({ data }: NodeProps) {
             ref={titleInputRef}
             className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-gray-700 dark:text-gray-200 placeholder:text-gray-400/40 dark:placeholder:text-gray-500/40"
             value={titleValue}
-            placeholder="Untitled"
+            placeholder=""
             onChange={(e) => setTitleValue(e.target.value)}
             onBlur={commitTitle}
             onKeyDown={(e) => {
@@ -259,14 +259,14 @@ export function ChecklistNode({ data }: NodeProps) {
           />
         ) : (
           <div
-            className={`text-xs font-semibold truncate ${
+            className={`text-xs font-semibold truncate min-h-[1em] ${
               title
                 ? "text-gray-700 dark:text-gray-200"
-                : "text-gray-400/30 dark:text-gray-500/30 italic"
-            } ${canEdit ? "cursor-text hover:text-gray-500 dark:hover:text-gray-400 transition-colors" : ""}`}
+                : ""
+            } ${canEdit ? "cursor-text" : ""}`}
             onClick={() => canEdit && setEditingTitle(true)}
           >
-            {title || "Untitled"}
+            {title || ""}
           </div>
         )}
       </div>

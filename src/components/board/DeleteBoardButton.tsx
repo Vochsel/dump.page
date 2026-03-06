@@ -54,7 +54,6 @@ export function DeleteBoardButton({
             className="p-1 rounded-md text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
             title="Delete board"
             onClick={(e) => {
-              e.preventDefault();
               e.stopPropagation();
             }}
           >
