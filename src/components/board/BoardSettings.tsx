@@ -53,6 +53,7 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
   const [copied, setCopied] = useState(false);
   const [copiedRss, setCopiedRss] = useState(false);
   const [mdOpen, setMdOpen] = useState(false);
+  const [copiedMd, setCopiedMd] = useState(false);
   const [memberEmail, setMemberEmail] = useState("");
   const [memberError, setMemberError] = useState("");
   const [addingMember, setAddingMember] = useState(false);
@@ -312,6 +313,21 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
           <pre className="flex-1 overflow-auto text-xs font-mono bg-muted p-3 rounded-md whitespace-pre-wrap">
             {mdContent ?? "Loading..."}
           </pre>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 self-end"
+            disabled={!mdContent}
+            onClick={async () => {
+              if (!mdContent) return;
+              await navigator.clipboard.writeText(mdContent);
+              setCopiedMd(true);
+              setTimeout(() => setCopiedMd(false), 2000);
+            }}
+          >
+            {copiedMd ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copiedMd ? "Copied" : "Copy"}
+          </Button>
         </DialogContent>
       </Dialog>
     </Popover>
