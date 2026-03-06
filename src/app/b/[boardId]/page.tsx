@@ -82,6 +82,36 @@ function EditableBoardName({
   );
 }
 
+function InviteOverlay({ boardName }: { boardName: string }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
+      <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full mx-4 text-center border border-gray-100">
+        <div
+          className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center text-white text-2xl font-bold shadow-md"
+          style={{ backgroundColor: "#7bd096", boxShadow: "0 4px 12px rgba(123, 208, 150, 0.4)" }}
+        >
+          <span style={{ fontFamily: "var(--font-dynapuff), cursive" }}>D</span>
+        </div>
+        <h2
+          className="text-2xl font-semibold mb-2"
+          style={{ fontFamily: "var(--font-dynapuff), cursive" }}
+        >
+          You're invited!
+        </h2>
+        <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
+          Someone added you to <strong>"{boardName}"</strong> on Dump.
+          <br />
+          Sign in to start collaborating.
+        </p>
+        <LoginButton />
+        <p className="text-xs text-muted-foreground mt-4">
+          Don't have an account? Signing in will create one automatically.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function BoardPage({
   params,
 }: {
@@ -90,12 +120,30 @@ export default function BoardPage({
   const { boardId } = use(params);
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? undefined;
+  const inviteToken = searchParams.get("invite") ?? undefined;
   const { user, loading: authLoading } = useAuth();
 
   const access = useQuery(api.boardMembers.checkAccess, {
     boardId: boardId as Id<"boards">,
     shareToken: token,
+    inviteToken,
   });
+
+  const resolveInvite = useMutation(api.boardMembers.resolveInviteByToken);
+  const [inviteResolved, setInviteResolved] = useState(false);
+
+  // Auto-resolve invite for logged-in users
+  useEffect(() => {
+    if (user && inviteToken && access?.pendingInvite && !inviteResolved) {
+      setInviteResolved(true);
+      resolveInvite({ inviteToken }).then(() => {
+        // Clean up the invite param from URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete("invite");
+        window.history.replaceState({}, "", url.toString());
+      });
+    }
+  }, [user, inviteToken, access?.pendingInvite, inviteResolved, resolveInvite]);
 
   if (access === undefined || authLoading) {
     return (
@@ -104,6 +152,9 @@ export default function BoardPage({
       </div>
     );
   }
+
+  // Show blurred board with invite overlay for unauthenticated invitees
+  const showInviteOverlay = !user && access.pendingInvite && access.board;
 
   if (!access.canView || !access.board) {
     return (
@@ -139,7 +190,10 @@ export default function BoardPage({
         title={`${access.board.name} RSS Feed`}
         href={rssUrl}
       />
-      <div className="absolute inset-0">
+      <div
+        className="absolute inset-0"
+        style={showInviteOverlay ? { filter: "blur(8px)", pointerEvents: "none" } : undefined}
+      >
         <ConvexBoardOpsProvider boardId={boardId as Id<"boards">}>
           <Canvas
             canEdit={access.canEdit}
@@ -147,45 +201,48 @@ export default function BoardPage({
           />
         </ConvexBoardOpsProvider>
       </div>
-      <header className="absolute top-0 left-0 right-0 z-10 md:flex md:justify-center md:px-4 md:mt-4">
-        <div
-          className="border-b md:border md:rounded-2xl md:w-1/2 md:min-w-[480px] md:max-w-[720px]"
-          style={{ backgroundColor: headerColor, borderColor: headerBorder }}
-        >
-          <div className="px-4 h-12 flex items-center relative">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="flex items-center gap-2 pointer-events-auto min-w-0">
-                <BoardIcon icon={access.board.icon} className="text-lg flex-shrink-0" size={20} />
-                <EditableBoardName
+      {showInviteOverlay && <InviteOverlay boardName={access.board.name} />}
+      {!showInviteOverlay && (
+        <header className="absolute top-0 left-0 right-0 z-10 md:flex md:justify-center md:px-4 md:mt-4">
+          <div
+            className="border-b md:border md:rounded-2xl md:w-1/2 md:min-w-[480px] md:max-w-[720px]"
+            style={{ backgroundColor: headerColor, borderColor: headerBorder }}
+          >
+            <div className="px-4 h-12 flex items-center relative">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="flex items-center gap-2 pointer-events-auto min-w-0">
+                  <BoardIcon icon={access.board.icon} className="text-lg flex-shrink-0" size={20} />
+                  <EditableBoardName
+                    boardId={boardId as Id<"boards">}
+                    name={access.board.name}
+                    canEdit={access.canEdit}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+                <BoardSettingsPopover
                   boardId={boardId as Id<"boards">}
-                  name={access.board.name}
+                  icon={access.board.icon}
+                  settings={boardSettings}
                   canEdit={access.canEdit}
                 />
+                <BoardShare
+                  board={access.board}
+                  isOwner={access.role === "owner"}
+                />
+                <UserMenu />
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-              <BoardSettingsPopover
-                boardId={boardId as Id<"boards">}
-                icon={access.board.icon}
-                settings={boardSettings}
-                canEdit={access.canEdit}
-              />
-              <BoardShare
-                board={access.board}
-                isOwner={access.role === "owner"}
-              />
-              <UserMenu />
-            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
     </div>
   );
 }

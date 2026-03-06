@@ -41,6 +41,13 @@ export const getOrCreateUser = mutation({
       { userId }
     );
 
+    // Resolve any pending board invites for this email
+    await ctx.scheduler.runAfter(
+      0,
+      internal.boardMembers.resolveInvitesByEmail,
+      { email: args.email.toLowerCase(), userId }
+    );
+
     return userId;
   },
 });

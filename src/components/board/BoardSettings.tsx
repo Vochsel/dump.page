@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import {
@@ -21,6 +21,10 @@ import {
   Grid3X3,
   Map,
   Rss,
+  X,
+  Clock,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { IconPicker } from "./IconPicker";
 
@@ -42,8 +46,16 @@ interface BoardShareProps {
 export function BoardShare({ board, isOwner }: BoardShareProps) {
   const [copied, setCopied] = useState(false);
   const [copiedRss, setCopiedRss] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteResult, setInviteResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const updateBoard = useMutation(api.boards.updateBoard);
   const regenerateToken = useMutation(api.boards.regenerateShareToken);
+  const addMember = useMutation(api.boardMembers.addMember);
+  const removeMember = useMutation(api.boardMembers.removeMember);
+  const cancelInvite = useMutation(api.boardMembers.cancelInvite);
+  const members = useQuery(api.boardMembers.getMembers, { boardId: board._id });
+  const pendingInvites = useQuery(api.boardMembers.getPendingInvites, { boardId: board._id });
 
   if (!isOwner) return null;
 
@@ -70,6 +82,32 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleInvite = async () => {
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email) return;
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setInviteResult({ type: "error", message: "Please enter a valid email address" });
+      return;
+    }
+
+    setInviteLoading(true);
+    setInviteResult(null);
+    try {
+      const result = await addMember({ boardId: board._id, email });
+      const message = result.status === "added"
+        ? `${email} has been added`
+        : `Invite sent to ${email}`;
+      setInviteResult({ type: "success", message });
+      setInviteEmail("");
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Failed to send invite";
+      setInviteResult({ type: "error", message: msg });
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -79,6 +117,114 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
+          {/* Invite by email */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Add people
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="Email address"
+                value={inviteEmail}
+                onChange={(e) => {
+                  setInviteEmail(e.target.value);
+                  setInviteResult(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleInvite();
+                }}
+                className="text-sm"
+                disabled={inviteLoading}
+              />
+              <Button
+                size="icon"
+                onClick={handleInvite}
+                disabled={inviteLoading || !inviteEmail.trim()}
+              >
+                {inviteLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {inviteResult && (
+              <p className={`text-xs mt-1.5 ${inviteResult.type === "success" ? "text-green-600" : "text-red-500"}`}>
+                {inviteResult.message}
+              </p>
+            )}
+          </div>
+
+          {/* Members list */}
+          {members && members.length > 0 && (
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
+                Members
+              </label>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                {members.map((m) => (
+                  <div key={m._id} className="flex items-center gap-2 text-sm">
+                    {m.user?.profileImage ? (
+                      <img
+                        src={m.user.profileImage}
+                        alt=""
+                        className="w-5 h-5 rounded-full flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-muted flex-shrink-0" />
+                    )}
+                    <span className="truncate flex-1 text-xs">
+                      {m.user?.name ?? m.user?.email ?? "Unknown"}
+                    </span>
+                    {m.role === "owner" ? (
+                      <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                        owner
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => removeMember({ boardId: board._id, userId: m.userId })}
+                        className="text-muted-foreground hover:text-red-500 transition-colors p-0.5"
+                        title="Remove member"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pending invites */}
+          {pendingInvites && pendingInvites.length > 0 && (
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
+                Pending
+              </label>
+              <div className="space-y-1.5">
+                {pendingInvites.map((inv) => (
+                  <div key={inv._id} className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate flex-1 text-xs text-muted-foreground">
+                      {inv.email}
+                    </span>
+                    <button
+                      onClick={() => cancelInvite({ inviteId: inv._id })}
+                      className="text-muted-foreground hover:text-red-500 transition-colors p-0.5"
+                      title="Cancel invite"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Visibility */}
           <div>
             <label className="text-sm font-medium mb-2 block">
               Visibility

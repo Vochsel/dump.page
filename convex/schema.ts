@@ -54,6 +54,17 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_boardId_userId", ["boardId", "userId"]),
 
+  boardInvites: defineTable({
+    boardId: v.id("boards"),
+    email: v.string(),
+    inviteToken: v.string(),
+    invitedBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_boardId_email", ["boardId", "email"])
+    .index("by_inviteToken", ["inviteToken"]),
+
   nodes: defineTable({
     boardId: v.id("boards"),
     type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),
