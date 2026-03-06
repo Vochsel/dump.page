@@ -13,6 +13,7 @@ import { Users, Plus, Globe, Link as LinkIcon, FileText, ExternalLink, CheckSqua
 import { Badge } from "@/components/ui/badge";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { Id } from "../../../convex/_generated/dataModel";
+import { SuggestFeatureButton } from "@/components/SuggestFeatureButton";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -53,6 +54,7 @@ export default function DashboardPage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <SuggestFeatureButton />
             <CreateBoardDialog />
             <UserMenu />
           </div>
