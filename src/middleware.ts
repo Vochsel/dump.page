@@ -38,6 +38,8 @@ const BOT_USER_AGENTS = [
   "undici",
   "got/",
   "MagpaiBot",
+  "XBot",
+  "Grok",
 ];
 
 function isBot(userAgent: string): boolean {

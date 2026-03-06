@@ -52,7 +52,8 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
   const [provider, setProvider] = useState<ProviderId>("claude");
 
   const needsToken = visibility === "shared" && shareToken;
-  const boardUrl = `${SITE_URL}/b/${slug}${needsToken ? `?token=${shareToken}` : ""}`;
+  const tokenParam = needsToken ? `?token=${shareToken}` : "";
+  const boardUrl = `${SITE_URL}/b/${slug}/llms.txt${tokenParam}`;
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as ProviderId | null;
