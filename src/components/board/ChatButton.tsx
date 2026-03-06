@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 
 const SITE_URL = "https://www.get-dump.com";
 
@@ -52,14 +51,15 @@ const STORAGE_KEY = "dump-chat-provider";
 interface ChatButtonProps {
   boardId: Id<"boards">;
   slug: string;
+  visibility: "private" | "shared" | "public";
+  shareToken?: string;
 }
 
-export function ChatButton({ boardId, slug }: ChatButtonProps) {
+export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButtonProps) {
   const [provider, setProvider] = useState<ProviderId>("claude");
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token") ?? undefined;
 
-  const boardUrl = `${SITE_URL}/b/${slug}${token ? `?token=${token}` : ""}`;
+  const needsToken = visibility === "shared" && shareToken;
+  const boardUrl = `${SITE_URL}/b/${slug}${needsToken ? `?token=${shareToken}` : ""}`;
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as ProviderId | null;

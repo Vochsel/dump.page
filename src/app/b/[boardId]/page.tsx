@@ -191,7 +191,12 @@ export default function BoardPage({
               />
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-              <ChatButton boardId={access.board._id} slug={access.board.slug ?? boardId} />
+              <ChatButton
+                boardId={access.board._id}
+                slug={access.board.slug ?? boardId}
+                visibility={access.board.visibility}
+                shareToken={access.board.shareToken}
+              />
               <BoardSettingsPopover
                 boardId={access.board._id}
                 icon={access.board.icon}
