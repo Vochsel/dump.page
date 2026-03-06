@@ -189,7 +189,7 @@ export default function BoardPage({
                 <EditableBoardName
                   boardId={boardId as Id<"boards">}
                   name={access.board.name}
-                  canEdit={access.canEdit}
+                  canEdit={access.role === "owner"}
                 />
               </div>
             </div>
@@ -198,7 +198,7 @@ export default function BoardPage({
                 boardId={boardId as Id<"boards">}
                 icon={access.board.icon}
                 settings={boardSettings}
-                canEdit={access.canEdit}
+                canEdit={access.role === "owner"}
               />
               <BoardShare
                 board={access.board}

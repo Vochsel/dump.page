@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import {
@@ -28,6 +28,9 @@ import {
   Map,
   Rss,
   FileText,
+  UserPlus,
+  X,
+  Crown,
 } from "lucide-react";
 import { IconPicker } from "./IconPicker";
 
@@ -52,8 +55,28 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
   const [mdOpen, setMdOpen] = useState(false);
   const [mdContent, setMdContent] = useState("");
   const [mdLoading, setMdLoading] = useState(false);
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberError, setMemberError] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
   const updateBoard = useMutation(api.boards.updateBoard);
   const regenerateToken = useMutation(api.boards.regenerateShareToken);
+  const addMember = useMutation(api.boardMembers.addMember);
+  const removeMember = useMutation(api.boardMembers.removeMember);
+  const members = useQuery(api.boardMembers.getMembers, { boardId: board._id });
+
+  const handleAddMember = useCallback(async () => {
+    const email = memberEmail.trim();
+    if (!email) return;
+    setMemberError("");
+    setAddingMember(true);
+    try {
+      await addMember({ boardId: board._id, email });
+      setMemberEmail("");
+    } catch (e) {
+      setMemberError(e instanceof Error ? e.message : "Failed to add member");
+    }
+    setAddingMember(false);
+  }, [memberEmail, board._id, addMember]);
 
   const fetchMarkdown = useCallback(async () => {
     setMdLoading(true);
@@ -181,6 +204,54 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
               </div>
             </div>
           )}
+
+          <Separator />
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Members
+            </label>
+            <div className="space-y-1.5 mb-2">
+              {members?.map((m) => (
+                <div key={m._id} className="flex items-center gap-2 text-xs">
+                  <span className="flex-1 truncate text-muted-foreground">
+                    {m.user?.email ?? "Unknown"}
+                  </span>
+                  {m.role === "owner" ? (
+                    <Crown className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                  ) : (
+                    <button
+                      onClick={() => removeMember({ boardId: board._id, userId: m.userId })}
+                      className="p-0.5 rounded hover:bg-red-50 hover:text-red-500 transition-colors flex-shrink-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAddMember();
+              }}
+              className="flex gap-2"
+            >
+              <Input
+                value={memberEmail}
+                onChange={(e) => { setMemberEmail(e.target.value); setMemberError(""); }}
+                placeholder="Email address"
+                type="email"
+                className="text-xs"
+              />
+              <Button variant="outline" size="icon" disabled={addingMember || !memberEmail.trim()}>
+                <UserPlus className="h-3.5 w-3.5" />
+              </Button>
+            </form>
+            {memberError && (
+              <p className="text-xs text-destructive mt-1">{memberError}</p>
+            )}
+          </div>
 
           <Button
             variant="outline"
