@@ -333,36 +333,36 @@ export const seedDefaultBoard = internalMutation({
       dimensions: { width: number; height: number };
     }> = [
       {
-        type: "link",
-        content: "https://news.ycombinator.com",
-        position: { x: 100, y: 100 },
-        dimensions: { width: 280, height: 120 },
-      },
-      {
-        type: "link",
-        content: "https://en.wikipedia.org/wiki/Australian_magpie",
-        position: { x: 420, y: 100 },
-        dimensions: { width: 280, height: 120 },
-      },
-      {
-        type: "link",
-        content: "https://magpai.app",
-        position: { x: 740, y: 100 },
-        dimensions: { width: 280, height: 120 },
-      },
-      {
         type: "text",
         content:
           "Welcome! This is your first board. Drop links, paste notes, and share with your team.",
-        position: { x: 100, y: 300 },
+        position: { x: 100, y: 100 },
         dimensions: { width: 320, height: 120 },
       },
       {
         type: "text",
         content:
           "Tip: Right-click the canvas to add new items, or just paste a URL.",
-        position: { x: 460, y: 300 },
+        position: { x: 100, y: 260 },
         dimensions: { width: 320, height: 120 },
+      },
+      {
+        type: "link",
+        content: "https://news.ycombinator.com",
+        position: { x: 480, y: 100 },
+        dimensions: { width: 280, height: 120 },
+      },
+      {
+        type: "link",
+        content: "https://en.wikipedia.org/wiki/Australian_magpie",
+        position: { x: 480, y: 260 },
+        dimensions: { width: 280, height: 120 },
+      },
+      {
+        type: "link",
+        content: "https://vochsel.com",
+        position: { x: 480, y: 420 },
+        dimensions: { width: 280, height: 120 },
       },
     ];
 
