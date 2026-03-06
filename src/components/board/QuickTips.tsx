@@ -10,6 +10,11 @@ const TIPS = [
     title: "Quick share",
     body: "Press Ctrl+C (or Cmd+C) with nothing selected to copy this board's share URL to your clipboard — ready to paste into any AI chatbot.",
   },
+  {
+    id: "customize-board",
+    title: "Make it yours",
+    body: "Try changing the background color and pattern via the settings button in the top toolbar. Each board can have its own look!",
+  },
 ];
 
 const STORAGE_KEY_DISMISSED = "dump-tips-dismissed";
