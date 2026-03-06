@@ -70,7 +70,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
   const openChat = useCallback(
     (id?: ProviderId) => {
       const chosen = id ?? provider;
-      const prompt = `Use this board for context: ${boardUrl}`;
+      const prompt = `Use this board for context: ${boardUrl}\n`;
       const p = PROVIDERS.find((p) => p.id === chosen)!;
       window.open(p.buildUrl(prompt), "_blank");
     },

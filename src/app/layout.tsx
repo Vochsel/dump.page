@@ -4,6 +4,7 @@ import "./globals.css";
 import { ConvexProvider } from "@/providers/convex-provider";
 import { AuthProvider } from "@/context/auth-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -75,6 +76,7 @@ export default function RootLayout({
         <ConvexProvider>
           <AuthProvider>
             <TooltipProvider>{children}</TooltipProvider>
+            <Toaster />
           </AuthProvider>
         </ConvexProvider>
       </body>

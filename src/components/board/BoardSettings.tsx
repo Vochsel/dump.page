@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -39,6 +40,35 @@ export type BoardSettingsData = {
   backgroundColor?: string;
   controlsVariant?: "default" | "map";
 };
+
+function RegenerateButton({ onRegenerate }: { onRegenerate: () => Promise<string> }) {
+  const [spinning, setSpinning] = useState(false);
+
+  const handleClick = async () => {
+    setSpinning(true);
+    try {
+      await onRegenerate();
+      toast.success("Share link regenerated");
+    } catch {
+      toast.error("Failed to regenerate link");
+    } finally {
+      setSpinning(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="mt-2 gap-2 text-xs"
+      onClick={handleClick}
+      disabled={spinning}
+    >
+      <RefreshCw className={`h-3 w-3 ${spinning ? "animate-spin" : ""}`} />
+      Regenerate link
+    </Button>
+  );
+}
 
 interface BoardShareProps {
   board: {
@@ -201,15 +231,9 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
                 </Button>
               </div>
               {isOwner && board.visibility === "shared" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2 gap-2 text-xs"
-                  onClick={() => regenerateToken({ boardId: board._id })}
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Regenerate link
-                </Button>
+                <RegenerateButton
+                  onRegenerate={() => regenerateToken({ boardId: board._id })}
+                />
               )}
             </div>
           )}
