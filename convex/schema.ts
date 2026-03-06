@@ -65,6 +65,7 @@ export default defineSchema({
         title: v.optional(v.string()),
         favicon: v.optional(v.string()),
         description: v.optional(v.string()),
+        image: v.optional(v.string()),
       })
     ),
     createdBy: v.id("users"),

@@ -8,6 +8,7 @@ export type Metadata = {
   title?: string;
   favicon?: string;
   description?: string;
+  image?: string;
 };
 
 export type BoardNode = {

@@ -1,25 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import { NodeProps } from "@xyflow/react";
-import { ExternalLink, Trash2, Pencil, Rss } from "lucide-react";
-import { useBoardOps } from "@/context/board-ops-context";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { ExternalLink, Trash2, Rss } from "lucide-react";
 
-import type { UndoAction } from "@/hooks/useUndoRedo";
 
 type LinkNodeData = {
   content: string;
@@ -30,8 +13,8 @@ type LinkNodeData = {
     title?: string;
     favicon?: string;
     description?: string;
+    image?: string;
   };
-  pushAction: (action: UndoAction) => void;
   deleteNodeWithUndo: (nodeId: string) => void;
 };
 
@@ -258,12 +241,8 @@ function EmbedNode({
 }
 
 export function LinkNode({ data }: NodeProps) {
-  const { content, nodeId, canEdit, metadata, metadataLoading, pushAction, deleteNodeWithUndo } =
+  const { content, nodeId, canEdit, metadata, metadataLoading, deleteNodeWithUndo } =
     data as unknown as LinkNodeData;
-  const { updateNode } = useBoardOps();
-
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [renameValue, setRenameValue] = useState("");
 
   let hostname = "";
   try {
@@ -281,28 +260,6 @@ export function LinkNode({ data }: NodeProps) {
   const soundCloudEmbedUrl = getSoundCloudEmbedUrl(content);
   const tweetId = getTwitterTweetId(content);
   const isRss = looksLikeRssFeed(content);
-
-  const openRename = useCallback(() => {
-    setRenameValue(title || "");
-    setRenameOpen(true);
-  }, [title]);
-
-  const handleRename = useCallback(() => {
-    const newTitle = renameValue.trim();
-    if (!newTitle) return;
-    const oldMetadata = metadata ? { ...metadata } : undefined;
-    const newMetadata = { ...metadata, title: newTitle };
-    pushAction({
-      type: "edit",
-      nodeId,
-      oldContent: content,
-      newContent: content,
-      oldMetadata,
-      newMetadata,
-    });
-    updateNode({ nodeId, metadata: newMetadata });
-    setRenameOpen(false);
-  }, [renameValue, nodeId, metadata, updateNode, pushAction, content]);
 
   const handleDelete = () => deleteNodeWithUndo(nodeId);
 
@@ -364,8 +321,21 @@ export function LinkNode({ data }: NodeProps) {
         href={content}
         target="_blank"
         rel="noopener noreferrer"
-        className="block p-3 hover:bg-muted/50 transition-colors rounded-lg"
+        className="block hover:bg-muted/50 transition-colors rounded-lg overflow-hidden"
       >
+        {/* OG Image */}
+        {!metadataLoading && metadata?.image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={metadata.image}
+            alt=""
+            className="w-full h-[140px] object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+            }}
+          />
+        )}
+        <div className="p-3">
         {/* Hostname row — always visible */}
         <div className="flex items-center gap-2 mb-1.5">
           {faviconUrl ? (
@@ -411,6 +381,7 @@ export function LinkNode({ data }: NodeProps) {
         {!metadataLoading && !title && !description && (
           <p className="text-sm font-medium truncate">{content}</p>
         )}
+        </div>
       </a>
       {canEdit && (
         <div className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -429,46 +400,5 @@ export function LinkNode({ data }: NodeProps) {
     </div>
   );
 
-  if (!canEdit) return nodeContent;
-
-  return (
-    <>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          {nodeContent}
-        </ContextMenuTrigger>
-        <ContextMenuContent className="w-40">
-          <ContextMenuItem onClick={openRename}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Rename
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Rename Link</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleRename();
-            }}
-            className="flex gap-2"
-          >
-            <Input
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              placeholder="Link title"
-              autoFocus
-            />
-            <Button type="submit" disabled={!renameValue.trim()}>
-              Save
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+  return nodeContent;
 }

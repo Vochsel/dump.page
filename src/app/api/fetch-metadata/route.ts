@@ -72,10 +72,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    let image = extractMeta(html, "og:image") || extractMeta(html, "twitter:image");
+
+    if (image && !image.startsWith("http")) {
+      try {
+        const base = new URL(url);
+        image = new URL(image, base.origin).href;
+      } catch {
+        image = undefined;
+      }
+    }
+
     return NextResponse.json({
       title: title || undefined,
       description: description ? description.slice(0, 200) : undefined,
       favicon: favicon || undefined,
+      image: image || undefined,
     });
   } catch {
     return NextResponse.json({});

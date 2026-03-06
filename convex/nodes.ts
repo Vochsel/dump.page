@@ -24,6 +24,7 @@ export const createNode = mutation({
         title: v.optional(v.string()),
         favicon: v.optional(v.string()),
         description: v.optional(v.string()),
+        image: v.optional(v.string()),
       })
     ),
   },
@@ -62,6 +63,7 @@ export const updateNode = mutation({
         title: v.optional(v.string()),
         favicon: v.optional(v.string()),
         description: v.optional(v.string()),
+        image: v.optional(v.string()),
       })
     ),
   },
@@ -112,6 +114,7 @@ export const patchNodeMetadata = internalMutation({
       title: v.optional(v.string()),
       favicon: v.optional(v.string()),
       description: v.optional(v.string()),
+      image: v.optional(v.string()),
     }),
   },
   handler: async (ctx, args) => {
@@ -202,12 +205,25 @@ export const fetchLinkMetadata = action({
         }
       }
 
+      let image = extractMeta(html, "og:image") ||
+        extractMeta(html, "twitter:image");
+
+      if (image && !image.startsWith("http")) {
+        try {
+          const base = new URL(args.url);
+          image = new URL(image, base.origin).href;
+        } catch {
+          image = undefined;
+        }
+      }
+
       await ctx.runMutation(internal.nodes.patchNodeMetadata, {
         nodeId: args.nodeId,
         metadata: {
           title: title || undefined,
           description: description ? description.slice(0, 200) : undefined,
           favicon: favicon || undefined,
+          image: image || undefined,
         },
       });
     } catch {

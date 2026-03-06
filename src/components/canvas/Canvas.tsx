@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil } from "lucide-react";
 
 import { darkenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
@@ -71,6 +71,10 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
     y: number;
   } | null>(null);
 
+  // Rename dialog state
+  const [renameNodeId, setRenameNodeId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
   // Undo/Redo
   const { pushAction, undo, redo, canUndo, canRedo } = useUndoRedo({
     convexNodes: boardNodes,
@@ -80,11 +84,14 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
     updateNodePosition,
   });
 
+  // Track optimistically deleted node IDs so they stay hidden until server catches up
+  const [optimisticDeletes, setOptimisticDeletes] = useState<Set<string>>(new Set());
+
   const deleteNodeWithUndo = useCallback(
-    async (nodeId: string) => {
+    (nodeId: string) => {
       const node = boardNodes?.find((n) => n._id === nodeId);
       if (!node) {
-        await deleteNode({ nodeId });
+        deleteNode({ nodeId });
         return;
       }
       pushAction({
@@ -99,7 +106,17 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
         },
       });
       sfx.delete();
-      await deleteNode({ nodeId });
+      // Optimistically remove from UI
+      setOptimisticDeletes((prev) => new Set(prev).add(nodeId));
+      setLocalNodes((prev) => prev.filter((n) => n.id !== nodeId));
+      // Fire and forget — server sync will confirm
+      deleteNode({ nodeId }).finally(() => {
+        setOptimisticDeletes((prev) => {
+          const next = new Set(prev);
+          next.delete(nodeId);
+          return next;
+        });
+      });
     },
     [boardNodes, deleteNode, pushAction]
   );
@@ -114,7 +131,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
     if (!boardNodes) return;
     setLocalNodes((prev) => {
       const prevMap = new Map(prev.map((n) => [n.id, n]));
-      return boardNodes.map((n) => {
+      return boardNodes.filter((n) => !optimisticDeletes.has(n._id)).map((n) => {
         const existing = prevMap.get(n._id);
         // If currently dragging this node, keep local position
         const position = draggingRef.current.has(n._id) && existing
@@ -136,7 +153,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
         };
       });
     });
-  }, [boardNodes, canEdit, pushAction, deleteNodeWithUndo]);
+  }, [boardNodes, canEdit, pushAction, deleteNodeWithUndo, optimisticDeletes]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -527,6 +544,35 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
     setNodeMenu(null);
   }, [nodeMenu, deleteNodeWithUndo]);
 
+  const handleNodeRename = useCallback(() => {
+    if (!nodeMenu) return;
+    const node = localNodes.find((n) => n.id === nodeMenu.nodeId);
+    if (!node) return;
+    const data = node.data as { metadata?: { title?: string } };
+    setRenameValue(data.metadata?.title || "");
+    setRenameNodeId(nodeMenu.nodeId);
+    setNodeMenu(null);
+  }, [nodeMenu, localNodes]);
+
+  const handleRenameSubmit = useCallback(() => {
+    if (!renameNodeId) return;
+    const newTitle = renameValue.trim();
+    if (!newTitle) return;
+    const source = boardNodes?.find((n) => n._id === renameNodeId);
+    const oldMetadata = source?.metadata ? { ...source.metadata } : undefined;
+    const newMetadata = { ...source?.metadata, title: newTitle };
+    pushAction({
+      type: "edit",
+      nodeId: renameNodeId,
+      oldContent: source?.content || "",
+      newContent: source?.content || "",
+      oldMetadata,
+      newMetadata,
+    });
+    updateNode({ nodeId: renameNodeId, metadata: newMetadata });
+    setRenameNodeId(null);
+  }, [renameNodeId, renameValue, boardNodes, pushAction, updateNode]);
+
   const bgPattern = settings.backgroundPattern ?? "dots";
   const bgColor = settings.backgroundColor ?? "#f9fafb";
   const controlsVariant = settings.controlsVariant ?? "default";
@@ -655,6 +701,15 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
               <CopyPlus className="h-3.5 w-3.5" />
               Duplicate
             </button>
+            {localNodes.find((n) => n.id === nodeMenu.nodeId)?.type === "link" && (
+              <button
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                onClick={handleNodeRename}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Rename
+              </button>
+            )}
             <div className="my-1 border-t border-gray-100" />
             <button
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -690,6 +745,31 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
             />
             <Button type="submit" disabled={!linkUrl.trim()}>
               Add
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={renameNodeId !== null} onOpenChange={(open) => { if (!open) setRenameNodeId(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename Link</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleRenameSubmit();
+            }}
+            className="flex gap-2"
+          >
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="Link title"
+              autoFocus
+            />
+            <Button type="submit" disabled={!renameValue.trim()}>
+              Save
             </Button>
           </form>
         </DialogContent>

@@ -422,6 +422,7 @@ export const persistLocalBoard = mutation({
             title: v.optional(v.string()),
             favicon: v.optional(v.string()),
             description: v.optional(v.string()),
+            image: v.optional(v.string()),
           })
         ),
       })
