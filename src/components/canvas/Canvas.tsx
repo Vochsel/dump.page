@@ -38,6 +38,7 @@ import { darkenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
 import { useBoardOps } from "@/context/board-ops-context";
 import { sfx } from "@/lib/sfx";
+import { inferUrlMetadata } from "@/lib/url-metadata";
 
 const nodeTypes: NodeTypes = {
   text: TextNode,
@@ -248,11 +249,13 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
           url = "https://" + url;
         }
+        const inferred = inferUrlMetadata(url);
         createNode({
           boardId,
           type: "link",
           content: url,
           position: { x: pos.x - 140, y: pos.y - 30 },
+          metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
         }).then((nodeId) => {
           pushAction({ type: "create", nodeId });
           sfx.add();
@@ -319,11 +322,13 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
           const url = rawUrl.trim();
           if (!url) continue;
           const nodePos = { x: pos.x - 140, y: pos.y - 30 + offsetY };
+          const inferred = inferUrlMetadata(url);
           createNode({
             boardId,
             type: "link",
             content: url,
             position: nodePos,
+            metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
           }).then((nodeId) => {
             pushAction({ type: "create", nodeId });
             sfx.add();
@@ -372,11 +377,13 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
           url = "https://" + url;
         }
+        const inferred = inferUrlMetadata(url);
         createNode({
           boardId,
           type: "link",
           content: url,
           position: { x: pos.x - 140, y: pos.y - 30 },
+          metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
         }).then((nodeId) => {
           pushAction({ type: "create", nodeId });
           sfx.add();
@@ -480,11 +487,13 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
       url = "https://" + url;
     }
     const pos = screenToFlowPosition(contextMenuPosRef.current);
+    const inferred = inferUrlMetadata(url);
     createNode({
       boardId,
       type: "link",
       content: url,
       position: { x: pos.x - 140, y: pos.y - 30 },
+      metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
     }).then((nodeId) => {
       pushAction({ type: "create", nodeId });
       sfx.add();
