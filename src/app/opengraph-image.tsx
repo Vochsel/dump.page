@@ -1,11 +1,19 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-export const runtime = "edge";
 export const alt = "Dump — collaborative context boards for teams and AI";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OgImage() {
+export default async function OgImage() {
+  const logoData = await readFile(join(process.cwd(), "public", "dump.png"));
+  const logoBase64 = `data:image/png;base64,${logoData.toString("base64")}`;
+
+  const dynaPuffFont = await fetch(
+    "https://fonts.gstatic.com/s/dynapuff/v4/z7N5dRvsZDIVHbYPMhZJ3HQ83UaSu4uhr7-ZFeoYkgAr1x8RSxYu6YjrSRs4wn8.ttf"
+  ).then((res) => res.arrayBuffer());
+
   return new ImageResponse(
     (
       <div
@@ -16,7 +24,8 @@ export default function OgImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0f9ff 100%)",
+          background:
+            "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0f9ff 100%)",
           fontFamily: "sans-serif",
         }}
       >
@@ -50,17 +59,13 @@ export default function OgImage() {
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://dump.magpai.app/dump.png"
-              alt=""
-              width={120}
-              height={120}
-            />
+            <img src={logoBase64} alt="" width={120} height={120} />
             <span
               style={{
                 fontSize: 72,
                 fontWeight: 700,
                 color: "#1f2937",
+                fontFamily: "DynaPuff",
               }}
             >
               Dump
@@ -93,7 +98,8 @@ export default function OgImage() {
                 textAlign: "center",
               }}
             >
-              Dump links, notes &amp; ideas — make them useful for humans and AI.
+              Dump links, notes &amp; ideas — make them useful for humans and
+              AI.
             </span>
           </div>
 
@@ -127,6 +133,16 @@ export default function OgImage() {
         </div>
       </div>
     ),
-    { ...size }
+    {
+      ...size,
+      fonts: [
+        {
+          name: "DynaPuff",
+          data: dynaPuffFont,
+          style: "normal",
+          weight: 700,
+        },
+      ],
+    }
   );
 }
