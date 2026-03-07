@@ -1,10 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const TIPS = [
+type Tip = {
+  id: string;
+  title: string;
+  body: string;
+  cta?: { label: string; href: string };
+};
+
+const TIPS: Tip[] = [
   {
     id: "copy-share-url",
     title: "Quick share",
@@ -19,6 +27,12 @@ const TIPS = [
     id: "snap-to-grid",
     title: "Snap to grid",
     body: "Enable snap-to-grid in the preferences menu (bottom left) to keep your cards neatly aligned. Great for organizing bigger boards!",
+  },
+  {
+    id: "connect-mcp",
+    title: "Connect via MCP",
+    body: "Connect Dump as an MCP server in Claude, Cursor, or any MCP-compatible client to give your LLM live access to your boards — keeping context perfectly in sync as you work.",
+    cta: { label: "Learn more", href: "/mcp" },
   },
 ];
 
@@ -47,7 +61,7 @@ function todayStr(): string {
 }
 
 export function QuickTips() {
-  const [tip, setTip] = useState<(typeof TIPS)[number] | null>(null);
+  const [tip, setTip] = useState<Tip | null>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -105,9 +119,16 @@ export function QuickTips() {
           >
             Don&apos;t show tips
           </button>
-          <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={dismiss}>
-            Got it
-          </Button>
+          <div className="flex items-center gap-1">
+            {tip.cta && (
+              <Button variant="outline" size="sm" className="h-6 text-xs px-2" asChild>
+                <Link href={tip.cta.href}>{tip.cta.label}</Link>
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={dismiss}>
+              Got it
+            </Button>
+          </div>
         </div>
       </div>
     </div>
