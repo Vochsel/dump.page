@@ -32,13 +32,22 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "sonner";
 import { useTheme } from "@/context/theme-context";
 
 import { darkenHex, lightenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
 import { useBoardOps } from "@/context/board-ops-context";
+import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { sfx } from "@/lib/sfx";
 import { inferUrlMetadata } from "@/lib/url-metadata";
 
@@ -73,6 +82,17 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
 
   // Mute state
   const [isMuted, setIsMuted] = useState(() => sfx.isMuted());
+
+  // Client preferences
+  const [snapToGrid, setSnapToGrid] = useLocalStorage("dump-snap-to-grid", false);
+
+  // Archive panel
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const archivedNodes = useConvexQuery(
+    api.nodes.getArchivedNodesByBoard,
+    archiveOpen ? { boardId: boardId as Id<"boards"> } : "skip"
+  );
+  const unarchiveMutation = useConvexMutation(api.nodes.unarchiveNode);
 
   // Node context menu state
   const [nodeMenu, setNodeMenu] = useState<{
@@ -441,9 +461,12 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
 
       const selected = localNodes.filter((n) => n.selected);
       if (selected.length > 0) {
-        fitView({ nodes: selected, padding: 0.5, duration: 300 });
+        const padding = selected.length <= 3 ? 0.8 : 0.3;
+        fitView({ nodes: selected, padding, duration: 300 });
       } else {
-        fitView({ padding: 0.5, duration: 300 });
+        const total = localNodes.length;
+        const padding = total <= 3 ? 0.8 : total <= 10 ? 0.4 : 0.15;
+        fitView({ padding, duration: 300 });
       }
     };
 
@@ -579,6 +602,13 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
     setNodeMenu(null);
   }, [nodeMenu, localNodes, boardNodes, boardId, createNode, fetchMetadata, pushAction, updateNode]);
 
+  const handleNodeArchive = useCallback(() => {
+    if (!nodeMenu) return;
+    updateNode({ nodeId: nodeMenu.nodeId, archived: true });
+    setNodeMenu(null);
+    toast("Item archived");
+  }, [nodeMenu, updateNode]);
+
   const handleNodeDelete = useCallback(() => {
     if (!nodeMenu) return;
     deleteNodeWithUndo(nodeMenu.nodeId);
@@ -676,6 +706,8 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
       nodeTypes={nodeTypes}
       nodesDraggable={canEdit}
       nodesConnectable={false}
+      snapToGrid={snapToGrid}
+      snapGrid={[20, 20]}
       onNodeContextMenu={canEdit ? onNodeContextMenu : undefined}
       onPaneClick={closeNodeMenu}
       selectionMode={SelectionMode.Partial}
@@ -725,6 +757,39 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
       >
         {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </button>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            title="Preferences"
+          >
+            <Settings2 className="h-4 w-4" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-48 p-2" side="top" align="start">
+          <label className="flex items-center justify-between gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent/50 cursor-pointer">
+            <span>Snap to grid</span>
+            <input
+              type="checkbox"
+              checked={snapToGrid}
+              onChange={(e) => setSnapToGrid(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 cursor-pointer"
+            />
+          </label>
+          {canEdit && (
+            <>
+              <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+              <button
+                onClick={() => setArchiveOpen(true)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent/50"
+              >
+                <Archive className="h-3.5 w-3.5" />
+                Archived items
+              </button>
+            </>
+          )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 
@@ -845,6 +910,13 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
             })()}
             <div className="my-1 border-t border-gray-100" />
             <button
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              onClick={handleNodeArchive}
+            >
+              <Archive className="h-3.5 w-3.5" />
+              Archive
+            </button>
+            <button
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
               onClick={handleNodeDelete}
             >
@@ -905,6 +977,54 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               Save
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Archive panel */}
+      <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+        <DialogContent className="sm:max-w-md max-h-[70vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Archive className="h-4 w-4" />
+              Archived Items
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-2 py-2">
+            {archivedNodes === undefined ? (
+              <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+            ) : archivedNodes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No archived items.</p>
+            ) : (
+              archivedNodes.map((node) => (
+                <div
+                  key={node._id}
+                  className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs text-muted-foreground uppercase">{node.type}</span>
+                    <p className="text-sm truncate text-gray-700 dark:text-gray-300">
+                      {node.type === "link"
+                        ? node.metadata?.title || node.content.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")
+                        : node.type === "checklist"
+                          ? node.title || "Checklist"
+                          : node.content.replace(/<[^>]*>/g, "").slice(0, 80)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-xs"
+                    onClick={async () => {
+                      await unarchiveMutation({ nodeId: node._id });
+                      toast("Item restored");
+                    }}
+                  >
+                    Restore
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>

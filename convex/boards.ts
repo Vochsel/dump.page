@@ -419,8 +419,9 @@ export const getMyBoardsWithRecentNodes = query({
           .query("nodes")
           .withIndex("by_boardId", (q) => q.eq("boardId", m.boardId))
           .collect();
-        // Sort by updatedAt descending and take top 4
+        // Sort by updatedAt descending and take top 4 (exclude archived)
         const recentNodes = nodes
+          .filter((n) => !n.archived)
           .sort((a, b) => b.updatedAt - a.updatedAt)
           .slice(0, 4)
           .map((n) => ({

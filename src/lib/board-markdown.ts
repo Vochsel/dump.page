@@ -185,7 +185,8 @@ export async function getBoardMarkdown(
       };
     }
 
-    const { board, nodes } = result;
+    const { board, nodes: allNodes } = result;
+    const nodes = allNodes.filter((n: { archived?: boolean }) => !n.archived);
 
     let markdown = `# ${board.name}\n\n`;
 

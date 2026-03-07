@@ -5,10 +5,40 @@ import { v } from "convex/values";
 export const getNodesByBoard = query({
   args: { boardId: v.id("boards") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const nodes = await ctx.db
       .query("nodes")
       .withIndex("by_boardId", (q) => q.eq("boardId", args.boardId))
       .collect();
+    return nodes.filter((n) => !n.archived);
+  },
+});
+
+export const getArchivedNodesByBoard = query({
+  args: { boardId: v.id("boards") },
+  handler: async (ctx, args) => {
+    const nodes = await ctx.db
+      .query("nodes")
+      .withIndex("by_boardId", (q) => q.eq("boardId", args.boardId))
+      .collect();
+    return nodes.filter((n) => n.archived);
+  },
+});
+
+export const archiveNode = mutation({
+  args: { nodeId: v.id("nodes") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    await ctx.db.patch(args.nodeId, { archived: true, updatedAt: Date.now() });
+  },
+});
+
+export const unarchiveNode = mutation({
+  args: { nodeId: v.id("nodes") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    await ctx.db.patch(args.nodeId, { archived: false, updatedAt: Date.now() });
   },
 });
 
@@ -60,6 +90,7 @@ export const updateNode = mutation({
     title: v.optional(v.string()),
     showTitle: v.optional(v.boolean()),
     collapsed: v.optional(v.boolean()),
+    archived: v.optional(v.boolean()),
     dimensions: v.optional(v.object({ width: v.number(), height: v.number() })),
     metadata: v.optional(
       v.object({
@@ -79,6 +110,7 @@ export const updateNode = mutation({
     if (args.title !== undefined) updates.title = args.title;
     if (args.showTitle !== undefined) updates.showTitle = args.showTitle;
     if (args.collapsed !== undefined) updates.collapsed = args.collapsed;
+    if (args.archived !== undefined) updates.archived = args.archived;
     if (args.dimensions !== undefined) updates.dimensions = args.dimensions;
     if (args.metadata !== undefined) updates.metadata = args.metadata;
 

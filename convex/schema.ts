@@ -82,6 +82,7 @@ export default defineSchema({
     ),
     showTitle: v.optional(v.boolean()),
     collapsed: v.optional(v.boolean()),
+    archived: v.optional(v.boolean()),
     createdBy: v.id("users"),
     createdAt: v.number(),
     updatedAt: v.number(),

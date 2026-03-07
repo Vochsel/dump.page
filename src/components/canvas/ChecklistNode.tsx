@@ -320,7 +320,7 @@ export function ChecklistNode({ data }: NodeProps) {
                 }}
                 onBlur={handleBlur}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     addItemAfter(item.id);
                   }

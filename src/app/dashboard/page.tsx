@@ -23,6 +23,109 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function BoardGrid({ boards }: { boards: any[] }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {boards.map(
+        (board) =>
+          board && (
+            <Link
+              key={board._id}
+              href={`/b/${board.slug ?? board._id}`}
+              className="group bg-white dark:bg-gray-900 rounded-xl border border-stone-200 dark:border-gray-800 hover:border-stone-300 dark:hover:border-gray-700 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
+            >
+              <div className="px-5 pt-5 pb-3 flex items-start justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-xl flex-shrink-0">
+                    <BoardIcon icon={board.icon} className="text-xl" size={22} />
+                  </span>
+                  <h3 className="font-[family-name:var(--font-poppins)] font-semibold text-stone-800 dark:text-stone-100 text-[15px] truncate">
+                    {board.name}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                  <Badge
+                    variant={
+                      board.visibility === "public"
+                        ? "default"
+                        : board.visibility === "shared"
+                          ? "secondary"
+                          : "outline"
+                    }
+                    className="text-[10px] capitalize px-1.5 py-0"
+                  >
+                    {board.visibility}
+                  </Badge>
+                </div>
+              </div>
+              <div className="px-5 pb-4 flex-1">
+                {board.recentNodes && board.recentNodes.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {board.recentNodes.map((node: { _id: string; type: string; content: string; metadata?: { title?: string }; title?: string }) => (
+                      <li
+                        key={node._id}
+                        className="flex items-center gap-2 text-xs text-stone-500 min-w-0"
+                      >
+                        {node.type === "link" ? (
+                          <LinkIcon className="h-3 w-3 text-blue-400 flex-shrink-0" />
+                        ) : node.type === "checklist" ? (
+                          <CheckSquare className="h-3 w-3 text-green-500 flex-shrink-0" />
+                        ) : (
+                          <FileText className="h-3 w-3 text-amber-400 flex-shrink-0" />
+                        )}
+                        <span className="truncate">
+                          {node.type === "link"
+                            ? node.metadata?.title ||
+                              node.content.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")
+                            : node.type === "checklist"
+                              ? (() => {
+                                  try {
+                                    const items = JSON.parse(node.content);
+                                    if (Array.isArray(items)) {
+                                      const checked = items.filter((i: { checked: boolean }) => i.checked).length;
+                                      const total = items.length;
+                                      const label = node.title || items.find((i: { text: string }) => i.text)?.text || "Checklist";
+                                      return `${label} (${checked}/${total})`;
+                                    }
+                                  } catch { /* ignore */ }
+                                  return "Checklist";
+                                })()
+                              : node.content.replace(/<[^>]*>/g, "").slice(0, 60)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-stone-300 italic">No items yet</p>
+                )}
+              </div>
+              <div className="px-5 py-3 border-t border-stone-100 dark:border-gray-800 flex items-center justify-between">
+                <span className="text-[11px] text-stone-400 flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  {board.memberCount} {board.memberCount === 1 ? "member" : "members"}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                    Open <ExternalLink className="h-2.5 w-2.5" />
+                  </span>
+                  {board.role === "owner" && (
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DeleteBoardButton
+                        boardId={board._id as Id<"boards">}
+                        boardName={board.name}
+                      />
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Link>
+          )
+      )}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -138,108 +241,17 @@ export default function DashboardPage() {
             <CreateBoardDialog />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {boards.map(
-              (board) =>
-                board && (
-                  <Link
-                    key={board._id}
-                    href={`/b/${board.slug ?? board._id}`}
-                    className="group bg-white dark:bg-gray-900 rounded-xl border border-stone-200 dark:border-gray-800 hover:border-stone-300 dark:hover:border-gray-700 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
-                  >
-                    {/* Board header */}
-                    <div className="px-5 pt-5 pb-3 flex items-start justify-between">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-xl flex-shrink-0">
-                          <BoardIcon icon={board.icon} className="text-xl" size={22} />
-                        </span>
-                        <h3 className="font-[family-name:var(--font-poppins)] font-semibold text-stone-800 dark:text-stone-100 text-[15px] truncate">
-                          {board.name}
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        <Badge
-                          variant={
-                            board.visibility === "public"
-                              ? "default"
-                              : board.visibility === "shared"
-                                ? "secondary"
-                                : "outline"
-                          }
-                          className="text-[10px] capitalize px-1.5 py-0"
-                        >
-                          {board.visibility}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Recent nodes preview */}
-                    <div className="px-5 pb-4 flex-1">
-                      {board.recentNodes && board.recentNodes.length > 0 ? (
-                        <ul className="space-y-1.5">
-                          {board.recentNodes.map((node) => (
-                            <li
-                              key={node._id}
-                              className="flex items-center gap-2 text-xs text-stone-500 min-w-0"
-                            >
-                              {node.type === "link" ? (
-                                <LinkIcon className="h-3 w-3 text-blue-400 flex-shrink-0" />
-                              ) : node.type === "checklist" ? (
-                                <CheckSquare className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              ) : (
-                                <FileText className="h-3 w-3 text-amber-400 flex-shrink-0" />
-                              )}
-                              <span className="truncate">
-                                {node.type === "link"
-                                  ? node.metadata?.title ||
-                                    node.content.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")
-                                  : node.type === "checklist"
-                                    ? (() => {
-                                        try {
-                                          const items = JSON.parse(node.content);
-                                          if (Array.isArray(items)) {
-                                            const checked = items.filter((i: { checked: boolean }) => i.checked).length;
-                                            const total = items.length;
-                                            const label = (node as unknown as { title?: string }).title || items.find((i: { text: string }) => i.text)?.text || "Checklist";
-                                            return `${label} (${checked}/${total})`;
-                                          }
-                                        } catch { /* ignore */ }
-                                        return "Checklist";
-                                      })()
-                                    : node.content.replace(/<[^>]*>/g, "").slice(0, 60)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-xs text-stone-300 italic">No items yet</p>
-                      )}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="px-5 py-3 border-t border-stone-100 dark:border-gray-800 flex items-center justify-between">
-                      <span className="text-[11px] text-stone-400 flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {board.memberCount} {board.memberCount === 1 ? "member" : "members"}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                          Open <ExternalLink className="h-2.5 w-2.5" />
-                        </span>
-                        {board.role === "owner" && (
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <DeleteBoardButton
-                              boardId={board._id as Id<"boards">}
-                              boardName={board.name}
-                            />
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                )
+          <>
+            <BoardGrid boards={boards.filter((b) => b && b.role === "owner")} />
+            {boards.some((b) => b && b.role !== "owner") && (
+              <div className="mt-10">
+                <h2 className="font-[family-name:var(--font-poppins)] text-sm font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wide mb-4">
+                  Shared with me
+                </h2>
+                <BoardGrid boards={boards.filter((b) => b && b.role !== "owner")} />
+              </div>
             )}
-          </div>
+          </>
         )}
       </main>
       <div className="fixed bottom-2 right-3 text-[10px] text-stone-300 font-mono select-none pointer-events-none">

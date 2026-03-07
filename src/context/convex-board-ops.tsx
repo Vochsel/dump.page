@@ -55,6 +55,7 @@ export function ConvexBoardOpsProvider({ boardId, children }: ConvexBoardOpsProv
           title: args.title,
           showTitle: args.showTitle,
           collapsed: args.collapsed,
+          archived: args.archived,
           metadata: args.metadata,
         });
         return null;

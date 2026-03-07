@@ -39,6 +39,7 @@ export interface BoardOps {
     title?: string;
     showTitle?: boolean;
     collapsed?: boolean;
+    archived?: boolean;
     metadata?: Metadata;
   }) => Promise<null>;
   updateNodePosition: (args: {
