@@ -27,8 +27,6 @@ import {
   Copy,
   RefreshCw,
   Check,
-  Grid3X3,
-  Map,
   Rss,
   FileText,
   UserPlus,
@@ -40,7 +38,6 @@ import { IconPicker } from "./IconPicker";
 export type BoardSettingsData = {
   backgroundPattern?: "dots" | "paper" | "boxes" | "blank";
   backgroundColor?: string;
-  controlsVariant?: "default" | "map";
 };
 
 function RegenerateButton({ onRegenerate }: { onRegenerate: () => Promise<string> }) {
@@ -419,7 +416,6 @@ export function BoardSettingsPopover({
 
   const currentPattern = settings.backgroundPattern ?? "dots";
   const currentColor = settings.backgroundColor ?? "#ffffff";
-  const currentControls = settings.controlsVariant ?? "default";
 
   const update = (patch: BoardSettingsData) => {
     updateSettings({ boardId, settings: patch });
@@ -434,35 +430,6 @@ export function BoardSettingsPopover({
       </PopoverTrigger>
       <PopoverContent className="w-72" align="end">
         <div className="space-y-4">
-          {/* Controls variant */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
-              Controls
-            </label>
-            <div className="flex gap-2">
-              <Button
-                variant={currentControls === "default" ? "default" : "outline"}
-                size="sm"
-                className="gap-1.5 flex-1"
-                onClick={() => update({ controlsVariant: "default" })}
-              >
-                <Grid3X3 className="h-3.5 w-3.5" />
-                Design
-              </Button>
-              <Button
-                variant={currentControls === "map" ? "default" : "outline"}
-                size="sm"
-                className="gap-1.5 flex-1"
-                onClick={() => update({ controlsVariant: "map" })}
-              >
-                <Map className="h-3.5 w-3.5" />
-                Map
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
           {/* Board icon */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">

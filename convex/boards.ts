@@ -190,6 +190,7 @@ export const updateBoard = mutation({
     }
 
     await ctx.db.patch(args.boardId, updates);
+    return { shareToken: (updates.shareToken as string) ?? board.shareToken };
   },
 });
 
@@ -244,9 +245,6 @@ export const updateBoardSettings = mutation({
         )
       ),
       backgroundColor: v.optional(v.string()),
-      controlsVariant: v.optional(
-        v.union(v.literal("default"), v.literal("map"))
-      ),
     }),
   },
   handler: async (ctx, args) => {

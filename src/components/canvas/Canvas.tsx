@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -86,6 +86,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
 
   // Client preferences
   const [snapToGrid, setSnapToGrid] = useLocalStorage("dump-snap-to-grid", false);
+  const [controlsVariant, setControlsVariant] = useLocalStorage<"default" | "map">("dump-controls-variant", "default");
 
   // Archive panel
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -674,7 +675,6 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
 
   const bgPattern = settings.backgroundPattern ?? "dots";
   const bgColorRaw = settings.backgroundColor ?? "#f9fafb";
-  const controlsVariant = settings.controlsVariant ?? "default";
 
   const isDark = theme === "dark";
   const bgColor = resolveBgColor(bgColorRaw, isDark);
@@ -777,6 +777,28 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               className="h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 cursor-pointer"
             />
           </label>
+          <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+          <p className="px-2 pt-1 pb-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Controls</p>
+          <div className="flex gap-1 px-1">
+            <button
+              onClick={() => setControlsVariant("default")}
+              className={`flex items-center gap-1.5 flex-1 px-2 py-1.5 text-xs rounded-md transition-colors ${
+                controlsVariant === "default" ? "bg-accent font-medium" : "hover:bg-accent/50"
+              }`}
+            >
+              <Grid3X3 className="h-3 w-3" />
+              Design
+            </button>
+            <button
+              onClick={() => setControlsVariant("map")}
+              className={`flex items-center gap-1.5 flex-1 px-2 py-1.5 text-xs rounded-md transition-colors ${
+                controlsVariant === "map" ? "bg-accent font-medium" : "hover:bg-accent/50"
+              }`}
+            >
+              <MapIcon className="h-3 w-3" />
+              Map
+            </button>
+          </div>
           {canEdit && (
             <>
               <div className="my-1 border-t border-gray-100 dark:border-gray-700" />

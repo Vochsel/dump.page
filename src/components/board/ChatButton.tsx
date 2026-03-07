@@ -124,14 +124,10 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
 
   const handleShareAndOpen = useCallback(async () => {
     try {
-      await updateBoard({ boardId, visibility: "shared" });
-      // The board will re-render with new visibility/shareToken via Convex reactivity,
-      // but we need the token now. Fetch markdown endpoint which will work once shared.
-      // Small delay to let Convex propagate the update.
-      await new Promise((r) => setTimeout(r, 500));
-      // Re-fetch to get the new share token
+      const result = await updateBoard({ boardId, visibility: "shared" });
       const chosen = pendingProvider ?? provider;
-      const newBoardUrl = `${SITE_URL}/b/${slug}`;
+      const token = result?.shareToken;
+      const newBoardUrl = `${SITE_URL}/b/${slug}${token ? `?token=${token}` : ""}`;
       const prompt = `Use this board for context: ${newBoardUrl}\n`;
       openProviderWithPrompt(prompt, chosen);
       setShowPrivateDialog(false);
