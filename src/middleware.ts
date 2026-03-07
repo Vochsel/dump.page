@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Bots that should get markdown/llms.txt (LLM crawlers, search engines, CLI tools)
 const BOT_USER_AGENTS = [
   "GPTBot",
   "ChatGPT-User",
@@ -19,13 +20,6 @@ const BOT_USER_AGENTS = [
   "YouBot",
   "Bytespider",
   "cohere-ai",
-  "facebookexternalhit",
-  "Twitterbot",
-  "LinkedInBot",
-  "WhatsApp",
-  "TelegramBot",
-  "Discordbot",
-  "Slackbot",
   "Applebot",
   "ia_archiver",
   "Scrapy",
@@ -41,6 +35,22 @@ const BOT_USER_AGENTS = [
   "XBot",
   "Grok",
 ];
+
+// OG scrapers that need HTML to read meta tags (not redirected to markdown)
+const OG_SCRAPERS = [
+  "facebookexternalhit",
+  "Twitterbot",
+  "LinkedInBot",
+  "WhatsApp",
+  "TelegramBot",
+  "Discordbot",
+  "Slackbot",
+];
+
+function isOgScraper(userAgent: string): boolean {
+  const ua = userAgent.toLowerCase();
+  return OG_SCRAPERS.some((bot) => ua.includes(bot.toLowerCase()));
+}
 
 function isBot(userAgent: string): boolean {
   const ua = userAgent.toLowerCase();
@@ -75,6 +85,9 @@ export function middleware(request: NextRequest) {
   // Serve markdown if: bot user agent, or client prefers text/markdown or text/plain (not HTML)
   const prefersText = (accept.includes("text/markdown") || accept.includes("text/plain")) &&
     !accept.includes("text/html");
+
+  // OG scrapers (Discord, Slack, etc.) need HTML to read meta tags
+  if (isOgScraper(userAgent)) return NextResponse.next();
 
   if (!isBot(userAgent) && !prefersText) return NextResponse.next();
 
