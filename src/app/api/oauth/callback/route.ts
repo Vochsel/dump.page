@@ -10,6 +10,8 @@ const convex = new ConvexHttpClient(
 // It validates the Firebase ID token and creates an OAuth auth code
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
+  console.log("[OAuth Callback] POST", { body: body ? { ...body, firebaseUid: body.firebaseUid ? "***" : undefined } : null });
+
   if (!body) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
@@ -23,7 +25,10 @@ export async function POST(req: NextRequest) {
     state,
   } = body;
 
+  console.log("[OAuth Callback] params:", { hasFirebaseUid: !!firebaseUid, clientId, redirectUri, hasCodeChallenge: !!codeChallenge, scope, state: state?.slice(0, 20) });
+
   if (!firebaseUid || !clientId || !redirectUri || !codeChallenge) {
+    console.log("[OAuth Callback] Missing required params");
     return NextResponse.json(
       { error: "Missing required parameters" },
       { status: 400 }
@@ -35,6 +40,8 @@ export async function POST(req: NextRequest) {
     firebaseUid,
   });
 
+  console.log("[OAuth Callback] user lookup:", user ? "found" : "not found");
+
   if (!user) {
     return NextResponse.json(
       { error: "User not found. Please sign in to Dump first." },
@@ -44,17 +51,17 @@ export async function POST(req: NextRequest) {
 
   // Validate client_id if registered
   const client = await convex.query(api.mcpAuth.getClient, { clientId });
+  console.log("[OAuth Callback] client lookup:", client ? "registered" : "unregistered (allowing)");
+
   if (client) {
-    // Validate redirect_uri against registered URIs
     if (!client.redirectUris.includes(redirectUri)) {
+      console.log("[OAuth Callback] Invalid redirect_uri. Registered:", client.redirectUris, "Got:", redirectUri);
       return NextResponse.json(
         { error: "Invalid redirect_uri for this client" },
         { status: 400 }
       );
     }
   }
-  // If client not registered (dynamic registration may not have been used),
-  // allow the flow - the PKCE challenge protects against code interception
 
   // Create auth code
   const code = await convex.mutation(api.mcpAuth.createAuthCode, {
@@ -69,6 +76,8 @@ export async function POST(req: NextRequest) {
   const redirect = new URL(redirectUri);
   redirect.searchParams.set("code", code);
   if (state) redirect.searchParams.set("state", state);
+
+  console.log("[OAuth Callback] Created auth code, redirecting to:", redirect.origin + redirect.pathname);
 
   return NextResponse.json({ redirectUrl: redirect.toString() });
 }

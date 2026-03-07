@@ -13,16 +13,21 @@ const corsHeaders = {
 };
 
 export async function POST(req: NextRequest) {
-  const body = await req.formData().catch(() => null);
-  const json = body ? null : await req.json().catch(() => null);
+  const contentType = req.headers.get("content-type") || "";
+  const rawBody = await req.clone().text();
+  console.log("[OAuth Token] POST", { contentType, rawBody: rawBody.slice(0, 500) });
+
+  const body = contentType.includes("form") ? new URLSearchParams(rawBody) : null;
+  const json = !body ? (() => { try { return JSON.parse(rawBody); } catch { return null; } })() : null;
 
   const getParam = (key: string): string | undefined => {
-    if (body) return body.get(key)?.toString();
+    if (body) return body.get(key) ?? undefined;
     if (json) return json[key];
     return undefined;
   };
 
   const grantType = getParam("grant_type");
+  console.log("[OAuth Token] grant_type:", grantType);
 
   if (grantType === "authorization_code") {
     const code = getParam("code");
@@ -30,33 +35,53 @@ export async function POST(req: NextRequest) {
     const codeVerifier = getParam("code_verifier");
     const redirectUri = getParam("redirect_uri");
 
+    console.log("[OAuth Token] authorization_code params:", {
+      hasCode: !!code,
+      clientId,
+      hasCodeVerifier: !!codeVerifier,
+      redirectUri,
+    });
+
     if (!code || !clientId || !codeVerifier || !redirectUri) {
+      console.log("[OAuth Token] Missing required params");
       return NextResponse.json(
         { error: "invalid_request", error_description: "Missing required parameters" },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    const result = await convex.mutation(api.mcpAuth.exchangeAuthCode, {
-      code,
-      clientId,
-      codeVerifier,
-      redirectUri,
-    });
+    try {
+      const result = await convex.mutation(api.mcpAuth.exchangeAuthCode, {
+        code,
+        clientId,
+        codeVerifier,
+        redirectUri,
+      });
 
-    if ("error" in result) {
+      console.log("[OAuth Token] exchangeAuthCode result:", "error" in result ? result : "success");
+
+      if ("error" in result) {
+        return NextResponse.json(
+          { error: result.error },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      return NextResponse.json(result, { headers: corsHeaders });
+    } catch (err) {
+      console.error("[OAuth Token] exchangeAuthCode threw:", err);
       return NextResponse.json(
-        { error: result.error },
-        { status: 400, headers: corsHeaders }
+        { error: "server_error", error_description: "Internal error during token exchange" },
+        { status: 500, headers: corsHeaders }
       );
     }
-
-    return NextResponse.json(result, { headers: corsHeaders });
   }
 
   if (grantType === "refresh_token") {
     const refreshToken = getParam("refresh_token");
     const clientId = getParam("client_id");
+
+    console.log("[OAuth Token] refresh_token params:", { hasRefreshToken: !!refreshToken, clientId });
 
     if (!refreshToken || !clientId) {
       return NextResponse.json(
@@ -65,21 +90,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await convex.mutation(api.mcpAuth.refreshAccessToken, {
-      refreshToken,
-      clientId,
-    });
+    try {
+      const result = await convex.mutation(api.mcpAuth.refreshAccessToken, {
+        refreshToken,
+        clientId,
+      });
 
-    if ("error" in result) {
+      console.log("[OAuth Token] refreshAccessToken result:", "error" in result ? result : "success");
+
+      if ("error" in result) {
+        return NextResponse.json(
+          { error: result.error },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      return NextResponse.json(result, { headers: corsHeaders });
+    } catch (err) {
+      console.error("[OAuth Token] refreshAccessToken threw:", err);
       return NextResponse.json(
-        { error: result.error },
-        { status: 400, headers: corsHeaders }
+        { error: "server_error" },
+        { status: 500, headers: corsHeaders }
       );
     }
-
-    return NextResponse.json(result, { headers: corsHeaders });
   }
 
+  console.log("[OAuth Token] Unsupported grant_type:", grantType);
   return NextResponse.json(
     { error: "unsupported_grant_type" },
     { status: 400, headers: corsHeaders }
