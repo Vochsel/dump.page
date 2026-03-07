@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
-import { Id } from "../../../../convex/_generated/dataModel";
 
 const convex = new ConvexHttpClient(
   process.env.NEXT_PUBLIC_CONVEX_URL as string
@@ -27,16 +26,7 @@ export async function generateMetadata({
     const title = `${icon}${board.name} — Dump`;
     const description = `${itemCount} ${itemCount === 1 ? "item" : "items"} on Dump`;
 
-    let thumbnailUrl: string | null = null;
-    try {
-      thumbnailUrl = await convex.query(api.screenshots.getThumbnailUrl, {
-        boardId: board._id as Id<"boards">,
-      });
-    } catch {
-      // No thumbnail
-    }
-
-    const metadata: Metadata = {
+    return {
       title,
       description,
       openGraph: {
@@ -45,18 +35,11 @@ export async function generateMetadata({
         type: "website",
       },
       twitter: {
-        card: thumbnailUrl ? "summary_large_image" : "summary",
+        card: "summary_large_image",
         title,
         description,
       },
     };
-
-    if (thumbnailUrl) {
-      metadata.openGraph!.images = [{ url: thumbnailUrl, width: 1200, height: 630 }];
-      metadata.twitter!.images = [thumbnailUrl];
-    }
-
-    return metadata;
   } catch {
     return { title: "Dump" };
   }
