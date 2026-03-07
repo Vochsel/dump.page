@@ -21,7 +21,6 @@ import { darkenHex, lightenHex } from "@/lib/utils";
 import { useTheme } from "@/context/theme-context";
 import { resolveBgColor } from "@/components/board/BoardSettings";
 import { toast } from "sonner";
-import { QuickTips } from "@/components/board/QuickTips";
 import { BUILD_VERSION } from "@/lib/constants";
 
 function EditableBoardName({
@@ -272,7 +271,6 @@ export default function BoardPage({
           </div>
         </div>
       </header>
-      <QuickTips />
       <div className="absolute bottom-2 right-3 z-10 text-[10px] text-gray-400/60 font-mono select-none pointer-events-none">
         v{BUILD_VERSION}
       </div>

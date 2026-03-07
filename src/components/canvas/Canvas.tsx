@@ -49,6 +49,7 @@ import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "co
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { sfx } from "@/lib/sfx";
+import { QuickTips } from "@/components/board/QuickTips";
 import { inferUrlMetadata } from "@/lib/url-metadata";
 
 const nodeTypes: NodeTypes = {
@@ -798,6 +799,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
       <div className="w-full h-full relative" onMouseMove={onMouseMove}>
         {flowContent}
         {bottomButtons}
+        <QuickTips />
       </div>
     );
   }
@@ -825,6 +827,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               </div>
             )}
             {bottomButtons}
+            <QuickTips />
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">

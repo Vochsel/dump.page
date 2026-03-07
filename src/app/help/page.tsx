@@ -181,8 +181,13 @@ export default function HelpPage() {
           </div>
         </section>
 
-        <div className="text-center text-xs text-stone-300 font-mono">
-          v{BUILD_VERSION}
+        <div className="text-center text-xs text-stone-300 font-mono space-y-1">
+          <div>
+            <Link href="/changelog" className="text-stone-400 hover:text-stone-600 transition-colors underline decoration-stone-300">
+              Changelog
+            </Link>
+          </div>
+          <div>v{BUILD_VERSION}</div>
         </div>
       </main>
     </div>

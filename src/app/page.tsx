@@ -1,86 +1,9 @@
-"use client";
-
-import { useAuth } from "@/context/auth-context";
-import { LoginButton } from "@/components/auth/LoginButton";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
+import { Suspense } from "react";
+import { DraggableCard } from "@/components/landing/DraggableCard";
+import { AuthRedirect } from "@/components/landing/AuthRedirect";
+import { StartDumpingButton } from "@/components/landing/StartDumpingButton";
 import { BoardCounter } from "@/components/BoardCounter";
-
-function DraggableCard({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
-  const dragState = useRef<{
-    startX: number;
-    startY: number;
-    baseX: number;
-    baseY: number;
-    started: boolean;
-  } | null>(null);
-
-  const onMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (window.matchMedia("(pointer: coarse)").matches) return;
-      if ((e.target as HTMLElement).closest("a, button")) return;
-      dragState.current = {
-        startX: e.clientX,
-        startY: e.clientY,
-        baseX: offset.x,
-        baseY: offset.y,
-        started: false,
-      };
-    },
-    [offset]
-  );
-
-  useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      const ds = dragState.current;
-      if (!ds) return;
-      const dx = e.clientX - ds.startX;
-      const dy = e.clientY - ds.startY;
-      if (!ds.started && Math.abs(dx) + Math.abs(dy) < 5) return;
-      ds.started = true;
-      setDragging(true);
-      setOffset({ x: ds.baseX + dx, y: ds.baseY + dy });
-    };
-    const onMouseUp = () => {
-      if (dragState.current?.started) {
-        setDragging(false);
-      }
-      dragState.current = null;
-    };
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      onMouseDown={onMouseDown}
-      className={className}
-      style={{
-        transform: `translate(${offset.x}px, ${offset.y}px)`,
-        cursor: dragging ? "grabbing" : "grab",
-        zIndex: dragging ? 50 : undefined,
-        userSelect: dragging ? "none" : undefined,
-        transition: dragging ? "none" : "box-shadow 0.2s",
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+import { LoginButton } from "@/components/auth/LoginButton";
 
 const features = [
   {
@@ -103,27 +26,55 @@ const features = [
   },
 ];
 
+const useCases = [
+  {
+    emoji: "\u{1F516}",
+    title: "Smarter bookmarks",
+    description:
+      "Save links you actually want to find again — organized by project, not buried in a browser folder.",
+    accent: "from-amber-50 to-orange-50 border-amber-200/80",
+    emojiAccent: "bg-amber-100",
+  },
+  {
+    emoji: "\u{1F916}",
+    title: "Context for AI chats",
+    description:
+      "Dump reference links into a board and share it with ChatGPT, Claude, or any LLM for richer answers.",
+    accent: "from-violet-50 to-purple-50 border-violet-200/80",
+    emojiAccent: "bg-violet-100",
+  },
+  {
+    emoji: "\u{1F5C2}\u{FE0F}",
+    title: "Cross-project research",
+    description:
+      "Collect docs, articles, and repos across multiple projects in one place your whole team can access.",
+    accent: "from-emerald-50 to-teal-50 border-emerald-200/80",
+    emojiAccent: "bg-emerald-100",
+  },
+  {
+    emoji: "\u{1F4AC}",
+    title: "Share context, not links",
+    description:
+      "Instead of pasting 5 URLs in Slack, share one board with all the context anyone needs.",
+    accent: "from-sky-50 to-blue-50 border-sky-200/80",
+    emojiAccent: "bg-sky-100",
+  },
+];
+
+const aiLogos = [
+  { name: "ChatGPT", icon: "https://cdn.worldvectorlogo.com/logos/chatgpt-6.svg" },
+  { name: "Claude", icon: "/claude-color.svg" },
+  { name: "Gemini", icon: "https://upload.wikimedia.org/wikipedia/commons/1/1d/Google_Gemini_icon_2025.svg" },
+  { name: "Grok", icon: "https://cdn.worldvectorlogo.com/logos/grok-1.svg" },
+];
 
 export default function Home() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && user) {
-      router.push("/dashboard");
-    }
-  }, [user, loading, router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="landing-dot-grid min-h-screen flex flex-col items-center px-4 py-20">
+      <Suspense>
+        <AuthRedirect />
+      </Suspense>
+
       {/* Logo */}
       <div className="flex items-center gap-3">
         <img
@@ -145,16 +96,11 @@ export default function Home() {
         <p className="font-[family-name:var(--font-poppins)] text-base sm:text-lg text-gray-500 dark:text-gray-400 font-medium">
           Shared whiteboards of links and text, accessible to all agents and chatbots.
         </p>
-        <button
-          onClick={() => router.push('/new')}
-          className="mt-4 px-8 py-3 text-white text-lg font-semibold rounded-full font-[family-name:var(--font-poppins)] transition-all hover:scale-105 shadow-md"
-          style={{ backgroundColor: "#7bd096", outline: "3px solid white", outlineOffset: "-1px", boxShadow: "0 2px 8px rgba(123, 208, 150, 0.4)" }}
-        >
-          Start dumping — it&apos;s free
-        </button>
-        <BoardCounter />
+        <StartDumpingButton />
+        <Suspense>
+          <BoardCounter />
+        </Suspense>
       </div>
-
 
       {/* Works with AI */}
       <div className="mt-16 max-w-xl w-full space-y-3 px-2">
@@ -162,12 +108,7 @@ export default function Home() {
           Works with your favorite AI
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
-          {[
-            { name: "ChatGPT", icon: "https://cdn.worldvectorlogo.com/logos/chatgpt-6.svg" },
-            { name: "Claude", icon: "/claude-color.svg" },
-            { name: "Gemini", icon: "https://upload.wikimedia.org/wikipedia/commons/1/1d/Google_Gemini_icon_2025.svg" },
-            { name: "Grok", icon: "https://cdn.worldvectorlogo.com/logos/grok-1.svg" },
-          ].map((ai) => (
+          {aiLogos.map((ai) => (
             <DraggableCard
               key={ai.name}
               className="flex items-center gap-2 bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2"
@@ -211,40 +152,7 @@ export default function Home() {
           How people use Dump
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {[
-            {
-              emoji: "🔖",
-              title: "Smarter bookmarks",
-              description:
-                "Save links you actually want to find again — organized by project, not buried in a browser folder.",
-              accent: "from-amber-50 to-orange-50 border-amber-200/80",
-              emojiAccent: "bg-amber-100",
-            },
-            {
-              emoji: "🤖",
-              title: "Context for AI chats",
-              description:
-                "Dump reference links into a board and share it with ChatGPT, Claude, or any LLM for richer answers.",
-              accent: "from-violet-50 to-purple-50 border-violet-200/80",
-              emojiAccent: "bg-violet-100",
-            },
-            {
-              emoji: "🗂️",
-              title: "Cross-project research",
-              description:
-                "Collect docs, articles, and repos across multiple projects in one place your whole team can access.",
-              accent: "from-emerald-50 to-teal-50 border-emerald-200/80",
-              emojiAccent: "bg-emerald-100",
-            },
-            {
-              emoji: "💬",
-              title: "Share context, not links",
-              description:
-                "Instead of pasting 5 URLs in Slack, share one board with all the context anyone needs.",
-              accent: "from-sky-50 to-blue-50 border-sky-200/80",
-              emojiAccent: "bg-sky-100",
-            },
-          ].map((useCase) => (
+          {useCases.map((useCase) => (
             <DraggableCard
               key={useCase.title}
               className={`bg-gradient-to-br ${useCase.accent} border rounded-xl p-5 space-y-2.5 hover:shadow-md transition-all duration-200`}
@@ -301,7 +209,9 @@ export default function Home() {
 
       {/* Login */}
       <div className="mt-16 flex flex-col items-center gap-3">
-        <LoginButton />
+        <Suspense fallback={<div className="h-10" />}>
+          <LoginButton />
+        </Suspense>
         <p className="text-xs text-gray-400 font-[family-name:var(--font-poppins)]">
           Free to use &middot; No credit card required &middot;{" "}
           <a href="/help" className="underline hover:text-gray-600 transition-colors">Help</a>

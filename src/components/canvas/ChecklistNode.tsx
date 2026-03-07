@@ -324,15 +324,20 @@ export function ChecklistNode({ data }: NodeProps) {
                     e.preventDefault();
                     addItemAfter(item.id);
                   }
-                  if (e.key === "Backspace") {
+                  if (e.key === "Backspace" || e.key === "Delete") {
                     const cur = itemsRef.current;
                     const curItem = cur.find((i) => i.id === item.id);
-                    if (curItem && curItem.text === "" && cur.length > 1) {
+                    if (curItem && curItem.text === "") {
                       e.preventDefault();
-                      const idx = cur.findIndex((i) => i.id === item.id);
-                      const focusTarget = cur[idx - 1] || cur[idx + 1];
-                      if (focusTarget) focusIdRef.current = focusTarget.id;
-                      deleteItem(item.id);
+                      e.stopPropagation();
+                      if (cur.length > 1) {
+                        const idx = cur.findIndex((i) => i.id === item.id);
+                        const focusTarget = cur[idx - 1] || cur[idx + 1];
+                        if (focusTarget) focusIdRef.current = focusTarget.id;
+                        deleteItem(item.id);
+                      }
+                    } else if (e.key === "Delete") {
+                      e.stopPropagation();
                     }
                   }
                 }}

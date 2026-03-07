@@ -15,6 +15,11 @@ const TIPS = [
     title: "Make it yours",
     body: "Try changing the background color and pattern via the settings button in the top toolbar. Each board can have its own look!",
   },
+  {
+    id: "snap-to-grid",
+    title: "Snap to grid",
+    body: "Enable snap-to-grid in the preferences menu (bottom left) to keep your cards neatly aligned. Great for organizing bigger boards!",
+  },
 ];
 
 const STORAGE_KEY_DISMISSED = "dump-tips-dismissed";
@@ -79,7 +84,7 @@ export function QuickTips() {
   if (!visible || !tip) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 max-w-xs animate-in slide-in-from-bottom-4 fade-in duration-300">
+    <div className="absolute bottom-16 left-4 z-50 max-w-xs animate-in slide-in-from-bottom-4 fade-in duration-300">
       <div className="bg-card border rounded-xl shadow-lg p-4">
         <div className="flex items-start justify-between gap-2">
           <p className="text-sm font-medium">{tip.title}</p>
