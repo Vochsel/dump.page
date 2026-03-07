@@ -105,6 +105,69 @@ function extractXmlAttr(xml: string, tag: string, attr: string): string | undefi
   return match?.[1]?.trim();
 }
 
+export async function getItemMarkdown(
+  slug: string,
+  itemId: string,
+  shareToken?: string
+): Promise<{ markdown: string; status: number }> {
+  try {
+    const result = await convex.query(api.boards.getBoardForMarkdown, {
+      slug,
+      shareToken,
+    });
+
+    if (!result) {
+      return {
+        markdown: "# Not Found\n\nThis board is private or does not exist.",
+        status: 404,
+      };
+    }
+
+    const { board, nodes } = result;
+    const node = nodes.find((n) => n._id === itemId);
+
+    if (!node) {
+      return {
+        markdown: "# Item Not Found\n\nThis item does not exist on this board.",
+        status: 404,
+      };
+    }
+
+    let markdown = `# ${board.icon} ${board.name}\n\n`;
+
+    if (node.type === "text") {
+      if (node.title) markdown += `## ${node.title}\n\n`;
+      markdown += `${contentToMarkdown(node.content)}\n`;
+    } else if (node.type === "checklist") {
+      if (node.title) markdown += `## ${node.title}\n\n`;
+      try {
+        const items = JSON.parse(node.content);
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            markdown += `- [${item.checked ? "x" : " "}] ${item.text}\n`;
+          }
+        }
+      } catch {
+        markdown += `${node.content}\n`;
+      }
+    } else if (node.type === "link") {
+      const title = node.metadata?.title || node.content;
+      markdown += `- [${title}](${node.content})`;
+      if (node.metadata?.description) {
+        markdown += ` - ${node.metadata.description}`;
+      }
+      markdown += "\n";
+    }
+
+    return { markdown, status: 200 };
+  } catch {
+    return {
+      markdown: "# Error\n\nFailed to load item.",
+      status: 500,
+    };
+  }
+}
+
 export async function getBoardMarkdown(
   slug: string,
   shareToken?: string

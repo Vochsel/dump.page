@@ -32,7 +32,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 import { darkenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
@@ -52,9 +53,11 @@ const LOOSE_URL_REGEX = /^(https?:\/\/|www\.)\S+\.\S+/i;
 interface CanvasInnerProps {
   canEdit: boolean;
   settings: BoardSettingsData;
+  boardSlug?: string;
+  shareToken?: string;
 }
 
-function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
+function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerProps) {
   const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata } = useBoardOps();
   const { screenToFlowPosition, fitView } = useReactFlow();
   const mousePosRef = useRef({ x: 0, y: 0 });
@@ -579,6 +582,17 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
     setNodeMenu(null);
   }, [nodeMenu, localNodes]);
 
+  const handleNodeCopyLink = useCallback(() => {
+    if (!nodeMenu || !boardSlug) return;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    let url = `${origin}/b/${boardSlug}/${nodeMenu.nodeId}`;
+    if (shareToken) url += `?token=${shareToken}`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success("Item link copied to clipboard");
+    });
+    setNodeMenu(null);
+  }, [nodeMenu, boardSlug, shareToken]);
+
   const handleNodeToggleTitle = useCallback(() => {
     if (!nodeMenu) return;
     const node = boardNodes?.find((n) => n._id === nodeMenu.nodeId);
@@ -749,6 +763,15 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
               <Copy className="h-3.5 w-3.5" />
               Copy to clipboard
             </button>
+            {boardSlug && (
+              <button
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                onClick={handleNodeCopyLink}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Copy item link
+              </button>
+            )}
             <button
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
               onClick={handleNodeDuplicate}
@@ -862,12 +885,14 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
 interface CanvasProps {
   canEdit: boolean;
   settings?: BoardSettingsData;
+  boardSlug?: string;
+  shareToken?: string;
 }
 
-export function Canvas({ canEdit, settings = {} }: CanvasProps) {
+export function Canvas({ canEdit, settings = {}, boardSlug, shareToken }: CanvasProps) {
   return (
     <ReactFlowProvider>
-      <CanvasInner canEdit={canEdit} settings={settings} />
+      <CanvasInner canEdit={canEdit} settings={settings} boardSlug={boardSlug} shareToken={shareToken} />
     </ReactFlowProvider>
   );
 }

@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   ExternalLink,
+  Globe,
   Settings,
   Copy,
   RefreshCw,
@@ -192,11 +193,11 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
-          {isOwner && (
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Visibility
-              </label>
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Visibility
+            </label>
+            {isOwner ? (
               <div className="flex gap-2">
                 {(["private", "shared", "public"] as const).map((v) => (
                   <Button
@@ -212,8 +213,15 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
                   </Button>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {board.visibility === "public" && <Globe className="h-3.5 w-3.5" />}
+                {board.visibility === "shared" && <ExternalLink className="h-3.5 w-3.5" />}
+                {board.visibility === "private" && <Settings className="h-3.5 w-3.5" />}
+                <span className="capitalize">{board.visibility}</span>
+              </div>
+            )}
+          </div>
 
           {shareUrl && (
             <div>

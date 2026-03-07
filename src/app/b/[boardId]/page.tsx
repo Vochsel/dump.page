@@ -210,6 +210,8 @@ export default function BoardPage({
           <Canvas
             canEdit={access.canEdit}
             settings={boardSettings}
+            boardSlug={access.board.slug ?? boardId}
+            shareToken={access.board.shareToken}
           />
         </ConvexBoardOpsProvider>
       </div>
