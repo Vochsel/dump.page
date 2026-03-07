@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown, Loader2 } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown, Loader2, ClipboardPaste } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -96,6 +96,9 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   const [linkUrl, setLinkUrl] = useState("");
   const [editLinkNodeId, setEditLinkNodeId] = useState<string | null>(null);
   const [linkSearching, setLinkSearching] = useState(false);
+
+  // Clipboard state for context menu
+  const [clipboardText, setClipboardText] = useState<string | null>(null);
 
   // Theme
   const { resolved: theme, setMode: setThemeMode, mode: themeMode } = useTheme();
@@ -638,6 +641,12 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     contextMenuPosRef.current = { x: e.clientX, y: e.clientY };
+    // Read clipboard for paste context menu item
+    navigator.clipboard.readText().then((text) => {
+      setClipboardText(text?.trim() || null);
+    }).catch(() => {
+      setClipboardText(null);
+    });
   }, []);
 
   const onNodeContextMenu = useCallback(
@@ -1024,7 +1033,48 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
             <QuickTips />
           </div>
         </ContextMenuTrigger>
-        <ContextMenuContent className="w-48">
+        <ContextMenuContent className="w-56">
+          {clipboardText && (() => {
+            const isUrl = URL_REGEX.test(clipboardText) || LOOSE_URL_REGEX.test(clipboardText);
+            const preview = clipboardText.length > 40 ? clipboardText.slice(0, 40) + "…" : clipboardText;
+            return (
+              <>
+                <ContextMenuItem onClick={() => {
+                  const pos = screenToFlowPosition(contextMenuPosRef.current);
+                  if (isUrl) {
+                    let url = clipboardText;
+                    if (!url.startsWith("http://") && !url.startsWith("https://")) url = "https://" + url;
+                    const inferred = inferUrlMetadata(url);
+                    createNode({
+                      boardId,
+                      type: "link",
+                      content: url,
+                      position: { x: pos.x - 140, y: pos.y - 30 },
+                      metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
+                    }).then((nodeId) => {
+                      pushAction({ type: "create", nodeId });
+                      sfx.add();
+                      fetchMetadata({ nodeId, url });
+                    });
+                  } else {
+                    createNode({
+                      boardId,
+                      type: "text",
+                      content: clipboardText,
+                      position: { x: pos.x - 120, y: pos.y - 30 },
+                    }).then((nodeId) => {
+                      pushAction({ type: "create", nodeId });
+                      sfx.add();
+                    });
+                  }
+                }}>
+                  <ClipboardPaste className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">Paste {isUrl ? "link" : "text"}: <span className="text-muted-foreground">{preview}</span></span>
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+              </>
+            );
+          })()}
           <ContextMenuItem onClick={addTextNodeAtCursor}>
             <Type className="h-4 w-4 mr-2" />
             Add Text
