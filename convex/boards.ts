@@ -42,6 +42,16 @@ export const createBoard = mutation({
       v.literal("shared"),
       v.literal("public")
     ),
+    templateNodes: v.optional(
+      v.array(
+        v.object({
+          type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),
+          content: v.string(),
+          title: v.optional(v.string()),
+          position: v.object({ x: v.number(), y: v.number() }),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -73,6 +83,31 @@ export const createBoard = mutation({
       role: "owner",
       joinedAt: now,
     });
+
+    // Seed template nodes
+    if (args.templateNodes) {
+      for (const node of args.templateNodes) {
+        const nodeId = await ctx.db.insert("nodes", {
+          boardId,
+          type: node.type,
+          content: node.content,
+          title: node.title,
+          showTitle: node.title ? true : undefined,
+          position: node.position,
+          dimensions: { width: 280, height: 120 },
+          createdBy: user._id,
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        if (node.type === "link") {
+          await ctx.scheduler.runAfter(0, api.nodes.fetchLinkMetadata, {
+            nodeId,
+            url: node.content,
+          });
+        }
+      }
+    }
 
     return slug;
   },
@@ -245,6 +280,14 @@ export const updateBoardSettings = mutation({
         )
       ),
       backgroundColor: v.optional(v.string()),
+      contextType: v.optional(
+        v.union(
+          v.literal("default"),
+          v.literal("skill"),
+          v.literal("agent")
+        )
+      ),
+      systemPrompt: v.optional(v.string()),
     }),
   },
   handler: async (ctx, args) => {

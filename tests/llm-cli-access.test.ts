@@ -35,7 +35,7 @@ function runCli(command: string): string {
 
 function hasCli(name: string): boolean {
   try {
-    execSync(`which ${name}`, { encoding: "utf-8", env: { PATH: FULL_PATH } });
+    execSync(`which ${name}`, { encoding: "utf-8", env: { ...process.env, PATH: FULL_PATH } });
     return true;
   } catch {
     return false;

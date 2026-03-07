@@ -11,6 +11,19 @@ export type ChangelogVersion = {
 
 export const changelog: ChangelogVersion[] = [
   {
+    version: "1.4.0",
+    date: "2026-03-07",
+    entries: [
+      { type: "feature", description: "Board context types — set boards as Default, Skill, or Agent to control how LLMs interpret the context" },
+      { type: "feature", description: "Custom system prompts — add an editable system prompt to any board, included in LLM markdown output" },
+      { type: "feature", description: "Collapsible checklists — collapse checklists to show a completion percentage bar" },
+      { type: "feature", description: "Merge notes to checklist — select multiple text notes and right-click to combine them into a single checklist" },
+      { type: "feature", description: "Board templates — choose from 5 templates (Project Tracker, Event Plan, Engineering Tasks, Brand Tone, Blank) when creating a board" },
+      { type: "feature", description: "Searchable emoji picker — search emoji by keyword in the unified icon/emoji picker" },
+      { type: "feature", description: "Dashboard card colors — boards with a custom background color show a colored accent bar on the dashboard" },
+    ],
+  },
+  {
     version: "1.3.0",
     date: "2026-03-07",
     entries: [

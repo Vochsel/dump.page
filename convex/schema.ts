@@ -37,6 +37,14 @@ export default defineSchema({
         controlsVariant: v.optional(
           v.union(v.literal("default"), v.literal("map"))
         ),
+        contextType: v.optional(
+          v.union(
+            v.literal("default"),
+            v.literal("skill"),
+            v.literal("agent")
+          )
+        ),
+        systemPrompt: v.optional(v.string()),
       })
     ),
     createdAt: v.number(),

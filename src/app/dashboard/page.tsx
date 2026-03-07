@@ -9,7 +9,7 @@ import { BoardIcon } from "@/components/board/BoardIcon";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import { Users, Plus, Globe, Link as LinkIcon, FileText, ExternalLink, CheckSquare, Sun, Moon, Monitor, Settings } from "lucide-react";
+import { Users, Plus, Link as LinkIcon, FileText, ExternalLink, CheckSquare, Sun, Moon, Monitor, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -35,6 +35,9 @@ function BoardGrid({ boards }: { boards: any[] }) {
               href={`/b/${board.slug ?? board._id}`}
               className="group bg-white dark:bg-gray-900 rounded-xl border border-stone-200 dark:border-gray-800 hover:border-stone-300 dark:hover:border-gray-700 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
             >
+              {board.settings?.backgroundColor && board.settings.backgroundColor !== "#f9fafb" && (
+                <div className="h-1 w-full" style={{ backgroundColor: board.settings.backgroundColor }} />
+              )}
               <div className="px-5 pt-5 pb-3 flex items-start justify-between">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="text-xl flex-shrink-0">

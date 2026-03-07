@@ -17,6 +17,7 @@ type ChecklistNodeData = {
   content: string;
   title?: string;
   showTitle?: boolean;
+  collapsed?: boolean;
   nodeId: string;
   canEdit: boolean;
   pushAction: (action: UndoAction) => void;
@@ -38,7 +39,7 @@ function parseItems(content: string): ChecklistItem[] {
 }
 
 export function ChecklistNode({ data }: NodeProps) {
-  const { content, title, showTitle, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as ChecklistNodeData;
+  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as ChecklistNodeData;
   const { updateNode } = useBoardOps();
 
   // Title editing state
@@ -233,6 +234,44 @@ export function ChecklistNode({ data }: NodeProps) {
     const clamped = Math.max(220, Math.min(640, estimated));
     return clamped;
   }, [items]);
+
+  const checkedCount = items.filter((i) => i.checked).length;
+  const totalCount = items.length;
+  const pct = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0;
+
+  if (collapsed) {
+    return (
+      <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md min-w-[180px] max-w-[640px] group border border-gray-200 dark:border-gray-700" style={{ width: Math.max(180, nodeWidth) }}>
+        {showTitle && title && (
+          <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60">
+            <div className="text-xs font-semibold truncate text-gray-700 dark:text-gray-200">{title}</div>
+          </div>
+        )}
+        <div className="p-3 space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <span>{checkedCount}/{totalCount} done</span>
+            <span className="font-medium">{pct}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-green-500 transition-all duration-300"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+        {canEdit && (
+          <div className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => deleteNodeWithUndo(nodeId)}
+              className="bg-destructive rounded-full p-1 shadow-sm hover:bg-destructive/90"
+            >
+              <Trash2 className="h-3 w-3 text-white" />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md min-w-[220px] max-w-[640px] group border border-gray-200 dark:border-gray-700" style={{ width: nodeWidth }}>

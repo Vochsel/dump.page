@@ -32,12 +32,16 @@ import {
   UserPlus,
   X,
   Crown,
+  Bot,
+  Wand2,
 } from "lucide-react";
 import { IconPicker } from "./IconPicker";
 
 export type BoardSettingsData = {
   backgroundPattern?: "dots" | "paper" | "boxes" | "blank";
   backgroundColor?: string;
+  contextType?: "default" | "skill" | "agent";
+  systemPrompt?: string;
 };
 
 function RegenerateButton({ onRegenerate }: { onRegenerate: () => Promise<string> }) {
@@ -118,6 +122,16 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
     if (!mdOpen || !markdownData) return null;
     const { board: b, nodes } = markdownData;
     let md = `# ${b.icon} ${b.name}\n\n`;
+    const contextType = (b as { settings?: { contextType?: string } }).settings?.contextType;
+    if (contextType === "skill") {
+      md += `> **Context Type: Skill** — This board provides contextual information to be used as a skill. Refer to it frequently for updated context.\n\n`;
+    } else if (contextType === "agent") {
+      md += `> **Context Type: Agent** — This board defines an agent persona. The goals, personality, and instructions below should take over your current context.\n\n`;
+    }
+    const sysPrompt = (b as { settings?: { systemPrompt?: string } }).settings?.systemPrompt;
+    if (sysPrompt) {
+      md += `${sysPrompt}\n\n`;
+    }
     const textNodes = nodes.filter((n) => n.type === "text");
     const linkNodes = nodes.filter((n) => n.type === "link");
     const checklistNodes = nodes.filter((n) => n.type === "checklist");
@@ -402,6 +416,12 @@ interface BoardSettingsPopoverProps {
   canEdit: boolean;
 }
 
+const CONTEXT_TYPES: { value: BoardSettingsData["contextType"]; label: string; description: string; icon: typeof Settings }[] = [
+  { value: "default", label: "Default", description: "Standard context dump", icon: FileText },
+  { value: "skill", label: "Skill", description: "Usable as a skill by LLMs", icon: Wand2 },
+  { value: "agent", label: "Agent", description: "Agent persona & goals", icon: Bot },
+];
+
 export function BoardSettingsPopover({
   boardId,
   icon,
@@ -411,85 +431,176 @@ export function BoardSettingsPopover({
   const updateSettings = useMutation(api.boards.updateBoardSettings);
   const updateBoard = useMutation(api.boards.updateBoard);
   const { resolved: theme } = useTheme();
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [promptValue, setPromptValue] = useState(settings.systemPrompt ?? "");
 
   if (!canEdit) return null;
 
   const currentPattern = settings.backgroundPattern ?? "dots";
   const currentColor = settings.backgroundColor ?? "#ffffff";
+  const currentContextType = settings.contextType ?? "default";
 
   const update = (patch: BoardSettingsData) => {
     updateSettings({ boardId, settings: patch });
   };
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Settings className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-72" align="end">
-        <div className="space-y-4">
-          {/* Board icon */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
-              Icon
-            </label>
-            <IconPicker
-              value={icon}
-              onChange={(newIcon) => updateBoard({ boardId, icon: newIcon })}
-            />
-          </div>
+    <>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <Settings className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-72" align="end">
+          <div className="space-y-4">
+            {/* Board icon */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
+                Icon
+              </label>
+              <IconPicker
+                value={icon}
+                onChange={(newIcon) => updateBoard({ boardId, icon: newIcon })}
+              />
+            </div>
 
-          <Separator />
+            <Separator />
 
-          {/* Background pattern */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
-              Background
-            </label>
-            <div className="grid grid-cols-4 gap-1.5">
-              {BG_PATTERNS.map((p) => (
-                <button
-                  key={p.value}
-                  onClick={() => update({ backgroundPattern: p.value })}
-                  className={`text-xs py-1.5 px-2 rounded-md border transition-colors ${
-                    currentPattern === p.value
-                      ? "border-primary bg-primary/10 font-medium"
-                      : "border-border hover:bg-muted"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
+            {/* Context type */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
+                Context Type
+              </label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {CONTEXT_TYPES.map((ct) => (
+                  <button
+                    key={ct.value}
+                    onClick={() => update({ contextType: ct.value })}
+                    title={ct.description}
+                    className={`text-xs py-1.5 px-2 rounded-md border transition-colors flex items-center gap-1 justify-center ${
+                      currentContextType === ct.value
+                        ? "border-primary bg-primary/10 font-medium"
+                        : "border-border hover:bg-muted"
+                    }`}
+                  >
+                    <ct.icon className="h-3 w-3" />
+                    {ct.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* System prompt */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
+                System Prompt
+              </label>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs gap-1.5"
+                onClick={() => {
+                  setPromptValue(settings.systemPrompt ?? "");
+                  setPromptOpen(true);
+                }}
+              >
+                <FileText className="h-3 w-3" />
+                {settings.systemPrompt ? "Edit prompt" : "Add prompt"}
+              </Button>
+            </div>
+
+            <Separator />
+
+            {/* Background pattern */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
+                Background
+              </label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {BG_PATTERNS.map((p) => (
+                  <button
+                    key={p.value}
+                    onClick={() => update({ backgroundPattern: p.value })}
+                    className={`text-xs py-1.5 px-2 rounded-md border transition-colors ${
+                      currentPattern === p.value
+                        ? "border-primary bg-primary/10 font-medium"
+                        : "border-border hover:bg-muted"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Background color */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
+                Color
+              </label>
+              <div className="flex gap-2">
+                {BG_COLORS.map((c) => (
+                  <button
+                    key={c.value}
+                    onClick={() => update({ backgroundColor: c.value })}
+                    title={c.label}
+                    className={`w-7 h-7 rounded-full border-2 transition-all ${
+                      currentColor === c.value
+                        ? "border-primary scale-110"
+                        : "border-border hover:scale-105"
+                    }`}
+                    style={{ backgroundColor: theme === "dark" ? c.dark : c.value }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
+        </PopoverContent>
+      </Popover>
 
-          <Separator />
-
-          {/* Background color */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
-              Color
-            </label>
-            <div className="flex gap-2">
-              {BG_COLORS.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => update({ backgroundColor: c.value })}
-                  title={c.label}
-                  className={`w-7 h-7 rounded-full border-2 transition-all ${
-                    currentColor === c.value
-                      ? "border-primary scale-110"
-                      : "border-border hover:scale-105"
-                  }`}
-                  style={{ backgroundColor: theme === "dark" ? c.dark : c.value }}
-                />
-              ))}
-            </div>
+      <Dialog open={promptOpen} onOpenChange={setPromptOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>System Prompt</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            This prompt is included at the top of the generated markdown for LLMs.
+          </p>
+          <textarea
+            className="w-full min-h-[160px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
+            placeholder="Enter a system prompt for this board..."
+            value={promptValue}
+            onChange={(e) => setPromptValue(e.target.value)}
+          />
+          <div className="flex justify-end gap-2">
+            {settings.systemPrompt && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                onClick={() => {
+                  update({ systemPrompt: "" });
+                  setPromptOpen(false);
+                }}
+              >
+                Remove
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={() => {
+                update({ systemPrompt: promptValue.trim() || undefined });
+                setPromptOpen(false);
+              }}
+            >
+              Save
+            </Button>
           </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

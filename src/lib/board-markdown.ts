@@ -190,6 +190,19 @@ export async function getBoardMarkdown(
 
     let markdown = `# ${board.name}\n\n`;
 
+    // Context type preamble
+    const contextType = board.settings?.contextType;
+    if (contextType === "skill") {
+      markdown += `> **Context Type: Skill** — This board provides contextual information to be used as a skill. Refer to it frequently for updated context.\n\n`;
+    } else if (contextType === "agent") {
+      markdown += `> **Context Type: Agent** — This board defines an agent persona. The goals, personality, and instructions below should take over your current context.\n\n`;
+    }
+
+    // Custom system prompt
+    if (board.settings?.systemPrompt) {
+      markdown += `${board.settings.systemPrompt}\n\n`;
+    }
+
     const textNodes = nodes.filter((n) => n.type === "text");
     const linkNodes = nodes.filter((n) => n.type === "link");
     const checklistNodes = nodes.filter((n) => n.type === "checklist");

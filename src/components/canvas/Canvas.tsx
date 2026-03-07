@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -181,7 +181,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
             content: n.content,
             title: n.title,
             showTitle: n.showTitle ?? (n.type === "checklist" ? true : undefined),
-            collapsed: n.collapsed,
+            collapsed: n.collapsed ?? false,
             nodeId: n._id,
             canEdit,
             metadata: n.metadata,
@@ -914,6 +914,37 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
             <CheckSquare className="h-4 w-4 mr-2" />
             Add Checklist
           </ContextMenuItem>
+          {(() => {
+            const selected = localNodes.filter((n) => n.selected && n.type === "text");
+            if (selected.length < 2) return null;
+            return (
+              <ContextMenuItem onClick={() => {
+                // Convert selected text nodes into a single checklist
+                const items = selected.map((n) => {
+                  const data = n.data as { content?: string };
+                  const text = (data.content || "").replace(/<[^>]*>/g, "").trim();
+                  return { id: Math.random().toString(36).slice(2, 9), text, checked: false };
+                });
+                const pos = selected[0].position;
+                createNode({
+                  boardId,
+                  type: "checklist",
+                  content: JSON.stringify(items),
+                  position: { x: pos.x, y: pos.y },
+                }).then((newNodeId) => {
+                  pushAction({ type: "create", nodeId: newNodeId });
+                  sfx.add();
+                  // Delete original text nodes
+                  for (const n of selected) {
+                    deleteNode({ nodeId: n.id });
+                  }
+                });
+              }}>
+                <ListChecks className="h-4 w-4 mr-2" />
+                Merge to checklist
+              </ContextMenuItem>
+            );
+          })()}
         </ContextMenuContent>
       </ContextMenu>
 
@@ -979,13 +1010,13 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
                     <PanelTop className="h-3.5 w-3.5" />
                     {source?.showTitle ? "Hide title bar" : "Show title bar"}
                   </button>
-                  {nodeType === "text" && (
+                  {(nodeType === "text" || nodeType === "checklist") && (
                     <button
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       onClick={handleNodeToggleCollapse}
                     >
                       <ChevronsUpDown className="h-3.5 w-3.5" />
-                      {source?.collapsed ? "Expand note" : "Collapse note"}
+                      {source?.collapsed ? "Expand" : "Collapse"}
                     </button>
                   )}
                 </>
