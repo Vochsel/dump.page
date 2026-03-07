@@ -13,7 +13,8 @@ export type UndoAction =
   | { type: "create"; nodeId: string }
   | { type: "delete"; deletedNodeId: string; snapshot: NodeSnapshot }
   | { type: "move"; nodeId: string; oldPosition: Position; newPosition: Position }
-  | { type: "edit"; nodeId: string; oldContent: string; newContent: string; oldMetadata?: Metadata; newMetadata?: Metadata };
+  | { type: "edit"; nodeId: string; oldContent: string; newContent: string; oldMetadata?: Metadata; newMetadata?: Metadata }
+  | { type: "batch"; actions: UndoAction[] };
 
 const MAX_HISTORY = 50;
 
@@ -55,63 +56,9 @@ export function useUndoRedo({
     setPast((prev) => prev.slice(0, -1));
 
     try {
-      switch (action.type) {
-        case "create": {
-          const node = convexNodes?.find((n) => n._id === action.nodeId);
-          if (!node) break;
-          const snapshot: NodeSnapshot = {
-            boardId: node.boardId,
-            type: node.type,
-            content: node.content,
-            position: node.position,
-            metadata: node.metadata,
-          };
-          await deleteNode({ nodeId: action.nodeId });
-          setFuture((prev) => [...prev, { type: "delete", deletedNodeId: action.nodeId, snapshot }]);
-          break;
-        }
-        case "delete": {
-          const newId = await createNode({
-            boardId: action.snapshot.boardId,
-            type: action.snapshot.type,
-            content: action.snapshot.content,
-            position: action.snapshot.position,
-            metadata: action.snapshot.metadata,
-          });
-          setFuture((prev) => [...prev, { type: "create", nodeId: newId }]);
-          break;
-        }
-        case "move": {
-          await updateNodePosition({ nodeId: action.nodeId, position: action.oldPosition });
-          setFuture((prev) => [...prev, {
-            type: "move",
-            nodeId: action.nodeId,
-            oldPosition: action.newPosition,
-            newPosition: action.oldPosition,
-          }]);
-          break;
-        }
-        case "edit": {
-          const updateArgs: { nodeId: string; content?: string; metadata?: Metadata } = {
-            nodeId: action.nodeId,
-          };
-          if (action.oldContent !== action.newContent) {
-            updateArgs.content = action.oldContent;
-          }
-          if (action.oldMetadata !== undefined) {
-            updateArgs.metadata = action.oldMetadata;
-          }
-          await updateNode(updateArgs);
-          setFuture((prev) => [...prev, {
-            type: "edit",
-            nodeId: action.nodeId,
-            oldContent: action.newContent,
-            newContent: action.oldContent,
-            oldMetadata: action.newMetadata,
-            newMetadata: action.oldMetadata,
-          }]);
-          break;
-        }
+      const reverseAction = await executeUndo(action);
+      if (reverseAction) {
+        setFuture((prev) => [...prev, reverseAction]);
       }
     } catch {
       // Node may have been deleted by collaborator — silently skip
@@ -124,6 +71,71 @@ export function useUndoRedo({
     }
   }, [past, convexNodes, createNode, deleteNode, updateNode, updateNodePosition]);
 
+  const executeUndo = useCallback(async (action: UndoAction): Promise<UndoAction | null> => {
+    switch (action.type) {
+      case "create": {
+        const node = convexNodes?.find((n) => n._id === action.nodeId);
+        if (!node) return null;
+        const snapshot: NodeSnapshot = {
+          boardId: node.boardId,
+          type: node.type,
+          content: node.content,
+          position: node.position,
+          metadata: node.metadata,
+        };
+        await deleteNode({ nodeId: action.nodeId });
+        return { type: "delete", deletedNodeId: action.nodeId, snapshot };
+      }
+      case "delete": {
+        const newId = await createNode({
+          boardId: action.snapshot.boardId,
+          type: action.snapshot.type,
+          content: action.snapshot.content,
+          position: action.snapshot.position,
+          metadata: action.snapshot.metadata,
+        });
+        return { type: "create", nodeId: newId };
+      }
+      case "move": {
+        await updateNodePosition({ nodeId: action.nodeId, position: action.oldPosition });
+        return {
+          type: "move",
+          nodeId: action.nodeId,
+          oldPosition: action.newPosition,
+          newPosition: action.oldPosition,
+        };
+      }
+      case "edit": {
+        const updateArgs: { nodeId: string; content?: string; metadata?: Metadata } = {
+          nodeId: action.nodeId,
+        };
+        if (action.oldContent !== action.newContent) {
+          updateArgs.content = action.oldContent;
+        }
+        if (action.oldMetadata !== undefined) {
+          updateArgs.metadata = action.oldMetadata;
+        }
+        await updateNode(updateArgs);
+        return {
+          type: "edit",
+          nodeId: action.nodeId,
+          oldContent: action.newContent,
+          newContent: action.oldContent,
+          oldMetadata: action.newMetadata,
+          newMetadata: action.oldMetadata,
+        };
+      }
+      case "batch": {
+        const reverseActions: UndoAction[] = [];
+        for (const sub of action.actions) {
+          const rev = await executeUndo(sub);
+          if (rev) reverseActions.push(rev);
+        }
+        return { type: "batch", actions: reverseActions.reverse() };
+      }
+    }
+  }, [convexNodes, createNode, deleteNode, updateNode, updateNodePosition]);
+
   const redo = useCallback(async () => {
     if (isExecutingRef.current || future.length === 0) return;
     isExecutingRef.current = true;
@@ -132,63 +144,10 @@ export function useUndoRedo({
     setFuture((prev) => prev.slice(0, -1));
 
     try {
-      switch (action.type) {
-        case "create": {
-          const node = convexNodes?.find((n) => n._id === action.nodeId);
-          if (!node) break;
-          const snapshot: NodeSnapshot = {
-            boardId: node.boardId,
-            type: node.type,
-            content: node.content,
-            position: node.position,
-            metadata: node.metadata,
-          };
-          await deleteNode({ nodeId: action.nodeId });
-          setPast((prev) => [...prev.slice(-(MAX_HISTORY - 1)), { type: "delete", deletedNodeId: action.nodeId, snapshot }]);
-          break;
-        }
-        case "delete": {
-          const newId = await createNode({
-            boardId: action.snapshot.boardId,
-            type: action.snapshot.type,
-            content: action.snapshot.content,
-            position: action.snapshot.position,
-            metadata: action.snapshot.metadata,
-          });
-          setPast((prev) => [...prev.slice(-(MAX_HISTORY - 1)), { type: "create", nodeId: newId }]);
-          break;
-        }
-        case "move": {
-          await updateNodePosition({ nodeId: action.nodeId, position: action.oldPosition });
-          setPast((prev) => [...prev.slice(-(MAX_HISTORY - 1)), {
-            type: "move",
-            nodeId: action.nodeId,
-            oldPosition: action.newPosition,
-            newPosition: action.oldPosition,
-          }]);
-          break;
-        }
-        case "edit": {
-          const updateArgs: { nodeId: string; content?: string; metadata?: Metadata } = {
-            nodeId: action.nodeId,
-          };
-          if (action.oldContent !== action.newContent) {
-            updateArgs.content = action.oldContent;
-          }
-          if (action.oldMetadata !== undefined) {
-            updateArgs.metadata = action.oldMetadata;
-          }
-          await updateNode(updateArgs);
-          setPast((prev) => [...prev.slice(-(MAX_HISTORY - 1)), {
-            type: "edit",
-            nodeId: action.nodeId,
-            oldContent: action.newContent,
-            newContent: action.oldContent,
-            oldMetadata: action.newMetadata,
-            newMetadata: action.oldMetadata,
-          }]);
-          break;
-        }
+      // Redo is just undoing the reverse action
+      const reverseAction = await executeUndo(action);
+      if (reverseAction) {
+        setPast((prev) => [...prev.slice(-(MAX_HISTORY - 1)), reverseAction]);
       }
     } catch {
       // Silently skip failed operations
@@ -198,7 +157,7 @@ export function useUndoRedo({
         document.activeElement.blur();
       }
     }
-  }, [future, convexNodes, createNode, deleteNode, updateNode, updateNodePosition]);
+  }, [future, executeUndo]);
 
   return {
     pushAction,

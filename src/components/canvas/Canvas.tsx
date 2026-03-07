@@ -23,6 +23,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
@@ -918,31 +919,54 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
             const selected = localNodes.filter((n) => n.selected && n.type === "text");
             if (selected.length < 2) return null;
             return (
-              <ContextMenuItem onClick={() => {
-                // Convert selected text nodes into a single checklist
-                const items = selected.map((n) => {
-                  const data = n.data as { content?: string };
-                  const text = (data.content || "").replace(/<[^>]*>/g, "").trim();
-                  return { id: Math.random().toString(36).slice(2, 9), text, checked: false };
-                });
-                const pos = selected[0].position;
-                createNode({
-                  boardId,
-                  type: "checklist",
-                  content: JSON.stringify(items),
-                  position: { x: pos.x, y: pos.y },
-                }).then((newNodeId) => {
-                  pushAction({ type: "create", nodeId: newNodeId });
-                  sfx.add();
-                  // Delete original text nodes
-                  for (const n of selected) {
-                    deleteNode({ nodeId: n.id });
-                  }
-                });
-              }}>
-                <ListChecks className="h-4 w-4 mr-2" />
-                Merge to checklist
-              </ContextMenuItem>
+              <>
+                <ContextMenuSeparator />
+                <ContextMenuItem onClick={() => {
+                  const items = selected.map((n) => {
+                    const data = n.data as { content?: string };
+                    const text = (data.content || "").replace(/<[^>]*>/g, "").trim();
+                    return { id: Math.random().toString(36).slice(2, 9), text, checked: false };
+                  });
+                  const pos = selected[0].position;
+                  // Snapshot deleted nodes for undo
+                  const deleteActions = selected.map((n) => {
+                    const source = boardNodes?.find((bn) => bn._id === n.id);
+                    return {
+                      type: "delete" as const,
+                      deletedNodeId: n.id,
+                      snapshot: {
+                        boardId,
+                        type: "text" as const,
+                        content: (n.data as { content?: string }).content || "",
+                        position: { x: n.position.x, y: n.position.y },
+                        metadata: source?.metadata,
+                      },
+                    };
+                  });
+                  createNode({
+                    boardId,
+                    type: "checklist",
+                    content: JSON.stringify(items),
+                    position: { x: pos.x, y: pos.y },
+                  }).then((newNodeId) => {
+                    // Single batch action: created checklist + deleted all text nodes
+                    pushAction({
+                      type: "batch",
+                      actions: [
+                        { type: "create", nodeId: newNodeId },
+                        ...deleteActions,
+                      ],
+                    });
+                    sfx.add();
+                    for (const n of selected) {
+                      deleteNode({ nodeId: n.id });
+                    }
+                  });
+                }}>
+                  <ListChecks className="h-4 w-4 mr-2" />
+                  Merge to checklist
+                </ContextMenuItem>
+              </>
             );
           })()}
         </ContextMenuContent>
