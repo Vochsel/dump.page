@@ -11,7 +11,7 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { useAuth } from "@/context/auth-context";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown, Sun, Moon } from "lucide-react";
+import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown, Sun, Moon, Volume2, VolumeOff } from "lucide-react";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { ChatButton } from "@/components/board/ChatButton";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { BUILD_VERSION } from "@/lib/constants";
 import { ListView } from "@/components/board/ListView";
 import { DocumentView } from "@/components/board/DocumentView";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { sfx } from "@/lib/sfx";
 import {
   Popover,
   PopoverContent,
@@ -109,6 +110,7 @@ export default function BoardPage({
   const { resolved: theme, setMode: setThemeMode } = useTheme();
 
   const [viewMode, setViewMode] = useLocalStorage<"board" | "list" | "document">("dump-view-mode", "board");
+  const [isMuted, setIsMuted] = useState(() => sfx.isMuted());
 
   const access = useQuery(api.boardMembers.checkAccess, {
     slug: boardId,
@@ -118,7 +120,7 @@ export default function BoardPage({
   // Update tab title with board name and icon
   useEffect(() => {
     if (access?.board) {
-      const icon = access.board.icon ? `${access.board.icon} ` : "";
+      const icon = access.board.icon && !access.board.icon.startsWith("lucide:") ? `${access.board.icon} ` : "";
       document.title = `${icon}${access.board.name} — Dump`;
     }
     return () => { document.title = "Dump — The context dump for humans and AI"; };
@@ -300,6 +302,16 @@ export default function BoardPage({
       {/* View switcher for non-board views */}
       {viewMode !== "board" && (
         <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5">
+          <button
+            onClick={() => {
+              if (isMuted) { sfx.unmute(); } else { sfx.mute(); }
+              setIsMuted(!isMuted);
+            }}
+            className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            title={isMuted ? "Unmute sounds" : "Mute sounds"}
+          >
+            {isMuted ? <VolumeOff className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
           <button
             onClick={() => {
               const next = theme === "dark" ? "light" : "dark";

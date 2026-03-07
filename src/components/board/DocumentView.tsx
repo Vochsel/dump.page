@@ -3,7 +3,8 @@
 import { useRef, useCallback, useState } from "react";
 import { useBoardOps } from "@/context/board-ops-context";
 import type { BoardNode } from "@/context/board-ops-context";
-import { ExternalLink, FileText, CheckSquare, Link as LinkIcon, GripVertical, Maximize2 } from "lucide-react";
+import { ExternalLink, FileText, CheckSquare, Link as LinkIcon, Maximize2 } from "lucide-react";
+import { sfx } from "@/lib/sfx";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,7 @@ function DraggableItem({
         origX: rect.left - parentRect.left,
         origY: rect.top - parentRect.top,
       };
+      sfx.dragStart();
 
       const onMouseMove = (e: MouseEvent) => {
         if (!dragRef.current || !elRef.current) return;
@@ -63,7 +65,8 @@ function DraggableItem({
         const newX = dragRef.current.origX + dx;
         const newY = dragRef.current.origY + dy;
         dragRef.current = null;
-        onDragEnd(node._id, { x: Math.max(0, newX), y: Math.max(0, newY) });
+        sfx.dragEnd();
+        onDragEnd(node._id, { x: newX, y: newY });
       };
 
       document.addEventListener("mousemove", onMouseMove);
@@ -81,19 +84,36 @@ function DraggableItem({
       style={{
         left: pos.x,
         top: pos.y,
-        maxWidth: "min(600px, calc(100% - 32px))",
-        minWidth: 280,
+        width: node.type === "link" ? 300 : 600,
+        maxWidth: "calc(100vw - 32px)",
       }}
     >
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-        {canEdit && (
-          <div
-            className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-60 hover:!opacity-100 cursor-grab active:cursor-grabbing p-1 text-gray-400"
-            onMouseDown={onMouseDown}
-          >
-            <GripVertical className="h-4 w-4" />
-          </div>
-        )}
+
+
+      {node.type === "text" && (
+        <div
+          className={`py-3 px-4 -mx-4 rounded-xl border border-transparent transition-colors duration-300 ${canEdit ? "group-hover:border-blue-200 dark:group-hover:border-blue-800/50 cursor-grab active:cursor-grabbing" : ""}`}
+          onMouseDown={canEdit ? onMouseDown : undefined}
+        >
+          {node.title && (
+            <h3 className="font-semibold text-base mb-2 text-gray-900 dark:text-gray-100">{node.title}</h3>
+          )}
+          {node.content ? (
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: node.content }}
+            />
+          ) : (
+            <p className="text-sm italic text-muted-foreground">Empty note</p>
+          )}
+        </div>
+      )}
+
+      {(node.type === "checklist" || node.type === "link") && (
+      <div
+        className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${canEdit ? "group-hover:border-blue-200 dark:group-hover:border-blue-800/50 cursor-grab active:cursor-grabbing" : ""}`}
+        onMouseDown={canEdit ? onMouseDown : undefined}
+      >
         <button
           onClick={() => onPreview(node._id)}
           className="absolute top-2 right-2 opacity-0 group-hover:opacity-60 hover:!opacity-100 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400"
@@ -101,22 +121,6 @@ function DraggableItem({
         >
           <Maximize2 className="h-3.5 w-3.5" />
         </button>
-
-        {node.type === "text" && (
-          <div className="px-5 py-4">
-            {node.title && (
-              <h3 className="font-semibold text-base mb-2 text-gray-900 dark:text-gray-100">{node.title}</h3>
-            )}
-            {node.content ? (
-              <div
-                className="prose prose-sm dark:prose-invert max-w-none line-clamp-6"
-                dangerouslySetInnerHTML={{ __html: node.content }}
-              />
-            ) : (
-              <p className="text-sm italic text-muted-foreground">Empty note</p>
-            )}
-          </div>
-        )}
 
         {node.type === "checklist" && (() => {
           let items: Array<{ id: string; text: string; checked: boolean }> = [];
@@ -168,7 +172,9 @@ function DraggableItem({
               className="block hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
             >
               {node.metadata?.image && (
-                <img src={node.metadata.image} alt="" className="w-full h-32 object-cover" />
+                <div className="w-full aspect-video overflow-hidden">
+                  <img src={node.metadata.image} alt="" className="w-full h-full object-cover" />
+                </div>
               )}
               <div className="px-5 py-3 flex items-start gap-3">
                 {favicon && (
@@ -191,6 +197,7 @@ function DraggableItem({
           );
         })()}
       </div>
+      )}
     </div>
   );
 }
@@ -201,12 +208,13 @@ export function DocumentView({ boardName, canEdit = false }: { boardName: string
 
   const nodes = (boardNodes ?? []).filter((n) => !n.collapsed);
 
-  // Auto-layout nodes that don't have docPosition
+  // Auto-layout nodes that don't have docPosition — center in column
+  const COLUMN_WIDTH = 600;
   const layoutNodes = nodes.map((node, index) => {
     if (node.docPosition) return node;
     return {
       ...node,
-      docPosition: { x: 40, y: 80 + index * 200 },
+      docPosition: { x: 0, y: index * 200 },
     };
   });
 
@@ -236,21 +244,24 @@ export function DocumentView({ boardName, canEdit = false }: { boardName: string
   return (
     <>
       <div className="relative w-full" style={{ minHeight: maxY }}>
-        {/* Board title */}
-        <div className="px-10 pt-8 pb-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{boardName}</h1>
-        </div>
+        {/* Centered column */}
+        <div className="max-w-[640px] mx-auto relative">
+          {/* Board title */}
+          <div className="pt-10 pb-6 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{boardName}</h1>
+          </div>
 
-        {/* Draggable items */}
-        {layoutNodes.map((node) => (
-          <DraggableItem
-            key={node._id}
-            node={node}
-            canEdit={canEdit}
-            onDragEnd={onDragEnd}
-            onPreview={setPreviewNodeId}
-          />
-        ))}
+          {/* Draggable items */}
+          {layoutNodes.map((node) => (
+            <DraggableItem
+              key={node._id}
+              node={node}
+              canEdit={canEdit}
+              onDragEnd={onDragEnd}
+              onPreview={setPreviewNodeId}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Preview dialog */}
