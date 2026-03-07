@@ -20,9 +20,25 @@ export async function POST(req: NextRequest) {
   const body = contentType.includes("form") ? new URLSearchParams(rawBody) : null;
   const json = !body ? (() => { try { return JSON.parse(rawBody); } catch { return null; } })() : null;
 
+  // Support client_id/client_secret via HTTP Basic Auth (RFC 6749 Section 2.3.1)
+  let basicClientId: string | undefined;
+  const authHeader = req.headers.get("authorization") || "";
+  if (authHeader.toLowerCase().startsWith("basic ")) {
+    try {
+      const decoded = atob(authHeader.slice(6));
+      const [id] = decoded.split(":");
+      basicClientId = id;
+      console.log("[OAuth Token] Basic auth client_id:", basicClientId);
+    } catch {
+      console.log("[OAuth Token] Failed to decode Basic auth header");
+    }
+  }
+
   const getParam = (key: string): string | undefined => {
     if (body) return body.get(key) ?? undefined;
     if (json) return json[key];
+    // Fall back to Basic auth for client_id
+    if (key === "client_id" && basicClientId) return basicClientId;
     return undefined;
   };
 
