@@ -49,6 +49,15 @@ function isBot(userAgent: string): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hasAuthCookie = request.cookies.has("__dump_authed");
+
+  // Auth-hint redirects: skip flicker by redirecting before page renders
+  if (pathname === "/" && hasAuthCookie) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+  if (pathname === "/dashboard" && !hasAuthCookie) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
 
   // Only intercept board pages
   if (!pathname.startsWith("/b/")) return NextResponse.next();
@@ -80,5 +89,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/b/:path*",
+  matcher: ["/", "/dashboard", "/b/:path*"],
 };

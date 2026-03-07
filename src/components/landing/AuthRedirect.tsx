@@ -1,18 +1,5 @@
-"use client";
-
-import { useAuth } from "@/context/auth-context";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-
+// Auth redirect is now handled by middleware — this component is a no-op kept
+// to avoid breaking imports.
 export function AuthRedirect() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && user) {
-      router.push("/dashboard");
-    }
-  }, [user, loading, router]);
-
   return null;
 }

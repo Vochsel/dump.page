@@ -43,7 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setFirebaseLoading(false);
-      if (!firebaseUser) {
+      if (firebaseUser) {
+        document.cookie =
+          "__dump_authed=1; path=/; max-age=2592000; SameSite=Lax";
+      } else {
+        document.cookie = "__dump_authed=; path=/; max-age=0";
         syncedUid.current = null;
       }
     });
@@ -74,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    document.cookie = "__dump_authed=; path=/; max-age=0";
     await firebaseSignOut(auth);
   };
 

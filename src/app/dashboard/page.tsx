@@ -6,8 +6,6 @@ import { api } from "../../../convex/_generated/api";
 import { CreateBoardDialog } from "@/components/board/CreateBoardDialog";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { BoardIcon } from "@/components/board/BoardIcon";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import Link from "next/link";
 import { Users, Plus, Link as LinkIcon, FileText, ExternalLink, CheckSquare, Sun, Moon, Monitor, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -131,15 +129,8 @@ function BoardGrid({ boards }: { boards: any[] }) {
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
-  const router = useRouter();
   const boards = useQuery(api.boards.getMyBoardsWithRecentNodes);
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
 
   if (loading || !user) {
     return (
