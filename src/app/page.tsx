@@ -131,18 +131,18 @@ export default function Home() {
           alt="Dump"
           className="h-24 sm:h-30"
         />
-        <span className="font-[family-name:var(--font-dynapuff)] text-4xl sm:text-5xl text-gray-800">
+        <span className="font-[family-name:var(--font-dynapuff)] text-4xl sm:text-5xl text-gray-800 dark:text-gray-100">
           Dump
         </span>
       </div>
 
       {/* CTA Heading */}
       <div className="text-center space-y-3 max-w-xl mt-8">
-        <h1 className="font-[family-name:var(--font-poppins)] text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
+        <h1 className="font-[family-name:var(--font-poppins)] text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-50 leading-tight">
           The context dump for humans and AI{" "}
           <span className="inline-block landing-sparkle">&#10024;</span>
         </h1>
-        <p className="font-[family-name:var(--font-poppins)] text-base sm:text-lg text-gray-500 font-medium">
+        <p className="font-[family-name:var(--font-poppins)] text-base sm:text-lg text-gray-500 dark:text-gray-400 font-medium">
           Shared whiteboards of links and text, accessible to all agents and chatbots.
         </p>
         <button
@@ -158,7 +158,7 @@ export default function Home() {
 
       {/* Works with AI */}
       <div className="mt-16 max-w-xl w-full space-y-3 px-2">
-        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 uppercase tracking-widest">
+        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 dark:text-gray-300 uppercase tracking-widest">
           Works with your favorite AI
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
@@ -170,10 +170,10 @@ export default function Home() {
           ].map((ai) => (
             <DraggableCard
               key={ai.name}
-              className="flex items-center gap-2 bg-white/70 border border-gray-200 rounded-full px-4 py-2"
+              className="flex items-center gap-2 bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2"
             >
               <img src={ai.icon} alt={ai.name} className="h-5 w-5" />
-              <span className="text-sm text-gray-700 font-medium font-[family-name:var(--font-poppins)]">
+              <span className="text-sm text-gray-700 dark:text-gray-200 font-medium font-[family-name:var(--font-poppins)]">
                 {ai.name}
               </span>
             </DraggableCard>
@@ -186,7 +186,7 @@ export default function Home() {
       </div>
 
       {/* Feature cards */}
-      <p className="mt-16 text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 uppercase tracking-widest mb-6">
+      <p className="mt-16 text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-6">
         How it works
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 max-w-2xl w-full px-2">
@@ -195,10 +195,10 @@ export default function Home() {
             key={feature.title}
             className={`${feature.color} ${feature.rotate} border-2 rounded-sm p-5 shadow-md hover:shadow-lg cursor-default`}
           >
-            <h3 className="font-[family-name:var(--font-poppins)] font-semibold text-gray-800 text-sm mb-1">
+            <h3 className="font-[family-name:var(--font-poppins)] font-semibold text-gray-800 dark:text-gray-100 text-sm mb-1">
               {feature.title}
             </h3>
-            <p className="text-xs text-gray-600 leading-relaxed">
+            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
               {feature.description}
             </p>
           </DraggableCard>
@@ -207,7 +207,7 @@ export default function Home() {
 
       {/* Use cases */}
       <div className="mt-16 max-w-2xl w-full px-2">
-        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 uppercase tracking-widest mb-6">
+        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-6">
           How people use Dump
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -267,22 +267,22 @@ export default function Home() {
 
       {/* Why we built this */}
       <div className="mt-16 max-w-xl w-full px-2 space-y-4">
-        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 uppercase tracking-widest">
+        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 dark:text-gray-300 uppercase tracking-widest">
           Why we built this
         </p>
-        <div className="bg-white/70 border border-gray-200 rounded-xl p-6 space-y-3">
+        <div className="bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-3">
           <ul className="space-y-2 text-sm text-gray-600 font-[family-name:var(--font-poppins)] leading-relaxed">
             <li className="flex gap-2">
               <span className="text-gray-400 flex-shrink-0">1.</span>
-              To quickly store <span className="font-semibold text-gray-800">reusable context</span> outside of any one LLM.
+              To quickly store <span className="font-semibold text-gray-800 dark:text-gray-100">reusable context</span> outside of any one LLM.
             </li>
             <li className="flex gap-2">
               <span className="text-gray-400 flex-shrink-0">2.</span>
-              To share <span className="font-semibold text-gray-800">multimodal context</span> between team members.
+              To share <span className="font-semibold text-gray-800 dark:text-gray-100">multimodal context</span> between team members.
             </li>
             <li className="flex gap-2">
               <span className="text-gray-400 flex-shrink-0">3.</span>
-              To <span className="font-semibold text-gray-800">regain control of our tokens</span>.
+              To <span className="font-semibold text-gray-800 dark:text-gray-100">regain control of our tokens</span>.
             </li>
           </ul>
           <p className="text-sm text-gray-500 font-[family-name:var(--font-poppins)] pt-2 border-t border-gray-100">

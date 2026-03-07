@@ -18,7 +18,7 @@ export default function ChangelogPage() {
   const [filter, setFilter] = useState<Filter>("all");
 
   return (
-    <div className="min-h-screen bg-[#fef9ee] relative overflow-hidden">
+    <div className="min-h-screen bg-[#fef9ee] dark:bg-gray-950 relative overflow-hidden">
       {/* Whiteboard decorations */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Grid pattern */}
@@ -40,7 +40,7 @@ export default function ChangelogPage() {
       <div className="absolute top-6 left-1/3 w-3 h-3 bg-red-400 rounded-full shadow-sm" />
       <div className="absolute top-8 right-1/4 w-3 h-3 bg-blue-400 rounded-full shadow-sm" />
 
-      <header className="relative z-10 border-b border-amber-200/40">
+      <header className="relative z-10 border-b border-amber-200/40 dark:border-gray-800">
         <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/">
@@ -87,7 +87,7 @@ export default function ChangelogPage() {
             return (
               <section
                 key={version.version}
-                className="bg-white/80 backdrop-blur-sm rounded-xl border border-stone-200/60 shadow-sm p-6 relative"
+                className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl border border-stone-200/60 dark:border-gray-800 shadow-sm p-6 relative"
               >
                 {/* Sticky note tab */}
                 <div className="absolute -top-3 left-6 bg-amber-100 px-3 py-0.5 rounded-t-md border border-b-0 border-amber-200/60 text-xs font-mono text-amber-700">
@@ -95,7 +95,7 @@ export default function ChangelogPage() {
                 </div>
 
                 <div className="flex items-baseline justify-between mb-4 mt-1">
-                  <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800">
+                  <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-100">
                     Version {version.version}
                   </h2>
                   <span className="text-xs text-stone-400 font-mono">{version.date}</span>
@@ -114,7 +114,7 @@ export default function ChangelogPage() {
                         <div className="mt-0.5">
                           <EntryIcon type={entry.type} />
                         </div>
-                        <span className="text-sm text-stone-700">{entry.description}</span>
+                        <span className="text-sm text-stone-700 dark:text-stone-300">{entry.description}</span>
                       </div>
                     );
                   })}

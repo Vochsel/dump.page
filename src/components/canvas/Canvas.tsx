@@ -32,8 +32,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "@/context/theme-context";
 
 import { darkenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
@@ -695,24 +696,40 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
     </ReactFlow>
   );
 
-  const muteButton = (
-    <button
-      onClick={() => {
-        if (isMuted) { sfx.unmute(); } else { sfx.mute(); }
-        setIsMuted(!isMuted);
-      }}
-      className="absolute bottom-4 left-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm hover:bg-white transition-colors text-gray-500 hover:text-gray-700"
-      title={isMuted ? "Unmute sounds" : "Mute sounds"}
-    >
-      {isMuted ? <VolumeOff className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-    </button>
+  const { resolved: theme, setMode: setThemeMode, mode: themeMode } = useTheme();
+
+  const bottomButtons = (
+    <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5">
+      <button
+        onClick={() => {
+          if (isMuted) { sfx.unmute(); } else { sfx.mute(); }
+          setIsMuted(!isMuted);
+        }}
+        className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        title={isMuted ? "Unmute sounds" : "Mute sounds"}
+      >
+        {isMuted ? <VolumeOff className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+      </button>
+      <button
+        onClick={() => {
+          const next = themeMode === "system"
+            ? (theme === "dark" ? "light" : "dark")
+            : themeMode === "dark" ? "light" : themeMode === "light" ? "system" : "dark";
+          setThemeMode(next);
+        }}
+        className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        title={`Theme: ${themeMode} (${theme})`}
+      >
+        {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+      </button>
+    </div>
   );
 
   if (!canEdit) {
     return (
       <div className="w-full h-full relative" onMouseMove={onMouseMove}>
         {flowContent}
-        {muteButton}
+        {bottomButtons}
       </div>
     );
   }
@@ -739,7 +756,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
                 </div>
               </div>
             )}
-            {muteButton}
+            {bottomButtons}
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">

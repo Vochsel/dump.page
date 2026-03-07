@@ -64,8 +64,8 @@ const AI_PROVIDERS = [
 
 export default function HelpPage() {
   return (
-    <div className="min-h-screen bg-stone-50">
-      <header className="border-b border-stone-200 bg-white">
+    <div className="min-h-screen bg-stone-50 dark:bg-gray-950">
+      <header className="border-b border-stone-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/">
@@ -82,7 +82,7 @@ export default function HelpPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-10">
-        <h1 className="font-[family-name:var(--font-poppins)] text-2xl font-semibold text-stone-900 mb-2">
+        <h1 className="font-[family-name:var(--font-poppins)] text-2xl font-semibold text-stone-900 dark:text-stone-100 mb-2">
           Getting Started with Dump
         </h1>
         <p className="text-stone-500 mb-10">
@@ -91,7 +91,7 @@ export default function HelpPage() {
 
         {/* Adding context */}
         <section className="mb-12">
-          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 mb-4">
+          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
             Ways to add context
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -101,8 +101,8 @@ export default function HelpPage() {
               { title: "Drag and drop", desc: "Drag links from your browser or text files from your desktop directly onto the board." },
               { title: "Toolbar", desc: "Use the toolbar buttons at the bottom of the canvas to add items at the center of your view." },
             ].map((item) => (
-              <div key={item.title} className="bg-white rounded-lg border border-stone-200 p-4">
-                <h3 className="font-medium text-stone-800 text-sm">{item.title}</h3>
+              <div key={item.title} className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 p-4">
+                <h3 className="font-medium text-stone-800 dark:text-stone-200 text-sm">{item.title}</h3>
                 <p className="text-xs text-stone-500 mt-1">{item.desc}</p>
               </div>
             ))}
@@ -111,10 +111,10 @@ export default function HelpPage() {
 
         {/* Sharing */}
         <section className="mb-12">
-          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 mb-4">
+          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
             Sharing your board
           </h2>
-          <div className="bg-white rounded-lg border border-stone-200 p-4 text-sm text-stone-600 space-y-2">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 p-4 text-sm text-stone-600 space-y-2">
             <p>Click the <strong>share button</strong> in the board header to set your board&apos;s visibility and copy the share link.</p>
             <ul className="space-y-1.5 ml-4 list-disc text-stone-500 text-xs">
               <li><strong className="text-stone-700">Private</strong> — only you and invited members can access</li>
@@ -127,7 +127,7 @@ export default function HelpPage() {
 
         {/* AI provider sections */}
         <section className="mb-12">
-          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 mb-4">
+          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
             Using with AI assistants
           </h2>
           <p className="text-stone-500 text-sm mb-6">
@@ -137,7 +137,7 @@ export default function HelpPage() {
             {AI_PROVIDERS.map((provider) => (
               <details
                 key={provider.name}
-                className="bg-white rounded-lg border border-stone-200 overflow-hidden group"
+                className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 overflow-hidden group"
               >
                 <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-stone-50 transition-colors">
                   <img src={provider.icon} alt={provider.name} className="h-5 w-5 flex-shrink-0" />
@@ -160,10 +160,10 @@ export default function HelpPage() {
 
         {/* Keyboard shortcuts */}
         <section className="mb-12">
-          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 mb-4">
+          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
             Keyboard shortcuts
           </h2>
-          <div className="bg-white rounded-lg border border-stone-200 divide-y divide-stone-100">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 divide-y divide-stone-100">
             {[
               { keys: "Cmd/Ctrl + C", desc: "Copy board share link (when nothing is selected)" },
               { keys: "Cmd/Ctrl + Z", desc: "Undo" },

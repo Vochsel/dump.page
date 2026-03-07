@@ -5,6 +5,7 @@ import { ConvexProvider } from "@/providers/convex-provider";
 import { AuthProvider } from "@/context/auth-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
+import { ThemeProvider } from "@/context/theme-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -69,14 +70,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${dynaPuff.variable} antialiased`}
       >
         <ConvexProvider>
           <AuthProvider>
-            <TooltipProvider>{children}</TooltipProvider>
-            <Toaster />
+            <ThemeProvider>
+              <TooltipProvider>{children}</TooltipProvider>
+              <Toaster />
+            </ThemeProvider>
           </AuthProvider>
         </ConvexProvider>
       </body>

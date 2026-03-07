@@ -9,17 +9,25 @@ import { BoardIcon } from "@/components/board/BoardIcon";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import { Users, Plus, Globe, Link as LinkIcon, FileText, ExternalLink, CheckSquare } from "lucide-react";
+import { Users, Plus, Globe, Link as LinkIcon, FileText, ExternalLink, CheckSquare, Sun, Moon, Monitor } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { Id } from "../../../convex/_generated/dataModel";
 import { SuggestFeatureButton } from "@/components/SuggestFeatureButton";
 import { BUILD_VERSION } from "@/lib/constants";
+import { useTheme } from "@/context/theme-context";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const boards = useQuery(api.boards.getMyBoardsWithRecentNodes);
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -29,7 +37,7 @@ export default function DashboardPage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-gray-950">
         <div className="animate-pulse text-muted-foreground font-[family-name:var(--font-poppins)]">
           Loading...
         </div>
@@ -40,9 +48,9 @@ export default function DashboardPage() {
   const firstName = user.displayName?.split(" ")[0] ?? "there";
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50 dark:bg-gray-950">
       {/* Header */}
-      <header className="border-b border-stone-200 bg-white">
+      <header className="border-b border-stone-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
@@ -50,14 +58,41 @@ export default function DashboardPage() {
               alt="Dump"
               className="h-9"
             />
-            <span className="font-[family-name:var(--font-dynapuff)] text-lg text-gray-800">
+            <span className="font-[family-name:var(--font-dynapuff)] text-lg text-gray-800 dark:text-gray-100">
               Dump
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/changelog" className="text-xs text-stone-400 hover:text-stone-600 transition-colors">
+            <Link href="/changelog" className="text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors">
               Changelog
             </Link>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  {themeMode === "dark" ? <Moon className="h-4 w-4" /> : themeMode === "light" ? <Sun className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-1" align="end">
+                {([
+                  { value: "system" as const, label: "System", icon: Monitor },
+                  { value: "light" as const, label: "Light", icon: Sun },
+                  { value: "dark" as const, label: "Dark", icon: Moon },
+                ]).map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setThemeMode(option.value)}
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      themeMode === option.value
+                        ? "bg-accent font-medium"
+                        : "hover:bg-accent/50"
+                    }`}
+                  >
+                    <option.icon className="h-3.5 w-3.5" />
+                    {option.label}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
             <SuggestFeatureButton />
             <CreateBoardDialog />
             <UserMenu />
@@ -68,10 +103,10 @@ export default function DashboardPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         {/* Greeting */}
         <div className="mb-8">
-          <h1 className="font-[family-name:var(--font-poppins)] text-2xl font-semibold text-stone-900">
+          <h1 className="font-[family-name:var(--font-poppins)] text-2xl font-semibold text-stone-900 dark:text-stone-100">
             Hey {firstName} 👋
           </h1>
-          <p className="font-[family-name:var(--font-poppins)] text-sm text-stone-400 mt-1">
+          <p className="font-[family-name:var(--font-poppins)] text-sm text-stone-400 dark:text-stone-500 mt-1">
             Your boards and recent activity
           </p>
         </div>
@@ -82,7 +117,7 @@ export default function DashboardPage() {
             {[...Array(3)].map((_, i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl border border-stone-200 p-5 h-52 animate-pulse"
+                className="bg-white dark:bg-gray-900 rounded-xl border border-stone-200 dark:border-gray-800 p-5 h-52 animate-pulse"
               >
                 <div className="h-5 w-24 bg-stone-100 rounded mb-3" />
                 <div className="h-3 w-32 bg-stone-100 rounded" />
@@ -94,7 +129,7 @@ export default function DashboardPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-stone-100 mb-4">
               <Plus className="h-7 w-7 text-stone-400" />
             </div>
-            <p className="font-[family-name:var(--font-poppins)] text-lg font-medium text-stone-600 mb-1">
+            <p className="font-[family-name:var(--font-poppins)] text-lg font-medium text-stone-600 dark:text-stone-300 mb-1">
               No boards yet
             </p>
             <p className="font-[family-name:var(--font-poppins)] text-sm text-stone-400 mb-6">
@@ -110,7 +145,7 @@ export default function DashboardPage() {
                   <Link
                     key={board._id}
                     href={`/b/${board.slug ?? board._id}`}
-                    className="group bg-white rounded-xl border border-stone-200 hover:border-stone-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
+                    className="group bg-white dark:bg-gray-900 rounded-xl border border-stone-200 dark:border-gray-800 hover:border-stone-300 dark:hover:border-gray-700 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
                   >
                     {/* Board header */}
                     <div className="px-5 pt-5 pb-3 flex items-start justify-between">
@@ -118,7 +153,7 @@ export default function DashboardPage() {
                         <span className="text-xl flex-shrink-0">
                           <BoardIcon icon={board.icon} className="text-xl" size={22} />
                         </span>
-                        <h3 className="font-[family-name:var(--font-poppins)] font-semibold text-stone-800 text-[15px] truncate">
+                        <h3 className="font-[family-name:var(--font-poppins)] font-semibold text-stone-800 dark:text-stone-100 text-[15px] truncate">
                           {board.name}
                         </h3>
                       </div>
@@ -182,7 +217,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Footer */}
-                    <div className="px-5 py-3 border-t border-stone-100 flex items-center justify-between">
+                    <div className="px-5 py-3 border-t border-stone-100 dark:border-gray-800 flex items-center justify-between">
                       <span className="text-[11px] text-stone-400 flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         {board.memberCount} {board.memberCount === 1 ? "member" : "members"}
