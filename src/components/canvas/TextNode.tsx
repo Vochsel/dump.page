@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { NodeProps } from "@xyflow/react";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { TipTapEditor } from "./TipTapEditor";
 import { useBoardOps } from "@/context/board-ops-context";
 
@@ -76,34 +76,45 @@ export function TextNode({ data }: NodeProps) {
     <div className="bg-yellow-100 dark:bg-yellow-900/40 rounded-sm shadow-md min-w-[180px] max-w-[360px] group border border-yellow-200/60 dark:border-yellow-700/40">
       {/* Title bar — only visible when showTitle is true */}
       {showTitle && (
-        <div className="bg-yellow-200/60 dark:bg-yellow-800/40 px-3 py-1.5 rounded-t-sm border-b border-yellow-300/50 dark:border-yellow-700/50">
-          {editingTitle && canEdit ? (
-            <input
-              ref={titleInputRef}
-              className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-yellow-900/80 dark:text-yellow-100/80 placeholder:text-yellow-600/40 dark:placeholder:text-yellow-400/30"
-              value={titleValue}
-              placeholder=""
-              onChange={(e) => setTitleValue(e.target.value)}
-              onBlur={commitTitle}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitTitle();
-                if (e.key === "Escape") {
-                  setTitleValue(title ?? "");
-                  setEditingTitle(false);
-                }
-              }}
-            />
-          ) : (
-            <div
-              className={`text-xs font-semibold truncate min-h-[1em] ${
-                title
-                  ? "text-yellow-900/80 dark:text-yellow-100/80"
-                  : ""
-              } ${canEdit ? "cursor-text" : ""}`}
-              onClick={() => canEdit && setEditingTitle(true)}
+        <div className="bg-yellow-200/60 dark:bg-yellow-800/40 px-3 py-1.5 rounded-t-sm border-b border-yellow-300/50 dark:border-yellow-700/50 flex items-center gap-1">
+          <div className="flex-1 min-w-0">
+            {editingTitle && canEdit ? (
+              <input
+                ref={titleInputRef}
+                className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-yellow-900/80 dark:text-yellow-100/80 placeholder:text-yellow-600/40 dark:placeholder:text-yellow-400/30"
+                value={titleValue}
+                placeholder=""
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={commitTitle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitTitle();
+                  if (e.key === "Escape") {
+                    setTitleValue(title ?? "");
+                    setEditingTitle(false);
+                  }
+                }}
+              />
+            ) : (
+              <div
+                className={`text-xs font-semibold truncate min-h-[1em] ${
+                  title
+                    ? "text-yellow-900/80 dark:text-yellow-100/80"
+                    : ""
+                } ${canEdit ? "cursor-text" : ""}`}
+                onClick={() => canEdit && setEditingTitle(true)}
+              >
+                {title || ""}
+              </div>
+            )}
+          </div>
+          {canEdit && (
+            <button
+              className="nodrag flex-shrink-0 p-0.5 rounded hover:bg-yellow-300/40 transition-colors text-yellow-700/50 hover:text-yellow-800/70"
+              onClick={() => updateNode({ nodeId, collapsed: !collapsed })}
+              title={collapsed ? "Expand note" : "Collapse note"}
             >
-              {title || ""}
-            </div>
+              {collapsed ? <ChevronsUpDown className="h-3 w-3" /> : <ChevronsDownUp className="h-3 w-3" />}
+            </button>
           )}
         </div>
       )}
@@ -115,20 +126,25 @@ export function TextNode({ data }: NodeProps) {
             onCancel={handleCancel}
           />
         ) : collapsed ? (
-          <div
-            className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-yellow-100 line-clamp-2"
-            tabIndex={canEdit ? 0 : undefined}
-            onKeyDown={(e) => { if (canEdit && e.key === "Enter") setEditing(true); }}
-            onClick={() => canEdit && setEditing(true)}
-            dangerouslySetInnerHTML={
-              content ? { __html: content } : undefined
-            }
-          >
-            {!content ? (
-              <span className="text-yellow-600/50 italic">
-                Click to edit...
-              </span>
-            ) : undefined}
+          <div className="relative">
+            <div
+              className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-yellow-100 line-clamp-2"
+              tabIndex={canEdit ? 0 : undefined}
+              onKeyDown={(e) => { if (canEdit && e.key === "Enter") setEditing(true); }}
+              onClick={() => canEdit && setEditing(true)}
+              dangerouslySetInnerHTML={
+                content ? { __html: content } : undefined
+              }
+            >
+              {!content ? (
+                <span className="text-yellow-600/50 italic">
+                  Click to edit...
+                </span>
+              ) : undefined}
+            </div>
+            {content && (
+              <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-yellow-100 dark:from-yellow-900/40 to-transparent pointer-events-none" />
+            )}
           </div>
         ) : (
           <div
@@ -148,6 +164,15 @@ export function TextNode({ data }: NodeProps) {
           </div>
         )}
       </div>
+      {collapsed && (
+        <div
+          className={`flex items-center justify-center border-t border-yellow-300/40 dark:border-yellow-700/40 py-0.5 ${canEdit ? "cursor-pointer hover:bg-yellow-200/30 transition-colors" : ""}`}
+          onClick={() => canEdit && updateNode({ nodeId, collapsed: false })}
+          title={canEdit ? "Expand note" : "Note is collapsed"}
+        >
+          <ChevronsUpDown className="h-3 w-3 text-yellow-600/40" />
+        </div>
+      )}
       {canEdit && (
         <div className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
