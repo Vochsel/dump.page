@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BUILD_VERSION } from "@/lib/constants";
+import { SmallLoginButton } from "@/components/auth/SmallLoginButton";
 
 const AI_PROVIDERS = [
   {
@@ -84,6 +85,7 @@ export default function HelpPage() {
                 Changelog
               </Button>
             </Link>
+            <SmallLoginButton />
           </div>
         </div>
       </header>
