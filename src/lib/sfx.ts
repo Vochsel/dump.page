@@ -5,8 +5,8 @@ import { sfxr } from "jsfxr";
 // Pre-designed sounds encoded as b58 strings (consistent on every play)
 // Soft noise pop for adding/pasting items
 const SFX_ADD = "7BMHBGNtjdtgWGXCMN4i7JaX3BHp3AXeMyQVG7P72Ko1FvxE4HvsfMhQdQXch4sBwimWn7ntqSCjYb3zs6ZML1Uy4oLMGGfuUt9R4BiEvLjHGUUTnkw84jsuH";
-// Soft sine drop for deleting
-const SFX_DELETE = "11111mqnbhVWQJQhLvKTANxMz72hUA4eYmzkzyrEUb5hWrCWWjM6hXbVPsRTYseukBYzWyj2UfmzdTvAhQ9PWuBgQkxtjx6e6tNeWL3biVgtCzKUUsemcLP";
+// High-pass noise crunch for deleting
+const SFX_DELETE = "7xvqHj3ZyR3QLth6621EzypANCmgN284yf2Mgf1875zo7GqNHjSbG1Rqi6qhnRZN87cFErTQWjsjSUHMnTnTsS3A5dmRmGoLLqKuNVQApA98kanX7TEx4GJsZ";
 // Short noise click for drag pick-up
 const SFX_CLICK = "7BMHBGN5brzd84wS453Cdjmbv3yFSPEwDs8GQPZyTsiBgWX7DpApHTjYpH6ZuNZJVTx83AQCNTdrk2Dvc1xdZp3ZfaJnvBCRHXRUvqjPt42b2HRgNAQSosZ59";
 // Square wave drop for drag release
@@ -31,7 +31,7 @@ function getSounds() {
   if (!sounds) {
     sounds = {
       add: decode(SFX_ADD, 0.03),
-      delete: decode(SFX_DELETE, 0.015),
+      delete: decode(SFX_DELETE, 0.157),
       click: decode(SFX_CLICK, 0.01),
       release: decode(SFX_RELEASE, 0.006),
     };
