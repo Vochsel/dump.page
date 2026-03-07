@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { Id } from "../../../convex/_generated/dataModel";
 import { SuggestFeatureButton } from "@/components/SuggestFeatureButton";
+import { BUILD_VERSION } from "@/lib/constants";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -203,6 +204,9 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+      <div className="fixed bottom-2 right-3 text-[10px] text-stone-300 font-mono select-none pointer-events-none">
+        v{BUILD_VERSION}
+      </div>
     </div>
   );
 }

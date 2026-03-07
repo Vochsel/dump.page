@@ -20,6 +20,7 @@ import { BoardIcon } from "@/components/board/BoardIcon";
 import { darkenHex, lightenHex } from "@/lib/utils";
 import { toast } from "sonner";
 import { QuickTips } from "@/components/board/QuickTips";
+import { BUILD_VERSION } from "@/lib/constants";
 
 function EditableBoardName({
   boardId,
@@ -100,6 +101,15 @@ export default function BoardPage({
     slug: boardId,
     shareToken: token,
   });
+
+  // Update tab title with board name and icon
+  useEffect(() => {
+    if (access?.board) {
+      const icon = access.board.icon ? `${access.board.icon} ` : "";
+      document.title = `${icon}${access.board.name} — Dump`;
+    }
+    return () => { document.title = "Dump — The context dump for humans and AI"; };
+  }, [access?.board?.name, access?.board?.icon]);
 
   // Debug: log board markdown to console (hooks must be before early returns)
   const markdownLogged = useRef(false);
@@ -252,6 +262,9 @@ export default function BoardPage({
         </div>
       </header>
       <QuickTips />
+      <div className="absolute bottom-2 right-3 z-10 text-[10px] text-gray-400/60 font-mono select-none pointer-events-none">
+        v{BUILD_VERSION}
+      </div>
     </div>
   );
 }
