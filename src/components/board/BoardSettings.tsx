@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useTheme } from "@/context/theme-context";
 import { toast } from "sonner";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -374,15 +375,21 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
   );
 }
 
-const BG_COLORS = [
-  { value: "#f9fafb", label: "White" },
-  { value: "#fef9ee", label: "Cream" },
-  { value: "#fdf2f8", label: "Pink" },
-  { value: "#eff6ff", label: "Blue" },
-  { value: "#f0fdf4", label: "Mint" },
-  { value: "#faf5ff", label: "Lavender" },
-  { value: "#f0f9ff", label: "Sky" },
+export const BG_COLORS = [
+  { value: "#f9fafb", dark: "#111113", label: "White" },
+  { value: "#fef9ee", dark: "#171310", label: "Cream" },
+  { value: "#fdf2f8", dark: "#170f15", label: "Pink" },
+  { value: "#eff6ff", dark: "#0d1320", label: "Blue" },
+  { value: "#f0fdf4", dark: "#0d1710", label: "Mint" },
+  { value: "#faf5ff", dark: "#140f1a", label: "Lavender" },
+  { value: "#f0f9ff", dark: "#0d141a", label: "Sky" },
 ];
+
+export function resolveBgColor(lightColor: string, isDark: boolean): string {
+  if (!isDark) return lightColor;
+  const entry = BG_COLORS.find((c) => c.value === lightColor);
+  return entry?.dark ?? "#111113";
+}
 
 const BG_PATTERNS: { value: BoardSettingsData["backgroundPattern"]; label: string }[] = [
   { value: "dots", label: "Dots" },
@@ -406,6 +413,7 @@ export function BoardSettingsPopover({
 }: BoardSettingsPopoverProps) {
   const updateSettings = useMutation(api.boards.updateBoardSettings);
   const updateBoard = useMutation(api.boards.updateBoard);
+  const { resolved: theme } = useTheme();
 
   if (!canEdit) return null;
 
@@ -508,7 +516,7 @@ export function BoardSettingsPopover({
                       ? "border-primary scale-110"
                       : "border-border hover:scale-105"
                   }`}
-                  style={{ backgroundColor: c.value }}
+                  style={{ backgroundColor: theme === "dark" ? c.dark : c.value }}
                 />
               ))}
             </div>

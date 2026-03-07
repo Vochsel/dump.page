@@ -12,7 +12,7 @@ import {
   useReactFlow,
   ReactFlowProvider,
 } from "@xyflow/react";
-import type { BoardSettingsData } from "@/components/board/BoardSettings";
+import { type BoardSettingsData, resolveBgColor } from "@/components/board/BoardSettings";
 import "@xyflow/react/dist/style.css";
 import { TextNode } from "./TextNode";
 import { LinkNode } from "./LinkNode";
@@ -36,7 +36,7 @@ import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, 
 import { toast } from "sonner";
 import { useTheme } from "@/context/theme-context";
 
-import { darkenHex } from "@/lib/utils";
+import { darkenHex, lightenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
 import { useBoardOps } from "@/context/board-ops-context";
 import { sfx } from "@/lib/sfx";
@@ -67,6 +67,9 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
   // Link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+
+  // Theme
+  const { resolved: theme, setMode: setThemeMode, mode: themeMode } = useTheme();
 
   // Mute state
   const [isMuted, setIsMuted] = useState(() => sfx.isMuted());
@@ -639,11 +642,13 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
   }, [renameNodeId, renameValue, boardNodes, pushAction, updateNode]);
 
   const bgPattern = settings.backgroundPattern ?? "dots";
-  const bgColor = settings.backgroundColor ?? "#f9fafb";
+  const bgColorRaw = settings.backgroundColor ?? "#f9fafb";
   const controlsVariant = settings.controlsVariant ?? "default";
 
-  const lineColor = darkenHex(bgColor, 0.08);
-  const lineColorFaint = darkenHex(bgColor, 0.05);
+  const isDark = theme === "dark";
+  const bgColor = resolveBgColor(bgColorRaw, isDark);
+  const lineColor = isDark ? lightenHex(bgColor, 0.08) : darkenHex(bgColor, 0.08);
+  const lineColorFaint = isDark ? lightenHex(bgColor, 0.05) : darkenHex(bgColor, 0.05);
 
   const renderBackground = () => {
     if (bgPattern === "dots") {
@@ -695,8 +700,6 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
       )}
     </ReactFlow>
   );
-
-  const { resolved: theme, setMode: setThemeMode, mode: themeMode } = useTheme();
 
   const bottomButtons = (
     <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5">

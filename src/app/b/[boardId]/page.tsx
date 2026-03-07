@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { BoardIcon } from "@/components/board/BoardIcon";
 import { darkenHex, lightenHex } from "@/lib/utils";
+import { useTheme } from "@/context/theme-context";
+import { resolveBgColor } from "@/components/board/BoardSettings";
 import { toast } from "sonner";
 import { QuickTips } from "@/components/board/QuickTips";
 import { BUILD_VERSION } from "@/lib/constants";
@@ -96,6 +98,7 @@ export default function BoardPage({
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? undefined;
   const { user, loading: authLoading } = useAuth();
+  const { resolved: theme } = useTheme();
 
   const access = useQuery(api.boardMembers.checkAccess, {
     slug: boardId,
@@ -191,9 +194,10 @@ export default function BoardPage({
   }
 
   const boardSettings = access.board.settings ?? {};
-  const bgColor = boardSettings.backgroundColor ?? "#f9fafb";
-  const headerColor = lightenHex(bgColor, 0.03);
-  const headerBorder = darkenHex(bgColor, 0.15);
+  const bgColorRaw = boardSettings.backgroundColor ?? "#f9fafb";
+  const bgColor = resolveBgColor(bgColorRaw, theme === "dark");
+  const headerColor = theme === "dark" ? lightenHex(bgColor, 0.03) : lightenHex(bgColor, 0.03);
+  const headerBorder = theme === "dark" ? lightenHex(bgColor, 0.08) : darkenHex(bgColor, 0.15);
 
   const rssUrl = `/b/${boardId}/rss.xml${token ? `?token=${token}` : ""}`;
 
