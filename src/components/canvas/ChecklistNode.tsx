@@ -29,14 +29,25 @@ function generateId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-function parseItems(content: string): ChecklistItem[] {
+function parseItems(content: string): { items: ChecklistItem[]; needsIdMigration: boolean } {
   try {
     const parsed = JSON.parse(content);
-    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed)) {
+      let needsIdMigration = false;
+      const items = parsed.map((item: Partial<ChecklistItem>) => {
+        if (!item.id) needsIdMigration = true;
+        return {
+          id: item.id || generateId(),
+          text: item.text ?? "",
+          checked: item.checked ?? false,
+        };
+      });
+      return { items, needsIdMigration };
+    }
   } catch {
     // ignore
   }
-  return [];
+  return { items: [], needsIdMigration: false };
 }
 
 export function ChecklistNode({ data }: NodeProps) {
@@ -81,12 +92,23 @@ export function ChecklistNode({ data }: NodeProps) {
   }, [titleValue, title, nodeId, stableUpdateNode]);
 
   const [items, setItems] = useState<ChecklistItem[]>(() => {
-    const parsed = parseItems(content);
+    const { items: parsed } = parseItems(content);
     return parsed.length > 0 ? parsed : [{ id: generateId(), text: "", checked: false }];
   });
   // Ref always tracks latest items so blur/effects never use stale closures
   const itemsRef = useRef(items);
   itemsRef.current = items;
+
+  // One-time migration: persist IDs for old checklists that lack them
+  const didMigrateRef = useRef(false);
+  useEffect(() => {
+    if (didMigrateRef.current) return;
+    const { needsIdMigration } = parseItems(content);
+    if (needsIdMigration) {
+      didMigrateRef.current = true;
+      stableUpdateNode({ nodeId, content: JSON.stringify(itemsRef.current) });
+    }
+  }, [content, nodeId, stableUpdateNode]);
 
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -101,7 +123,7 @@ export function ChecklistNode({ data }: NodeProps) {
     if (hasFocusRef.current) return;
     // Also check if any input inside the container is focused (covers edge cases)
     if (containerRef.current?.contains(document.activeElement)) return;
-    const parsed = parseItems(content);
+    const { items: parsed } = parseItems(content);
     if (parsed.length > 0) {
       setItems(parsed);
     }
