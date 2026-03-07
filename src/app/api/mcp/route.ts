@@ -4,7 +4,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { z } from "zod";
-import { getBoardMarkdown } from "@/lib/board-markdown";
+import { formatBoardDataAsMarkdown } from "@/lib/board-markdown";
 
 const convex = new ConvexHttpClient(
   process.env.NEXT_PUBLIC_CONVEX_URL as string
@@ -100,7 +100,7 @@ function createServer(): McpServer {
         };
       }
 
-      const { markdown } = await getBoardMarkdown(slug);
+      const markdown = formatBoardDataAsMarkdown(board.board, board.nodes);
 
       return {
         content: [{ type: "text" as const, text: markdown }],

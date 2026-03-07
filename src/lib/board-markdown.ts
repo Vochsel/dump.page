@@ -168,6 +168,85 @@ export async function getItemMarkdown(
   }
 }
 
+// Format pre-fetched board data as markdown (no auth check, caller must verify access)
+export function formatBoardDataAsMarkdown(
+  board: {
+    name: string;
+    settings?: { contextType?: string; systemPrompt?: string } | null;
+  },
+  nodes: Array<{
+    type: string;
+    content: string;
+    title?: string;
+    metadata?: { title?: string; description?: string } | null;
+  }>
+): string {
+  let markdown = `# ${board.name}\n\n`;
+
+  const contextType = board.settings?.contextType;
+  if (contextType === "skill") {
+    markdown += `> **Context Type: Skill** — This board provides contextual information to be used as a skill. Refer to it frequently for updated context.\n\n`;
+  } else if (contextType === "agent") {
+    markdown += `> **Context Type: Agent** — This board defines an agent persona. The goals, personality, and instructions below should take over your current context.\n\n`;
+  }
+
+  if (board.settings?.systemPrompt) {
+    markdown += `${board.settings.systemPrompt}\n\n`;
+  }
+
+  const textNodes = nodes.filter((n) => n.type === "text");
+  const linkNodes = nodes.filter((n) => n.type === "link");
+  const checklistNodes = nodes.filter((n) => n.type === "checklist");
+
+  if (textNodes.length > 0) {
+    markdown += `## Notes\n\n`;
+    for (const node of textNodes) {
+      if (node.title) {
+        markdown += `### ${node.title}\n\n`;
+      }
+      markdown += `${contentToMarkdown(node.content)}\n\n`;
+    }
+  }
+
+  if (checklistNodes.length > 0) {
+    markdown += `## Checklists\n\n`;
+    for (const node of checklistNodes) {
+      if (node.title) {
+        markdown += `### ${node.title}\n\n`;
+      }
+      try {
+        const items = JSON.parse(node.content);
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            markdown += `- [${item.checked ? "x" : " "}] ${item.text}\n`;
+          }
+          markdown += `\n`;
+        }
+      } catch {
+        markdown += `${node.content}\n\n`;
+      }
+    }
+  }
+
+  if (linkNodes.length > 0) {
+    markdown += `## Links\n\n`;
+    for (const node of linkNodes) {
+      const title = node.metadata?.title || node.content;
+      markdown += `- [${title}](${node.content})`;
+      if (node.metadata?.description) {
+        markdown += ` - ${node.metadata.description}`;
+      }
+      markdown += `\n`;
+    }
+  }
+
+  if (nodes.length === 0) {
+    markdown += `*This board is empty.*\n`;
+  }
+
+  return markdown;
+}
+
 export async function getBoardMarkdown(
   slug: string,
   shareToken?: string
