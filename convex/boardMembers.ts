@@ -1,25 +1,16 @@
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import { getCurrentUser, requireBoardOwner } from "./lib/auth";
+import { authedMutation } from "./lib/functions";
 
-export const addMember = mutation({
+export const addMember = authedMutation({
   args: {
     boardId: v.id("boards"),
     email: v.string(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const currentUser = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
-    if (!currentUser) throw new Error("User not found");
-
-    const board = await ctx.db.get(args.boardId);
-    if (!board || board.ownerId !== currentUser._id)
-      throw new Error("Not authorized");
+    await requireBoardOwner(ctx, args.boardId, ctx.user._id);
 
     const targetUser = await ctx.db
       .query("users")
@@ -44,24 +35,13 @@ export const addMember = mutation({
   },
 });
 
-export const removeMember = mutation({
+export const removeMember = authedMutation({
   args: {
     boardId: v.id("boards"),
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const currentUser = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
-    if (!currentUser) throw new Error("User not found");
-
-    const board = await ctx.db.get(args.boardId);
-    if (!board || board.ownerId !== currentUser._id)
-      throw new Error("Not authorized");
+    await requireBoardOwner(ctx, args.boardId, ctx.user._id);
 
     const membership = await ctx.db
       .query("boardMembers")
@@ -79,6 +59,23 @@ export const removeMember = mutation({
 export const getMembers = query({
   args: { boardId: v.id("boards") },
   handler: async (ctx, args) => {
+    const board = await ctx.db.get(args.boardId);
+    if (!board) return [];
+
+    // Only members can list members on non-public boards
+    if (board.visibility !== "public") {
+      const user = await getCurrentUser(ctx);
+      if (!user) return [];
+
+      const membership = await ctx.db
+        .query("boardMembers")
+        .withIndex("by_boardId_userId", (q) =>
+          q.eq("boardId", args.boardId).eq("userId", user._id)
+        )
+        .unique();
+      if (!membership) return [];
+    }
+
     const members = await ctx.db
       .query("boardMembers")
       .withIndex("by_boardId", (q) => q.eq("boardId", args.boardId))
@@ -114,26 +111,16 @@ export const checkAccess = query({
     }
     if (!board) return { canView: false, canEdit: false, board: null };
 
-    const identity = await ctx.auth.getUserIdentity();
-    let user: Doc<"users"> | null = null;
+    const user = await getCurrentUser(ctx);
     let membership: Doc<"boardMembers"> | null = null;
 
-    if (identity) {
-      user = await ctx.db
-        .query("users")
-        .withIndex("by_firebaseUid", (q) =>
-          q.eq("firebaseUid", identity.subject)
+    if (user) {
+      membership = await ctx.db
+        .query("boardMembers")
+        .withIndex("by_boardId_userId", (q) =>
+          q.eq("boardId", board!._id).eq("userId", user._id)
         )
         .unique();
-
-      if (user) {
-        membership = await ctx.db
-          .query("boardMembers")
-          .withIndex("by_boardId_userId", (q) =>
-            q.eq("boardId", board!._id).eq("userId", user!._id)
-          )
-          .unique();
-      }
     }
 
     // Members can always view and edit

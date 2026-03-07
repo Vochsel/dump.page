@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import { getCurrentUser } from "./lib/auth";
 
 export const getOrCreateUser = mutation({
   args: {
@@ -12,6 +13,11 @@ export const getOrCreateUser = mutation({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
+
+    // Verify the caller's identity matches the requested UID
+    if (identity.subject !== args.firebaseUid) {
+      throw new Error("Not authorized: identity mismatch");
+    }
 
     const existing = await ctx.db
       .query("users")
@@ -48,16 +54,6 @@ export const getOrCreateUser = mutation({
 export const getMe = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) =>
-        q.eq("firebaseUid", identity.subject)
-      )
-      .unique();
-
-    return user;
+    return await getCurrentUser(ctx);
   },
 });

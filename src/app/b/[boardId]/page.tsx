@@ -196,7 +196,7 @@ export default function BoardPage({
         href={rssUrl}
       />
       <div className="absolute inset-0">
-        <ConvexBoardOpsProvider boardId={access.board._id}>
+        <ConvexBoardOpsProvider boardId={access.board._id} shareToken={token}>
           <Canvas
             canEdit={access.canEdit}
             settings={boardSettings}

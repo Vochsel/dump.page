@@ -1,10 +1,50 @@
-import { mutation, query, action, internalMutation } from "./_generated/server";
+import { query, action, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import { getCurrentUser, requireBoardMember } from "./lib/auth";
+import { authedMutation } from "./lib/functions";
 
 export const getNodesByBoard = query({
-  args: { boardId: v.id("boards") },
+  args: {
+    boardId: v.id("boards"),
+    shareToken: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    const board = await ctx.db.get(args.boardId);
+    if (!board) return [];
+
+    // Public boards: anyone can read
+    if (board.visibility === "public") {
+      return await ctx.db
+        .query("nodes")
+        .withIndex("by_boardId", (q) => q.eq("boardId", args.boardId))
+        .collect();
+    }
+
+    // Shared boards with valid token
+    if (
+      board.visibility === "shared" &&
+      args.shareToken &&
+      board.shareToken === args.shareToken
+    ) {
+      return await ctx.db
+        .query("nodes")
+        .withIndex("by_boardId", (q) => q.eq("boardId", args.boardId))
+        .collect();
+    }
+
+    // Private/shared without token: require membership
+    const user = await getCurrentUser(ctx);
+    if (!user) return [];
+
+    const membership = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_boardId_userId", (q) =>
+        q.eq("boardId", args.boardId).eq("userId", user._id)
+      )
+      .unique();
+    if (!membership) return [];
+
     return await ctx.db
       .query("nodes")
       .withIndex("by_boardId", (q) => q.eq("boardId", args.boardId))
@@ -12,7 +52,7 @@ export const getNodesByBoard = query({
   },
 });
 
-export const createNode = mutation({
+export const createNode = authedMutation({
   args: {
     boardId: v.id("boards"),
     type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),
@@ -29,14 +69,7 @@ export const createNode = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
-    if (!user) throw new Error("User not found");
+    await requireBoardMember(ctx, args.boardId, ctx.user._id);
 
     const now = Date.now();
     return await ctx.db.insert("nodes", {
@@ -46,14 +79,14 @@ export const createNode = mutation({
       position: args.position,
       dimensions: args.dimensions ?? { width: 280, height: 120 },
       metadata: args.metadata,
-      createdBy: user._id,
+      createdBy: ctx.user._id,
       createdAt: now,
       updatedAt: now,
     });
   },
 });
 
-export const updateNode = mutation({
+export const updateNode = authedMutation({
   args: {
     nodeId: v.id("nodes"),
     content: v.optional(v.string()),
@@ -69,8 +102,9 @@ export const updateNode = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const node = await ctx.db.get(args.nodeId);
+    if (!node) throw new Error("Node not found");
+    await requireBoardMember(ctx, node.boardId, ctx.user._id);
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (args.content !== undefined) updates.content = args.content;
@@ -82,14 +116,15 @@ export const updateNode = mutation({
   },
 });
 
-export const updateNodePosition = mutation({
+export const updateNodePosition = authedMutation({
   args: {
     nodeId: v.id("nodes"),
     position: v.object({ x: v.number(), y: v.number() }),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const node = await ctx.db.get(args.nodeId);
+    if (!node) throw new Error("Node not found");
+    await requireBoardMember(ctx, node.boardId, ctx.user._id);
 
     await ctx.db.patch(args.nodeId, {
       position: args.position,
@@ -98,11 +133,12 @@ export const updateNodePosition = mutation({
   },
 });
 
-export const deleteNode = mutation({
+export const deleteNode = authedMutation({
   args: { nodeId: v.id("nodes") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const node = await ctx.db.get(args.nodeId);
+    if (!node) throw new Error("Node not found");
+    await requireBoardMember(ctx, node.boardId, ctx.user._id);
 
     await ctx.db.delete(args.nodeId);
   },

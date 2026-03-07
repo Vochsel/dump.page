@@ -1,28 +1,9 @@
-import { mutation, query, internalMutation, MutationCtx } from "./_generated/server";
-import { internal, api } from "./_generated/api";
+import { query, internalMutation } from "./_generated/server";
+import { api } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import { UserIdentity } from "convex/server";
-
-async function ensureUser(ctx: MutationCtx, identity: UserIdentity) {
-  const existing = await ctx.db
-    .query("users")
-    .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-    .unique();
-  if (existing) return existing;
-
-  const userId = await ctx.db.insert("users", {
-    firebaseUid: identity.subject,
-    email: identity.email ?? "",
-    name: identity.name ?? identity.email ?? "Anonymous",
-    profileImage: identity.pictureUrl,
-    createdAt: Date.now(),
-  });
-
-  await ctx.scheduler.runAfter(0, internal.boards.seedDefaultBoard, { userId });
-
-  return (await ctx.db.get(userId))!;
-}
+import { getCurrentUser, requireBoardMember, requireBoardOwner } from "./lib/auth";
+import { authedMutation, ensuredMutation } from "./lib/functions";
 
 function generateSlug(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -33,7 +14,7 @@ function generateSlug(): string {
   return slug;
 }
 
-export const createBoard = mutation({
+export const createBoard = ensuredMutation({
   args: {
     name: v.string(),
     icon: v.string(),
@@ -44,11 +25,6 @@ export const createBoard = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const user = await ensureUser(ctx, identity);
-
     const now = Date.now();
     const shareToken =
       args.visibility === "shared"
@@ -60,7 +36,7 @@ export const createBoard = mutation({
       name: args.name,
       slug,
       icon: args.icon,
-      ownerId: user._id,
+      ownerId: ctx.user._id,
       visibility: args.visibility,
       shareToken,
       createdAt: now,
@@ -69,7 +45,7 @@ export const createBoard = mutation({
 
     await ctx.db.insert("boardMembers", {
       boardId,
-      userId: user._id,
+      userId: ctx.user._id,
       role: "owner",
       joinedAt: now,
     });
@@ -81,13 +57,7 @@ export const createBoard = mutation({
 export const getMyBoards = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
     if (!user) return [];
 
     const memberships = await ctx.db
@@ -135,13 +105,7 @@ export const getBoard = query({
     }
 
     // Check membership for private/shared without token
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
     if (!user) return null;
 
     const membership = await ctx.db
@@ -156,7 +120,7 @@ export const getBoard = query({
   },
 });
 
-export const updateBoard = mutation({
+export const updateBoard = authedMutation({
   args: {
     boardId: v.id("boards"),
     name: v.optional(v.string()),
@@ -166,18 +130,7 @@ export const updateBoard = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
-    if (!user) throw new Error("User not found");
-
-    const board = await ctx.db.get(args.boardId);
-    if (!board || board.ownerId !== user._id)
-      throw new Error("Not authorized");
+    const board = await requireBoardOwner(ctx, args.boardId, ctx.user._id);
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (args.name !== undefined) updates.name = args.name;
@@ -193,21 +146,10 @@ export const updateBoard = mutation({
   },
 });
 
-export const deleteBoard = mutation({
+export const deleteBoard = authedMutation({
   args: { boardId: v.id("boards") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
-    if (!user) throw new Error("User not found");
-
-    const board = await ctx.db.get(args.boardId);
-    if (!board || board.ownerId !== user._id)
-      throw new Error("Not authorized");
+    await requireBoardOwner(ctx, args.boardId, ctx.user._id);
 
     // Delete all nodes
     const nodes = await ctx.db
@@ -231,7 +173,7 @@ export const deleteBoard = mutation({
   },
 });
 
-export const updateBoardSettings = mutation({
+export const updateBoardSettings = authedMutation({
   args: {
     boardId: v.id("boards"),
     settings: v.object({
@@ -250,23 +192,7 @@ export const updateBoardSettings = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
-    if (!user) throw new Error("User not found");
-
-    // Allow any member to update settings
-    const membership = await ctx.db
-      .query("boardMembers")
-      .withIndex("by_boardId_userId", (q) =>
-        q.eq("boardId", args.boardId).eq("userId", user._id)
-      )
-      .unique();
-    if (!membership) throw new Error("Not authorized");
+    await requireBoardMember(ctx, args.boardId, ctx.user._id);
 
     const board = await ctx.db.get(args.boardId);
     if (!board) throw new Error("Board not found");
@@ -278,21 +204,10 @@ export const updateBoardSettings = mutation({
   },
 });
 
-export const regenerateShareToken = mutation({
+export const regenerateShareToken = authedMutation({
   args: { boardId: v.id("boards") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
-    if (!user) throw new Error("User not found");
-
-    const board = await ctx.db.get(args.boardId);
-    if (!board || board.ownerId !== user._id)
-      throw new Error("Not authorized");
+    await requireBoardOwner(ctx, args.boardId, ctx.user._id);
 
     const newToken = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
     await ctx.db.patch(args.boardId, {
@@ -312,7 +227,7 @@ export const seedDefaultBoard = internalMutation({
     const boardId = await ctx.db.insert("boards", {
       name: "Welcome to Dump",
       slug: generateSlug(),
-      icon: "👋",
+      icon: "\uD83D\uDC4B",
       ownerId: args.userId,
       visibility: "private",
       createdAt: now,
@@ -391,13 +306,7 @@ export const seedDefaultBoard = internalMutation({
 export const getMyBoardsWithRecentNodes = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
+    const user = await getCurrentUser(ctx);
     if (!user) return [];
 
     const memberships = await ctx.db
@@ -438,7 +347,7 @@ export const getMyBoardsWithRecentNodes = query({
   },
 });
 
-export const persistLocalBoard = mutation({
+export const persistLocalBoard = ensuredMutation({
   args: {
     name: v.string(),
     icon: v.string(),
@@ -459,11 +368,6 @@ export const persistLocalBoard = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const user = await ensureUser(ctx, identity);
-
     const now = Date.now();
 
     const slug = generateSlug();
@@ -471,7 +375,7 @@ export const persistLocalBoard = mutation({
       name: args.name,
       slug,
       icon: args.icon,
-      ownerId: user._id,
+      ownerId: ctx.user._id,
       visibility: "private",
       createdAt: now,
       updatedAt: now,
@@ -479,7 +383,7 @@ export const persistLocalBoard = mutation({
 
     await ctx.db.insert("boardMembers", {
       boardId,
-      userId: user._id,
+      userId: ctx.user._id,
       role: "owner",
       joinedAt: now,
     });
@@ -492,7 +396,7 @@ export const persistLocalBoard = mutation({
         position: node.position,
         dimensions: { width: 280, height: 120 },
         metadata: node.metadata,
-        createdBy: user._id,
+        createdBy: ctx.user._id,
         createdAt: now,
         updatedAt: now,
       });
@@ -538,21 +442,15 @@ export const getBoardForMarkdown = query({
 
     // Check if authenticated user is a member
     let isMember = false;
-    const identity = await ctx.auth.getUserIdentity();
-    if (identity) {
-      const user = await ctx.db
-        .query("users")
-        .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
+    const user = await getCurrentUser(ctx);
+    if (user) {
+      const membership = await ctx.db
+        .query("boardMembers")
+        .withIndex("by_boardId_userId", (q) =>
+          q.eq("boardId", board!._id).eq("userId", user._id)
+        )
         .unique();
-      if (user) {
-        const membership = await ctx.db
-          .query("boardMembers")
-          .withIndex("by_boardId_userId", (q) =>
-            q.eq("boardId", board!._id).eq("userId", user._id)
-          )
-          .unique();
-        if (membership) isMember = true;
-      }
+      if (membership) isMember = true;
     }
 
     // Allow: members, public boards, shared boards with valid token
