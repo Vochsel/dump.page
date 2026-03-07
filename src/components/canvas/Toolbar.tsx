@@ -71,6 +71,8 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: Too
     if (!input) return;
 
     let url: string;
+    let searchMeta: { title?: string; description?: string } | null = null;
+
     if (URL_LIKE.test(input)) {
       url = input.startsWith("http://") || input.startsWith("https://")
         ? input
@@ -86,6 +88,9 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: Too
           return;
         }
         url = data.url;
+        if (data.title || data.description) {
+          searchMeta = { title: data.title, description: data.description };
+        }
       } catch {
         setSearching(false);
         return;
@@ -99,11 +104,15 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: Too
       type: "link",
       content: url,
       position: { x: pos.x - 140, y: pos.y - 60 },
+      metadata: searchMeta ?? undefined,
     });
     onNodeCreated(nodeId);
     setLinkUrl("");
     setLinkOpen(false);
-    fetchMetadata({ nodeId, url });
+    // Skip fetchMetadata if we already have search result metadata
+    if (!searchMeta) {
+      fetchMetadata({ nodeId, url });
+    }
   };
 
   return (

@@ -33,7 +33,11 @@ export async function GET(req: Request) {
 
     if (first?.link) {
       console.log(`[search-url] Result: ${first.link} — "${first.title}"`);
-      return NextResponse.json({ url: first.link, title: first.title });
+      return NextResponse.json({
+        url: first.link,
+        title: first.title || undefined,
+        description: first.description || undefined,
+      });
     }
 
     console.log(`[search-url] No organic results`);
