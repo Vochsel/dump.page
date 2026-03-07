@@ -403,20 +403,17 @@ function withLogging(fn: (req: Request) => Promise<Response>) {
 
     try {
       const res = await fn(req);
-      console.log(`[MCP] Response: ${res.status} ${res.statusText}`, {
+      const cloned = res.clone();
+      const body = await cloned.text().catch(() => "(unreadable)");
+      console.log(`[MCP] Response: ${res.status}`, {
         contentType: res.headers.get("content-type"),
+        headers: Object.fromEntries(res.headers.entries()),
+        bodyPreview: body.slice(0, 500),
       });
-
-      // Clone and log body for non-200 responses
-      if (res.status >= 400) {
-        const cloned = res.clone();
-        const body = await cloned.text().catch(() => "(unreadable)");
-        console.error(`[MCP] Error body:`, body);
-      }
 
       return res;
     } catch (err) {
-      console.error(`[MCP] Handler threw:`, err);
+      console.error(`[MCP] Handler threw:`, err instanceof Error ? { message: err.message, stack: err.stack } : err);
       throw err;
     }
   };
