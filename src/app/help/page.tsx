@@ -10,37 +10,35 @@ const AI_PROVIDERS = [
     name: "ChatGPT",
     icon: "https://chatgpt.com/favicon.ico",
     steps: [
-      "Open your board and click the Chat button in the header",
-      "Select ChatGPT from the dropdown",
-      'If your board is shared or public, the board URL with /llms.txt will be sent as context',
-      'If private, choose to bake markdown into the prompt or share with a magic link',
+      "Share your board using the share button in the header",
+      "Click the Chat button and select ChatGPT from the dropdown",
+      "ChatGPT will open with your board context ready to go",
     ],
   },
   {
     name: "Claude",
     icon: "https://claude.ai/favicon.ico",
     steps: [
-      "Open your board and click the Chat button in the header",
-      "Select Claude from the dropdown",
+      "Share your board using the share button in the header",
+      "Click the Chat button and select Claude from the dropdown",
       "Claude will open with your board context pre-loaded",
-      "You can also paste the board's llms.txt URL directly into a conversation",
     ],
   },
   {
     name: "Claude Code",
     icon: "https://claude.ai/favicon.ico",
     steps: [
-      "Copy your board's llms.txt URL from the share dialog",
-      "Use WebFetch or curl to fetch the content in your CLI session",
-      "The plain-text format is optimized for code-assistant workflows",
+      "Share your board using the share button in the header",
+      "Copy the board's share link and give it to Claude Code",
+      "The /llms.txt format is optimized for code-assistant workflows",
     ],
   },
   {
     name: "Codex",
     icon: "https://chatgpt.com/favicon.ico",
     steps: [
-      "Copy the llms.txt URL from the share dialog",
-      "Include it in your Codex prompt as a context URL",
+      "Share your board using the share button in the header",
+      "Copy the board's share link and include it in your Codex prompt",
       "Codex will fetch and use the board content as reference material",
     ],
   },
@@ -48,8 +46,8 @@ const AI_PROVIDERS = [
     name: "Grok",
     icon: "https://grok.com/images/favicon.svg",
     steps: [
-      "Open your board and click the Chat button in the header",
-      "Select Grok from the dropdown",
+      "Share your board using the share button in the header",
+      "Click the Chat button and select Grok from the dropdown",
       "Grok will open with your board context in the prompt",
     ],
   },
@@ -57,8 +55,8 @@ const AI_PROVIDERS = [
     name: "Gemini",
     icon: "https://www.gstatic.com/lamda/images/gemini_favicon_f069958c85030456e93de685481c559f160ea06b.png",
     steps: [
-      "Copy your board's share URL or llms.txt URL",
-      "Paste it into a Gemini conversation",
+      "Share your board using the share button in the header",
+      "Copy the board's share link and paste it into a Gemini conversation",
       "Gemini can read the board content and use it as context",
     ],
   },
@@ -94,25 +92,36 @@ export default function HelpPage() {
         {/* Adding context */}
         <section className="mb-12">
           <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 mb-4">
-            Adding context to your board
+            Ways to add context
           </h2>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { step: "1", title: "Right-click the canvas", desc: "Choose Add Text, Add Link, or Add Checklist to create a new item at the cursor position." },
-              { step: "2", title: "Paste a URL", desc: "Copy any URL and paste it onto the canvas. Dump auto-detects URLs and creates link cards with metadata." },
-              { step: "3", title: "Drag and drop", desc: "Drag links from your browser or text files from your desktop directly onto the board." },
-              { step: "4", title: "Share your board", desc: "Click the share icon in the header to set visibility and copy the share link." },
+              { title: "Right-click the canvas", desc: "Add text notes, links, or checklists at the cursor position." },
+              { title: "Paste", desc: "Paste any URL or text onto the canvas. URLs automatically become link cards with metadata." },
+              { title: "Drag and drop", desc: "Drag links from your browser or text files from your desktop directly onto the board." },
+              { title: "Toolbar", desc: "Use the toolbar buttons at the bottom of the canvas to add items at the center of your view." },
             ].map((item) => (
-              <div key={item.step} className="flex gap-3 bg-white rounded-lg border border-stone-200 p-4">
-                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-stone-900 text-white flex items-center justify-center text-sm font-semibold">
-                  {item.step}
-                </div>
-                <div>
-                  <h3 className="font-medium text-stone-800 text-sm">{item.title}</h3>
-                  <p className="text-xs text-stone-500 mt-0.5">{item.desc}</p>
-                </div>
+              <div key={item.title} className="bg-white rounded-lg border border-stone-200 p-4">
+                <h3 className="font-medium text-stone-800 text-sm">{item.title}</h3>
+                <p className="text-xs text-stone-500 mt-1">{item.desc}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Sharing */}
+        <section className="mb-12">
+          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 mb-4">
+            Sharing your board
+          </h2>
+          <div className="bg-white rounded-lg border border-stone-200 p-4 text-sm text-stone-600 space-y-2">
+            <p>Click the <strong>share button</strong> in the board header to set your board&apos;s visibility and copy the share link.</p>
+            <ul className="space-y-1.5 ml-4 list-disc text-stone-500 text-xs">
+              <li><strong className="text-stone-700">Private</strong> — only you and invited members can access</li>
+              <li><strong className="text-stone-700">Shared</strong> — anyone with the magic link can view</li>
+              <li><strong className="text-stone-700">Public</strong> — anyone with the board URL can view</li>
+            </ul>
+            <p className="text-xs text-stone-400">Shared and public boards are automatically accessible to AI assistants via the board&apos;s <code className="bg-stone-100 px-1 rounded font-mono">/llms.txt</code> endpoint.</p>
           </div>
         </section>
 
