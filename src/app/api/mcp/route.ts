@@ -346,6 +346,10 @@ const handler = createMcpHandler(
     basePath: "/api",
     maxDuration: 60,
     disableSse: true,
+    verboseLogs: true,
+    onEvent: (event) => {
+      console.log("[MCP Event]", JSON.stringify(event));
+    },
   }
 );
 
@@ -388,9 +392,13 @@ const authedHandler = withMcpAuth(
 function withLogging(fn: (req: Request) => Promise<Response>) {
   return async (req: Request) => {
     const url = new URL(req.url);
+    const clonedReq = req.clone();
+    const rawBody = await clonedReq.text().catch(() => "(unreadable)");
     console.log(`[MCP] ${req.method} ${url.pathname}`, {
       hasAuth: !!req.headers.get("authorization"),
       contentType: req.headers.get("content-type"),
+      accept: req.headers.get("accept"),
+      body: rawBody.slice(0, 500),
     });
 
     try {
