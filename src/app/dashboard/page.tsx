@@ -9,7 +9,7 @@ import { BoardIcon } from "@/components/board/BoardIcon";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import { Users, Plus, Globe, Link as LinkIcon, FileText, ExternalLink, CheckSquare, Sun, Moon, Monitor } from "lucide-react";
+import { Users, Plus, Globe, Link as LinkIcon, FileText, ExternalLink, CheckSquare, Sun, Moon, Monitor, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -172,10 +172,11 @@ export default function DashboardPage() {
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
-                  {themeMode === "dark" ? <Moon className="h-4 w-4" /> : themeMode === "light" ? <Sun className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}
+                  <Settings className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-40 p-1" align="end">
+              <PopoverContent className="w-44 p-2" align="end">
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide px-2 mb-1.5">Theme</p>
                 {([
                   { value: "system" as const, label: "System", icon: Monitor },
                   { value: "light" as const, label: "Light", icon: Sun },
@@ -184,7 +185,7 @@ export default function DashboardPage() {
                   <button
                     key={option.value}
                     onClick={() => setThemeMode(option.value)}
-                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors ${
                       themeMode === option.value
                         ? "bg-accent font-medium"
                         : "hover:bg-accent/50"
@@ -194,9 +195,10 @@ export default function DashboardPage() {
                     {option.label}
                   </button>
                 ))}
+                <div className="my-1.5 border-t border-border" />
+                <SuggestFeatureButton />
               </PopoverContent>
             </Popover>
-            <SuggestFeatureButton />
             <CreateBoardDialog />
             <UserMenu />
           </div>

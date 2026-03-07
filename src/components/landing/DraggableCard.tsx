@@ -5,9 +5,11 @@ import { useRef, useState, useCallback, useEffect, type ReactNode } from "react"
 export function DraggableCard({
   children,
   className,
+  style: externalStyle,
 }: {
   children: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -66,9 +68,10 @@ export function DraggableCard({
       onMouseDown={onMouseDown}
       className={className}
       style={{
+        ...externalStyle,
         transform: `translate(${offset.x}px, ${offset.y}px)`,
         cursor: dragging ? "grabbing" : "grab",
-        zIndex: dragging ? 50 : undefined,
+        zIndex: dragging ? 50 : externalStyle?.zIndex,
         userSelect: dragging ? "none" : undefined,
         transition: dragging ? "none" : "box-shadow 0.2s",
       }}

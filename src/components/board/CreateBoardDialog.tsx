@@ -37,8 +37,8 @@ export function CreateBoardDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+          <Plus className="h-3.5 w-3.5" />
           New Board
         </Button>
       </DialogTrigger>

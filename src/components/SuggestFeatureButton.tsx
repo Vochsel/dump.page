@@ -46,7 +46,7 @@ export function SuggestFeatureButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="text-xs text-gray-400 hover:text-gray-600 font-[family-name:var(--font-poppins)] underline decoration-gray-300 hover:decoration-gray-400 transition-colors cursor-pointer"
+        className="w-full text-left text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md px-2 py-1.5 transition-colors cursor-pointer"
       >
         Suggest a feature
       </button>

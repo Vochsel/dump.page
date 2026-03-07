@@ -2,17 +2,37 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Bug } from "lucide-react";
+import { ArrowLeft, Sparkles, Bug, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { changelog, type ChangelogEntry } from "@/lib/changelog";
 import { BUILD_VERSION } from "@/lib/constants";
+import { DraggableCard } from "@/components/landing/DraggableCard";
+import { SmallLoginButton } from "@/components/auth/SmallLoginButton";
 
 type Filter = "all" | "feature" | "fix";
 
 function EntryIcon({ type }: { type: ChangelogEntry["type"] }) {
-  if (type === "feature") return <Sparkles className="h-3.5 w-3.5 text-amber-500" />;
-  return <Bug className="h-3.5 w-3.5 text-blue-500" />;
+  if (type === "feature") return <Sparkles className="h-3.5 w-3.5 text-stone-400" />;
+  return <Bug className="h-3.5 w-3.5 text-stone-400" />;
 }
+
+const stickyNotes = [
+  { top: "8%", left: "calc(50% - 520px)", rotate: "rotate-[3deg]", bg: "bg-yellow-100 border-yellow-200/80", color: "text-yellow-700", title: "TODO:", body: "Add dark mode for the changelog page... eventually" },
+  { top: "22%", left: "calc(50% + 400px)", rotate: "rotate-[-2deg]", bg: "bg-pink-100 border-pink-200/80", color: "text-pink-700", title: undefined, body: "Remember: ship it before it's perfect" },
+  { top: "42%", left: "calc(50% - 540px)", rotate: "rotate-[1.5deg]", bg: "bg-blue-100 border-blue-200/80", color: "text-blue-700", title: "Fun fact", body: "This changelog was built on a Dump board" },
+  { top: "58%", left: "calc(50% + 410px)", rotate: "rotate-[-3deg]", bg: "bg-green-100 border-green-200/80", color: "text-green-700", title: undefined, body: "If you're reading this, you're our favorite user" },
+  { top: "75%", left: "calc(50% - 530px)", rotate: "rotate-[2deg]", bg: "bg-purple-100 border-purple-200/80", color: "text-purple-700", title: "Secret", body: "There's a hidden sound when you add a card" },
+  { top: "88%", left: "calc(50% + 390px)", rotate: "rotate-[-1deg]", bg: "bg-orange-100 border-orange-200/80", color: "text-orange-700", title: undefined, body: "We spent way too long picking these colors" },
+];
+
+const linkCards = [
+  { top: "15%", left: "calc(50% + 410px)", rotate: "rotate-[-1deg]", emoji: "\u{1F986}", title: "Rubber Duck Debugging", subtitle: "Our #1 dev tool" },
+  { top: "35%", left: "calc(50% + 420px)", rotate: "rotate-[2deg]", emoji: "\u{2615}", title: "Coffee Counter", subtitle: "4,217 cups & counting" },
+  { top: "50%", left: "calc(50% - 550px)", rotate: "rotate-[-1.5deg]", emoji: "\u{1F3B5}", title: "Lofi Beats Playlist", subtitle: "Fuel for shipping" },
+  { top: "65%", left: "calc(50% - 530px)", rotate: "rotate-[1deg]", emoji: "\u{1F680}", title: "Launch Checklist", subtitle: "Almost there..." },
+  { top: "82%", left: "calc(50% - 540px)", rotate: "rotate-[-2deg]", emoji: "\u{1F354}", title: "Lunch Decision Board", subtitle: "The hardest problem" },
+  { top: "92%", left: "calc(50% + 400px)", rotate: "rotate-[1.5deg]", emoji: "\u{1F431}", title: "Office Cat Pics", subtitle: "Very important folder" },
+];
 
 export default function ChangelogPage() {
   const [filter, setFilter] = useState<Filter>("all");
@@ -21,7 +41,6 @@ export default function ChangelogPage() {
     <div className="min-h-screen bg-[#fef9ee] dark:bg-gray-950 relative overflow-hidden">
       {/* Whiteboard decorations */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Grid pattern */}
         <svg className="w-full h-full opacity-[0.04]">
           <defs>
             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -36,9 +55,34 @@ export default function ChangelogPage() {
       <div className="absolute top-4 left-8 w-16 h-6 bg-amber-200/40 rotate-[-8deg] rounded-sm" />
       <div className="absolute top-4 right-8 w-16 h-6 bg-amber-200/40 rotate-[5deg] rounded-sm" />
 
-      {/* Pin dots */}
-      <div className="absolute top-6 left-1/3 w-3 h-3 bg-red-400 rounded-full shadow-sm" />
-      <div className="absolute top-8 right-1/4 w-3 h-3 bg-blue-400 rounded-full shadow-sm" />
+      {/* Draggable sticky notes scattered across viewport */}
+      {stickyNotes.map((note, i) => (
+        <DraggableCard
+          key={`sticky-${i}`}
+          className={`absolute ${note.rotate} ${note.bg} border rounded-sm p-3 shadow-md w-36 hidden xl:block z-20`}
+          style={{ top: note.top, left: note.left }}
+        >
+          {note.title && <p className={`text-[11px] font-medium ${note.color}`}>{note.title}</p>}
+          <p className={`text-[10px] ${note.color} ${note.title ? "mt-1" : ""} leading-relaxed`}>{note.body}</p>
+        </DraggableCard>
+      ))}
+
+      {/* Draggable link cards scattered across viewport */}
+      {linkCards.map((card, i) => (
+        <DraggableCard
+          key={`link-${i}`}
+          className={`absolute ${card.rotate} bg-white border border-stone-200 rounded-lg p-2.5 shadow-sm w-40 hidden xl:block z-20`}
+          style={{ top: card.top, left: card.left }}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-stone-100 rounded flex items-center justify-center text-[10px]">{card.emoji}</div>
+            <div>
+              <p className="text-[10px] font-medium text-stone-700 truncate">{card.title}</p>
+              <p className="text-[9px] text-stone-400">{card.subtitle}</p>
+            </div>
+          </div>
+        </DraggableCard>
+      ))}
 
       <header className="relative z-10 border-b border-amber-200/40 dark:border-gray-800">
         <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -52,6 +96,14 @@ export default function ChangelogPage() {
             <span className="font-[family-name:var(--font-dynapuff)] text-lg text-gray-800">
               Changelog
             </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/help">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <HelpCircle className="h-4 w-4" />
+              </Button>
+            </Link>
+            <SmallLoginButton />
           </div>
         </div>
       </header>
