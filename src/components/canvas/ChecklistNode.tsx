@@ -280,7 +280,7 @@ export function ChecklistNode({ data }: NodeProps) {
             onDragOver={(e) => handleDragOver(e, idx)}
             onDrop={(e) => handleDrop(e, idx)}
             onDragEnd={handleDragEnd}
-            className={`flex items-center gap-1 rounded px-1 py-0.5 group/item ${
+            className={`flex items-start gap-1 rounded px-1 py-0.5 group/item ${
               dragOverIdx === idx && dragIdx !== idx
                 ? "border-t-2 border-gray-400"
                 : "border-t-2 border-transparent"
@@ -290,7 +290,7 @@ export function ChecklistNode({ data }: NodeProps) {
               <div
                 draggable
                 onDragStart={(e) => handleDragStart(e, idx)}
-                className="nodrag cursor-grab shrink-0"
+                className="nodrag cursor-grab shrink-0 mt-0.5"
               >
                 <GripVertical className="h-3 w-3 text-gray-400/60" />
               </div>
@@ -300,7 +300,7 @@ export function ChecklistNode({ data }: NodeProps) {
               checked={item.checked}
               onChange={() => canEdit && toggleCheck(item.id)}
               disabled={!canEdit}
-              className="nodrag h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 shrink-0 cursor-pointer"
+              className="nodrag h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 shrink-0 cursor-pointer mt-0.5"
             />
             {canEdit ? (
               <input
@@ -322,7 +322,7 @@ export function ChecklistNode({ data }: NodeProps) {
               />
             ) : (
               <span
-                className={`flex-1 text-sm px-1 text-gray-900 dark:text-gray-100 ${
+                className={`flex-1 text-sm px-1 text-gray-900 dark:text-gray-100 break-words min-w-0 ${
                   item.checked ? "line-through opacity-50" : ""
                 }`}
               >
@@ -332,7 +332,7 @@ export function ChecklistNode({ data }: NodeProps) {
             {canEdit && (
               <button
                 onClick={() => deleteItem(item.id)}
-                className="nodrag opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 hover:bg-gray-200/50 rounded shrink-0"
+                className="nodrag opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 hover:bg-gray-200/50 rounded shrink-0 mt-0.5"
               >
                 <X className="h-3 w-3 text-gray-600/60" />
               </button>

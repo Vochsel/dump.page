@@ -55,6 +55,9 @@ export default function DashboardPage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/changelog" className="text-xs text-stone-400 hover:text-stone-600 transition-colors">
+              Changelog
+            </Link>
             <SuggestFeatureButton />
             <CreateBoardDialog />
             <UserMenu />
