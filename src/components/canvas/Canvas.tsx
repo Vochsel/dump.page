@@ -338,7 +338,8 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
         target.isContentEditable ||
-        target.closest("[contenteditable]")
+        target.closest("[contenteditable]") ||
+        target.closest(".ProseMirror")
       ) {
         return;
       }
