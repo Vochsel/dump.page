@@ -124,7 +124,7 @@ export default async function BoardOgImage({
           alignItems: "center",
           justifyContent: "center",
           background:
-            "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0f9ff 100%)",
+            "linear-gradient(135deg, #fafafa 0%, #f5f5f5 50%, #f8fafc 100%)",
           fontFamily: "sans-serif",
         }}
       >
@@ -133,9 +133,9 @@ export default async function BoardOgImage({
             position: "absolute",
             inset: 0,
             backgroundImage:
-              "radial-gradient(circle, #d1d5db 1px, transparent 1px)",
+              "radial-gradient(circle, #e5e7eb 1px, transparent 1px)",
             backgroundSize: "24px 24px",
-            opacity: 0.3,
+            opacity: 0.15,
           }}
         />
         <div
@@ -146,20 +146,20 @@ export default async function BoardOgImage({
             gap: "24px",
           }}
         >
-          {icon && <span style={{ fontSize: 80 }}>{icon}</span>}
+          {icon && <span style={{ fontSize: 120 }}>{icon}</span>}
           <span
             style={{
-              fontSize: 48,
+              fontSize: 64,
               fontWeight: 700,
               color: "#1f2937",
               fontFamily: "DynaPuff",
-              maxWidth: 800,
+              maxWidth: 900,
               textAlign: "center",
             }}
           >
             {board.name}
           </span>
-          <span style={{ fontSize: 24, color: "#6b7280" }}>
+          <span style={{ fontSize: 32, color: "#6b7280" }}>
             {itemCount} {itemCount === 1 ? "item" : "items"} on Dump
           </span>
         </div>
@@ -198,7 +198,7 @@ async function generateFallbackImage() {
           alignItems: "center",
           justifyContent: "center",
           background:
-            "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0f9ff 100%)",
+            "linear-gradient(135deg, #fafafa 0%, #f5f5f5 50%, #f8fafc 100%)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
