@@ -208,6 +208,21 @@ export default function Home() {
         </div>
       </div>
 
+      {/* MCP sticker */}
+      <DraggableCard className="mt-12 -rotate-3">
+        <a
+          href="/mcp"
+          className="block bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/40 dark:to-emerald-900/40 border-2 border-green-300 dark:border-green-700 border-dashed rounded-lg px-5 py-3 shadow-md hover:shadow-lg transition-shadow"
+        >
+          <p className="font-[family-name:var(--font-dynapuff)] text-sm text-green-800 dark:text-green-200 text-center">
+            Now with 100% more MCP
+          </p>
+          <p className="text-[10px] text-green-600 dark:text-green-400 text-center mt-0.5 font-[family-name:var(--font-poppins)]">
+            Connect ChatGPT, Claude &amp; more &rarr;
+          </p>
+        </a>
+      </DraggableCard>
+
       {/* Login */}
       <div className="mt-16 flex flex-col items-center gap-3">
         <Suspense fallback={<div className="h-10" />}>
