@@ -35,6 +35,7 @@ import {
   Bot,
   Wand2,
   HelpCircle,
+  Share2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -201,7 +202,7 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon">
-          <ExternalLink className="h-4 w-4" />
+          <Share2 className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
