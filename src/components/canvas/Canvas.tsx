@@ -660,7 +660,7 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
         if (isMuted) { sfx.unmute(); } else { sfx.mute(); }
         setIsMuted(!isMuted);
       }}
-      className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm hover:bg-white transition-colors text-gray-500 hover:text-gray-700"
+      className="absolute bottom-4 left-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm hover:bg-white transition-colors text-gray-500 hover:text-gray-700"
       title={isMuted ? "Unmute sounds" : "Mute sounds"}
     >
       {isMuted ? <VolumeOff className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
