@@ -46,6 +46,22 @@ export function TipTapEditor({ content, onSave, onCancel }: TipTapEditorProps) {
           e.preventDefault();
           onCancel();
         }
+        if (e.key === "Tab") {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!editor) return;
+          if (e.shiftKey) {
+            editor.chain().focus().liftListItem("listItem").run() ||
+              editor.chain().focus().liftListItem("taskItem").run();
+          } else {
+            const sank =
+              editor.chain().focus().sinkListItem("listItem").run() ||
+              editor.chain().focus().sinkListItem("taskItem").run();
+            if (!sank) {
+              editor.chain().focus().insertContent("\t").run();
+            }
+          }
+        }
       }}
     >
       <EditorContent editor={editor} />
