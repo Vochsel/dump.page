@@ -43,6 +43,21 @@ export function ChecklistNode({ data }: NodeProps) {
   const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo, onPreview } = data as unknown as ChecklistNodeData;
   const { updateNode } = useBoardOps();
 
+  // Stable refs for context functions — prevents callback recreation on every node change
+  const updateNodeRef = useRef(updateNode);
+  updateNodeRef.current = updateNode;
+  const stableUpdateNode = useCallback(
+    (args: Parameters<typeof updateNode>[0]) => updateNodeRef.current(args),
+    []
+  );
+
+  const pushActionRef = useRef(pushAction);
+  pushActionRef.current = pushAction;
+  const stablePushAction = useCallback(
+    (action: UndoAction) => pushActionRef.current(action),
+    []
+  );
+
   // Title editing state
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(title ?? "");
@@ -61,9 +76,9 @@ export function ChecklistNode({ data }: NodeProps) {
     const trimmed = titleValue.trim();
     const newTitle = trimmed || undefined;
     if (newTitle !== (title ?? undefined)) {
-      updateNode({ nodeId, title: newTitle ?? "" });
+      stableUpdateNode({ nodeId, title: newTitle ?? "" });
     }
-  }, [titleValue, title, nodeId, updateNode]);
+  }, [titleValue, title, nodeId, stableUpdateNode]);
 
   const [items, setItems] = useState<ChecklistItem[]>(() => {
     const parsed = parseItems(content);
@@ -79,6 +94,7 @@ export function ChecklistNode({ data }: NodeProps) {
   const focusIdRef = useRef<string | null>(null);
   // Track whether any input is focused to skip external sync
   const hasFocusRef = useRef(false);
+  const lastFocusedIdRef = useRef<string | null>(null);
 
   // Sync from external content changes only when not editing
   useEffect(() => {
@@ -112,12 +128,29 @@ export function ChecklistNode({ data }: NodeProps) {
     });
   }, [items]);
 
+  // Focus restoration safety net — if focus dropped to body during re-render, restore it
+  useEffect(() => {
+    if (
+      hasFocusRef.current &&
+      lastFocusedIdRef.current &&
+      document.activeElement === document.body
+    ) {
+      const el = inputRefs.current.get(lastFocusedIdRef.current);
+      if (el) {
+        el.focus();
+      } else {
+        hasFocusRef.current = false;
+        lastFocusedIdRef.current = null;
+      }
+    }
+  });
+
   const persistNow = useCallback(
     (newItems: ChecklistItem[]) => {
       setItems(newItems);
-      updateNode({ nodeId, content: JSON.stringify(newItems) });
+      stableUpdateNode({ nodeId, content: JSON.stringify(newItems) });
     },
-    [nodeId, updateNode]
+    [nodeId, stableUpdateNode]
   );
 
   const toggleCheck = useCallback(
@@ -152,17 +185,24 @@ export function ChecklistNode({ data }: NodeProps) {
     ) {
       // Internal focus transfer — persist but keep hasFocusRef true
       if (newContent !== content) {
-        pushAction({ type: "edit", nodeId, oldContent: content, newContent });
+        stablePushAction({ type: "edit", nodeId, oldContent: content, newContent });
       }
-      updateNode({ nodeId, content: newContent });
+      stableUpdateNode({ nodeId, content: newContent });
       return;
     }
-    hasFocusRef.current = false;
+    // Defer clearing hasFocusRef — during arrow navigation, the new textarea's
+    // onFocus may not have fired yet. Use rAF so the new onFocus fires first.
+    requestAnimationFrame(() => {
+      if (!containerRef.current?.contains(document.activeElement)) {
+        hasFocusRef.current = false;
+        lastFocusedIdRef.current = null;
+      }
+    });
     if (newContent !== content) {
-      pushAction({ type: "edit", nodeId, oldContent: content, newContent });
+      stablePushAction({ type: "edit", nodeId, oldContent: content, newContent });
     }
-    updateNode({ nodeId, content: newContent });
-  }, [nodeId, updateNode, content, pushAction]);
+    stableUpdateNode({ nodeId, content: newContent });
+  }, [nodeId, stableUpdateNode, content, stablePushAction]);
 
   const addItemAfter = useCallback(
     (id: string) => {
@@ -243,6 +283,13 @@ export function ChecklistNode({ data }: NodeProps) {
         {showTitle && title && (
           <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60 flex items-center gap-1">
             <div className="flex-1 min-w-0 text-xs font-semibold truncate text-gray-700 dark:text-gray-200">{title}</div>
+            <button
+              className="nodrag flex-shrink-0 p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors text-gray-500/50 hover:text-gray-600/70 dark:text-gray-400/50 dark:hover:text-gray-300/70"
+              onClick={() => onPreview?.(nodeId)}
+              title="Preview contents"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </button>
             {canEdit && (
               <button
                 className="nodrag flex-shrink-0 p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors text-gray-500/50 hover:text-gray-600/70 dark:text-gray-400/50 dark:hover:text-gray-300/70"
@@ -257,16 +304,7 @@ export function ChecklistNode({ data }: NodeProps) {
         <div className="p-3 space-y-1.5">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>{checkedCount}/{totalCount} done</span>
-            <div className="flex items-center gap-1">
-              <button
-                className="nodrag p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors"
-                onClick={() => onPreview?.(nodeId)}
-                title="Preview contents"
-              >
-                <Maximize2 className="h-3 w-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
-              </button>
-              <span className="font-medium">{pct}%</span>
-            </div>
+            <span className="font-medium">{pct}%</span>
           </div>
           <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
             <div
@@ -381,6 +419,7 @@ export function ChecklistNode({ data }: NodeProps) {
                 }}
                 onFocus={(e) => {
                   hasFocusRef.current = true;
+                  lastFocusedIdRef.current = item.id;
                   e.target.style.height = "auto";
                   e.target.style.height = e.target.scrollHeight + "px";
                 }}
@@ -391,17 +430,33 @@ export function ChecklistNode({ data }: NodeProps) {
                     addItemAfter(item.id);
                   }
                   if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                    const cur = itemsRef.current;
-                    const curIdx = cur.findIndex((i) => i.id === item.id);
-                    const targetIdx = e.key === "ArrowUp" ? curIdx - 1 : curIdx + 1;
-                    if (targetIdx >= 0 && targetIdx < cur.length) {
-                      e.preventDefault();
-                      const targetEl = inputRefs.current.get(cur[targetIdx].id);
-                      if (targetEl) {
-                        targetEl.focus();
-                        // Place cursor at end
-                        const len = targetEl.value.length;
-                        targetEl.setSelectionRange(len, len);
+                    e.stopPropagation(); // Prevent React Flow from intercepting
+                    const ta = e.currentTarget;
+                    const val = ta.value;
+                    const pos = ta.selectionStart;
+                    // For multiline items, only jump to adjacent item when
+                    // cursor is on the first line (ArrowUp) or last line (ArrowDown)
+                    const atEdge = e.key === "ArrowUp"
+                      ? !val.slice(0, pos).includes("\n")
+                      : !val.slice(pos).includes("\n");
+                    if (atEdge) {
+                      const cur = itemsRef.current;
+                      const curIdx = cur.findIndex((i) => i.id === item.id);
+                      const targetIdx = e.key === "ArrowUp" ? curIdx - 1 : curIdx + 1;
+                      if (targetIdx >= 0 && targetIdx < cur.length) {
+                        e.preventDefault();
+                        // Set focus flag BEFORE .focus() to prevent blur handler from clearing it
+                        hasFocusRef.current = true;
+                        const targetEl = inputRefs.current.get(cur[targetIdx].id);
+                        if (targetEl) {
+                          targetEl.focus();
+                          if (e.key === "ArrowUp") {
+                            const len = targetEl.value.length;
+                            targetEl.setSelectionRange(len, len);
+                          } else {
+                            targetEl.setSelectionRange(0, 0);
+                          }
+                        }
                       }
                     }
                   }
