@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2 } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -69,9 +69,11 @@ interface CanvasInnerProps {
   settings: BoardSettingsData;
   boardSlug?: string;
   shareToken?: string;
+  viewMode?: "board" | "list" | "document";
+  onViewModeChange?: (mode: "board" | "list" | "document") => void;
 }
 
-function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerProps) {
+function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onViewModeChange }: CanvasInnerProps) {
   const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata } = useBoardOps();
   const { screenToFlowPosition, fitView, setViewport } = useReactFlow();
   const mousePosRef = useRef({ x: 0, y: 0 });
@@ -907,6 +909,40 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
           )}
         </PopoverContent>
       </Popover>
+      {viewMode && onViewModeChange && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm"
+              title="Switch view"
+            >
+              {viewMode === "board" ? <LayoutGrid className="h-3.5 w-3.5" /> : viewMode === "list" ? <List className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+              <span className="capitalize">{viewMode}</span>
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-40 p-1" side="top" align="start">
+            {([
+              { value: "board" as const, label: "Board", icon: LayoutGrid },
+              { value: "list" as const, label: "List", icon: List },
+              { value: "document" as const, label: "Document", icon: FileText },
+            ]).map((option) => (
+              <button
+                key={option.value}
+                onClick={() => onViewModeChange(option.value)}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors ${
+                  viewMode === option.value
+                    ? "bg-accent font-medium"
+                    : "hover:bg-accent/50"
+                }`}
+              >
+                <option.icon className="h-3.5 w-3.5" />
+                {option.label}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 
@@ -1348,12 +1384,14 @@ interface CanvasProps {
   settings?: BoardSettingsData;
   boardSlug?: string;
   shareToken?: string;
+  viewMode?: "board" | "list" | "document";
+  onViewModeChange?: (mode: "board" | "list" | "document") => void;
 }
 
-export function Canvas({ canEdit, settings = {}, boardSlug, shareToken }: CanvasProps) {
+export function Canvas({ canEdit, settings = {}, boardSlug, shareToken, viewMode, onViewModeChange }: CanvasProps) {
   return (
     <ReactFlowProvider>
-      <CanvasInner canEdit={canEdit} settings={settings} boardSlug={boardSlug} shareToken={shareToken} />
+      <CanvasInner canEdit={canEdit} settings={settings} boardSlug={boardSlug} shareToken={shareToken} viewMode={viewMode} onViewModeChange={onViewModeChange} />
     </ReactFlowProvider>
   );
 }
