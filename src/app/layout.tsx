@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/auth-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/context/theme-context";
+import { CommandPalette } from "@/components/CommandPalette";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,6 +79,7 @@ export default function RootLayout({
           <AuthProvider>
             <ThemeProvider>
               <TooltipProvider>{children}</TooltipProvider>
+              <CommandPalette />
               <Toaster />
             </ThemeProvider>
           </AuthProvider>

@@ -11,6 +11,23 @@ export type ChangelogVersion = {
 
 export const changelog: ChangelogVersion[] = [
   {
+    version: "1.5.0",
+    date: "2026-03-07",
+    entries: [
+      { type: "feature", description: "MCP server — connect Dump to Claude, ChatGPT, Claude Code, and Codex via OAuth-based MCP integration" },
+      { type: "feature", description: "Command palette — press Cmd+K to search across all boards and items, with recent boards shown by default" },
+      { type: "feature", description: "List and document views — toggle between board, list, and document views for any board" },
+      { type: "feature", description: "Preview collapsed items — click the magnifying glass on collapsed notes and checklists to view full content in a popup" },
+      { type: "feature", description: "Multi-select copy — right-click multiple selected items to copy all their contents at once" },
+      { type: "feature", description: "Checklist arrow key navigation — use up/down arrows to move between checklist items while editing" },
+      { type: "feature", description: "MCP integration page — setup instructions for Claude, ChatGPT, Claude Code, and Codex at /mcp" },
+      { type: "fix", description: "Checklist width — checklists now grow wider when items have longer text" },
+      { type: "fix", description: "Copy content for links — right-click 'Copy content' on link items now copies the URL instead of the title" },
+      { type: "fix", description: "Checklist input focus — reduced random defocus when typing in checklist items" },
+      { type: "fix", description: "Dark mode context menu — node right-click menu now properly styled in dark mode" },
+    ],
+  },
+  {
     version: "1.4.0",
     date: "2026-03-07",
     entries: [

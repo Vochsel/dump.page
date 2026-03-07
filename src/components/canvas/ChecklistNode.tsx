@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { NodeProps } from "@xyflow/react";
-import { Trash2, GripVertical, X, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { Trash2, GripVertical, X, ChevronsDownUp, ChevronsUpDown, Maximize2 } from "lucide-react";
 import { useBoardOps } from "@/context/board-ops-context";
 
 type ChecklistItem = {
@@ -22,6 +22,7 @@ type ChecklistNodeData = {
   canEdit: boolean;
   pushAction: (action: UndoAction) => void;
   deleteNodeWithUndo: (nodeId: string) => void;
+  onPreview?: (nodeId: string) => void;
 };
 
 function generateId() {
@@ -39,7 +40,7 @@ function parseItems(content: string): ChecklistItem[] {
 }
 
 export function ChecklistNode({ data }: NodeProps) {
-  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as ChecklistNodeData;
+  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo, onPreview } = data as unknown as ChecklistNodeData;
   const { updateNode } = useBoardOps();
 
   // Title editing state
@@ -82,6 +83,8 @@ export function ChecklistNode({ data }: NodeProps) {
   // Sync from external content changes only when not editing
   useEffect(() => {
     if (hasFocusRef.current) return;
+    // Also check if any input inside the container is focused (covers edge cases)
+    if (containerRef.current?.contains(document.activeElement)) return;
     const parsed = parseItems(content);
     if (parsed.length > 0) {
       setItems(parsed);
@@ -230,9 +233,13 @@ export function ChecklistNode({ data }: NodeProps) {
   const totalCount = items.length;
   const pct = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0;
 
+  // Calculate if checklist needs wider layout based on content
+  const needsWide = items.some((i) => i.text.length > 35);
+  const widthClass = needsWide ? "w-[480px]" : "w-[280px]";
+
   if (collapsed) {
     return (
-      <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md w-[280px] group border border-gray-200 dark:border-gray-700">
+      <div ref={containerRef} className={`bg-white dark:bg-gray-900 rounded-sm shadow-md ${widthClass} group border border-gray-200 dark:border-gray-700`}>
         {showTitle && title && (
           <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60 flex items-center gap-1">
             <div className="flex-1 min-w-0 text-xs font-semibold truncate text-gray-700 dark:text-gray-200">{title}</div>
@@ -250,7 +257,16 @@ export function ChecklistNode({ data }: NodeProps) {
         <div className="p-3 space-y-1.5">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>{checkedCount}/{totalCount} done</span>
-            <span className="font-medium">{pct}%</span>
+            <div className="flex items-center gap-1">
+              <button
+                className="nodrag p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors"
+                onClick={() => onPreview?.(nodeId)}
+                title="Preview contents"
+              >
+                <Maximize2 className="h-3 w-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+              </button>
+              <span className="font-medium">{pct}%</span>
+            </div>
           </div>
           <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
             <div
@@ -274,7 +290,7 @@ export function ChecklistNode({ data }: NodeProps) {
   }
 
   return (
-    <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md w-[280px] group border border-gray-200 dark:border-gray-700">
+    <div ref={containerRef} className={`bg-white dark:bg-gray-900 rounded-sm shadow-md ${widthClass} group border border-gray-200 dark:border-gray-700`}>
       {/* Title bar — only visible when showTitle is true */}
       {showTitle && (
         <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60 flex items-center gap-1">
@@ -373,6 +389,21 @@ export function ChecklistNode({ data }: NodeProps) {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     addItemAfter(item.id);
+                  }
+                  if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                    const cur = itemsRef.current;
+                    const curIdx = cur.findIndex((i) => i.id === item.id);
+                    const targetIdx = e.key === "ArrowUp" ? curIdx - 1 : curIdx + 1;
+                    if (targetIdx >= 0 && targetIdx < cur.length) {
+                      e.preventDefault();
+                      const targetEl = inputRefs.current.get(cur[targetIdx].id);
+                      if (targetEl) {
+                        targetEl.focus();
+                        // Place cursor at end
+                        const len = targetEl.value.length;
+                        targetEl.setSelectionRange(len, len);
+                      }
+                    }
                   }
                   if (e.key === "Backspace" || e.key === "Delete") {
                     const cur = itemsRef.current;

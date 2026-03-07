@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { NodeProps } from "@xyflow/react";
-import { Trash2, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { Trash2, ChevronsDownUp, ChevronsUpDown, Maximize2 } from "lucide-react";
 import { TipTapEditor } from "./TipTapEditor";
 import { useBoardOps } from "@/context/board-ops-context";
 
@@ -17,10 +17,11 @@ type TextNodeData = {
   canEdit: boolean;
   pushAction: (action: UndoAction) => void;
   deleteNodeWithUndo: (nodeId: string) => void;
+  onPreview?: (nodeId: string) => void;
 };
 
 export function TextNode({ data }: NodeProps) {
-  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as TextNodeData;
+  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo, onPreview } = data as unknown as TextNodeData;
   const [editing, setEditing] = useState(!content && canEdit);
   const { updateNode } = useBoardOps();
 
@@ -165,12 +166,23 @@ export function TextNode({ data }: NodeProps) {
         )}
       </div>
       {collapsed && (
-        <div
-          className={`flex items-center justify-center border-t border-yellow-300/40 dark:border-amber-700/30 py-0.5 ${canEdit ? "cursor-pointer hover:bg-yellow-200/30 dark:hover:bg-amber-800/20 transition-colors" : ""}`}
-          onClick={() => canEdit && updateNode({ nodeId, collapsed: false })}
-          title={canEdit ? "Expand note" : "Note is collapsed"}
-        >
-          <ChevronsUpDown className="h-3 w-3 text-yellow-600/40" />
+        <div className="flex items-center justify-center border-t border-yellow-300/40 dark:border-amber-700/30 py-0.5 gap-1">
+          <button
+            className="nodrag p-0.5 rounded hover:bg-yellow-200/40 dark:hover:bg-amber-800/30 transition-colors"
+            onClick={() => onPreview?.(nodeId)}
+            title="Preview contents"
+          >
+            <Maximize2 className="h-3 w-3 text-yellow-600/40 hover:text-yellow-700/60" />
+          </button>
+          {canEdit && (
+            <button
+              className="nodrag p-0.5 rounded hover:bg-yellow-200/40 dark:hover:bg-amber-800/30 transition-colors"
+              onClick={() => updateNode({ nodeId, collapsed: false })}
+              title="Expand note"
+            >
+              <ChevronsUpDown className="h-3 w-3 text-yellow-600/40 hover:text-yellow-700/60" />
+            </button>
+          )}
         </div>
       )}
       {canEdit && (

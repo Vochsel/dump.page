@@ -11,7 +11,7 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { useAuth } from "@/context/auth-context";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, HelpCircle } from "lucide-react";
+import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText } from "lucide-react";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { ChatButton } from "@/components/board/ChatButton";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,9 @@ import { useTheme } from "@/context/theme-context";
 import { resolveBgColor } from "@/components/board/BoardSettings";
 import { toast } from "sonner";
 import { BUILD_VERSION } from "@/lib/constants";
+import { ListView } from "@/components/board/ListView";
+import { DocumentView } from "@/components/board/DocumentView";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 function EditableBoardName({
   boardId,
@@ -99,6 +102,8 @@ export default function BoardPage({
   const token = searchParams.get("token") ?? undefined;
   const { user, loading: authLoading } = useAuth();
   const { resolved: theme } = useTheme();
+
+  const [viewMode, setViewMode] = useLocalStorage<"board" | "list" | "document">("dump-view-mode", "board");
 
   const access = useQuery(api.boardMembers.checkAccess, {
     slug: boardId,
@@ -211,12 +216,22 @@ export default function BoardPage({
       />
       <div className="absolute inset-0">
         <ConvexBoardOpsProvider boardId={access.board._id}>
-          <Canvas
-            canEdit={access.canEdit}
-            settings={boardSettings}
-            boardSlug={access.board.slug ?? boardId}
-            shareToken={access.board.shareToken}
-          />
+          {viewMode === "board" ? (
+            <Canvas
+              canEdit={access.canEdit}
+              settings={boardSettings}
+              boardSlug={access.board.slug ?? boardId}
+              shareToken={access.board.shareToken}
+            />
+          ) : viewMode === "list" ? (
+            <div className="h-full overflow-y-auto pt-16" style={{ backgroundColor: bgColor }}>
+              <ListView />
+            </div>
+          ) : (
+            <div className="h-full overflow-y-auto pt-16" style={{ backgroundColor: bgColor }}>
+              <DocumentView boardName={access.board.name} />
+            </div>
+          )}
         </ConvexBoardOpsProvider>
       </div>
       <header className="absolute top-0 left-0 right-0 z-10 md:flex md:justify-center md:px-4 md:mt-4">
@@ -243,6 +258,30 @@ export default function BoardPage({
               />
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+              {/* View mode toggle */}
+              <div className="flex items-center bg-black/5 dark:bg-white/5 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode("board")}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === "board" ? "bg-white dark:bg-gray-700 shadow-sm" : "hover:bg-black/5 dark:hover:bg-white/5"}`}
+                  title="Board view"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-white dark:bg-gray-700 shadow-sm" : "hover:bg-black/5 dark:hover:bg-white/5"}`}
+                  title="List view"
+                >
+                  <List className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewMode("document")}
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === "document" ? "bg-white dark:bg-gray-700 shadow-sm" : "hover:bg-black/5 dark:hover:bg-white/5"}`}
+                  title="Document view"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                </button>
+              </div>
               <ChatButton
                 boardId={access.board._id}
                 slug={access.board.slug ?? boardId}

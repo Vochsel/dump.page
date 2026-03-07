@@ -620,3 +620,91 @@ export const getBoardForMarkdown = query({
     return { board, nodes };
   },
 });
+
+// Search across all user's boards and items for the cmd+k palette
+export const globalSearch = query({
+  args: { query: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return { boards: [], items: [] };
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
+      .unique();
+    if (!user) return { boards: [], items: [] };
+
+    const searchLower = args.query.toLowerCase();
+
+    const memberships = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const boards: Array<{
+      _id: Id<"boards">;
+      slug: string;
+      name: string;
+      icon: string;
+      updatedAt: number;
+    }> = [];
+
+    const items: Array<{
+      _id: Id<"nodes">;
+      boardId: Id<"boards">;
+      boardSlug: string;
+      boardName: string;
+      type: string;
+      content: string;
+      title?: string;
+      metadata?: { title?: string; description?: string } | null;
+    }> = [];
+
+    for (const m of memberships) {
+      const board = await ctx.db.get(m.boardId);
+      if (!board) continue;
+
+      // Match board name
+      if (board.name.toLowerCase().includes(searchLower)) {
+        boards.push({
+          _id: board._id,
+          slug: board.slug,
+          name: board.name,
+          icon: board.icon,
+          updatedAt: board.updatedAt,
+        });
+      }
+
+      // Search items within this board
+      const nodes = await ctx.db
+        .query("nodes")
+        .withIndex("by_boardId", (q) => q.eq("boardId", m.boardId))
+        .collect();
+
+      for (const node of nodes) {
+        if (node.archived) continue;
+        const matchTitle = node.title?.toLowerCase().includes(searchLower);
+        const matchContent = node.content.toLowerCase().includes(searchLower);
+        const matchMeta = node.metadata?.title?.toLowerCase().includes(searchLower) ||
+          node.metadata?.description?.toLowerCase().includes(searchLower);
+
+        if (matchTitle || matchContent || matchMeta) {
+          items.push({
+            _id: node._id,
+            boardId: board._id,
+            boardSlug: board.slug,
+            boardName: board.name,
+            type: node.type,
+            content: node.content,
+            title: node.title,
+            metadata: node.metadata ? { title: node.metadata.title, description: node.metadata.description } : null,
+          });
+          if (items.length >= 20) break;
+        }
+      }
+      if (items.length >= 20) break;
+    }
+
+    return { boards, items };
+  },
+});

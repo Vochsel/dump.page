@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -111,6 +111,9 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
   // Rename dialog state
   const [renameNodeId, setRenameNodeId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+
+  // Preview dialog for collapsed items
+  const [previewNodeId, setPreviewNodeId] = useState<string | null>(null);
 
   // Undo/Redo
   const { pushAction, undo, redo, canUndo, canRedo } = useUndoRedo({
@@ -189,6 +192,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
             metadataLoading: n.type === "link" && n.metadata === undefined,
             pushAction,
             deleteNodeWithUndo,
+            onPreview: setPreviewNodeId,
           },
         };
       });
@@ -594,10 +598,24 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
     const node = localNodes.find((n) => n.id === nodeMenu.nodeId);
     if (!node) return;
     const data = node.data as { content?: string; metadata?: { title?: string } };
-    const text = data.metadata?.title || data.content || "";
-    // Strip HTML tags for text nodes
-    const plain = text.replace(/<[^>]*>/g, "");
-    navigator.clipboard.writeText(plain);
+    let text: string;
+    if (node.type === "link") {
+      // For links, always copy the URL
+      text = data.content || "";
+    } else if (node.type === "checklist") {
+      // For checklists, copy as plain text list
+      try {
+        const items = JSON.parse(data.content || "[]");
+        text = items.map((i: { text: string; checked: boolean }) => `${i.checked ? "[x]" : "[ ]"} ${i.text}`).join("\n");
+      } catch {
+        text = data.content || "";
+      }
+    } else {
+      // For text nodes, strip HTML
+      text = (data.content || "").replace(/<[^>]*>/g, "");
+    }
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
     setNodeMenu(null);
   }, [nodeMenu, localNodes]);
 
@@ -972,15 +990,56 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
         </ContextMenuContent>
       </ContextMenu>
 
-      {nodeMenu && (
+      {nodeMenu && (() => {
+        const selectedNodes = localNodes.filter((n) => n.selected);
+        const isMultiSelect = selectedNodes.length > 1 && selectedNodes.some((n) => n.id === nodeMenu.nodeId);
+        return (
         <>
           <div className="fixed inset-0 z-40" onClick={closeNodeMenu} onContextMenu={(e) => { e.preventDefault(); closeNodeMenu(); }} />
           <div
-            className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
+            className="fixed z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
             style={{ left: nodeMenu.x, top: nodeMenu.y }}
           >
+            {isMultiSelect ? (
+              <>
+                <button
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  onClick={() => {
+                    const texts = selectedNodes.map((n) => {
+                      const data = n.data as { content?: string; metadata?: { title?: string } };
+                      if (n.type === "link") return data.content || "";
+                      if (n.type === "checklist") {
+                        try {
+                          const items = JSON.parse(data.content || "[]");
+                          return items.map((i: { text: string; checked: boolean }) => `${i.checked ? "[x]" : "[ ]"} ${i.text}`).join("\n");
+                        } catch { return data.content || ""; }
+                      }
+                      return (data.content || "").replace(/<[^>]*>/g, "");
+                    });
+                    navigator.clipboard.writeText(texts.join("\n\n"));
+                    toast.success(`Copied ${selectedNodes.length} items`);
+                    setNodeMenu(null);
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy contents ({selectedNodes.length})
+                </button>
+                <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                <button
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                  onClick={() => {
+                    for (const n of selectedNodes) deleteNodeWithUndo(n.id);
+                    setNodeMenu(null);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete ({selectedNodes.length})
+                </button>
+              </>
+            ) : (
+            <>
             <button
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               onClick={handleNodeCopy}
             >
               <Copy className="h-3.5 w-3.5" />
@@ -988,7 +1047,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
             </button>
             {boardSlug && (
               <button
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 onClick={handleNodeCopyLink}
               >
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -996,7 +1055,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               </button>
             )}
             <button
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               onClick={handleNodeDuplicate}
             >
               <CopyPlus className="h-3.5 w-3.5" />
@@ -1005,14 +1064,14 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
             {localNodes.find((n) => n.id === nodeMenu.nodeId)?.type === "link" && (
               <>
                 <button
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   onClick={handleNodeEditLink}
                 >
                   <Link className="h-3.5 w-3.5" />
                   Edit link
                 </button>
                 <button
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   onClick={handleNodeRename}
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -1026,9 +1085,9 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               const source = boardNodes?.find((n) => n._id === nodeMenu.nodeId);
               return (
                 <>
-                  <div className="my-1 border-t border-gray-100" />
+                  <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
                   <button
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     onClick={handleNodeToggleTitle}
                   >
                     <PanelTop className="h-3.5 w-3.5" />
@@ -1036,7 +1095,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
                   </button>
                   {(nodeType === "text" || nodeType === "checklist") && (
                     <button
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       onClick={handleNodeToggleCollapse}
                     >
                       <ChevronsUpDown className="h-3.5 w-3.5" />
@@ -1046,24 +1105,27 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
                 </>
               );
             })()}
-            <div className="my-1 border-t border-gray-100" />
+            <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
             <button
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               onClick={handleNodeArchive}
             >
               <Archive className="h-3.5 w-3.5" />
               Archive
             </button>
             <button
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
               onClick={handleNodeDelete}
             >
               <Trash2 className="h-3.5 w-3.5" />
               Delete
             </button>
+            </>
+            )}
           </div>
         </>
-      )}
+        );
+      })()}
 
       <Dialog open={linkDialogOpen} onOpenChange={(open) => { setLinkDialogOpen(open); if (!open) setEditLinkNodeId(null); }}>
         <DialogContent className="sm:max-w-md">
@@ -1118,6 +1180,52 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               Save
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview dialog for collapsed items */}
+      <Dialog open={previewNodeId !== null} onOpenChange={(open) => { if (!open) setPreviewNodeId(null); }}>
+        <DialogContent className="sm:max-w-lg max-h-[70vh] flex flex-col">
+          {(() => {
+            if (!previewNodeId) return null;
+            const source = boardNodes?.find((n) => n._id === previewNodeId);
+            if (!source) return null;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    {source.type === "checklist" ? <CheckSquare className="h-4 w-4" /> : <Type className="h-4 w-4" />}
+                    {source.title || (source.type === "checklist" ? "Checklist" : "Note")}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex-1 overflow-y-auto py-2">
+                  {source.type === "checklist" ? (
+                    <div className="space-y-1">
+                      {(() => {
+                        try {
+                          const items = JSON.parse(source.content);
+                          if (!Array.isArray(items)) return <p className="text-sm text-muted-foreground">Empty</p>;
+                          return items.map((item: { id: string; text: string; checked: boolean }) => (
+                            <div key={item.id} className="flex items-start gap-2 px-1 py-0.5">
+                              <input type="checkbox" checked={item.checked} readOnly className="h-3.5 w-3.5 rounded border-gray-300 mt-0.5" />
+                              <span className={`text-sm ${item.checked ? "line-through opacity-50" : ""}`}>{item.text}</span>
+                            </div>
+                          ));
+                        } catch { return <p className="text-sm text-muted-foreground">Empty</p>; }
+                      })()}
+                    </div>
+                  ) : (
+                    <div
+                      className="tiptap-editor text-sm prose prose-sm max-w-none dark:prose-invert"
+                      dangerouslySetInnerHTML={source.content ? { __html: source.content } : undefined}
+                    >
+                      {!source.content ? <p className="text-muted-foreground italic">Empty</p> : undefined}
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
