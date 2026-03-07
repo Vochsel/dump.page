@@ -790,7 +790,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               onClick={handleNodeCopy}
             >
               <Copy className="h-3.5 w-3.5" />
-              Copy to clipboard
+              Copy content
             </button>
             {boardSlug && (
               <button
@@ -798,7 +798,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
                 onClick={handleNodeCopyLink}
               >
                 <ExternalLink className="h-3.5 w-3.5" />
-                Copy item link
+                Copy link to this
               </button>
             )}
             <button
