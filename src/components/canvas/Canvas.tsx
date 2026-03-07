@@ -154,7 +154,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
           data: {
             content: n.content,
             title: n.title,
-            showTitle: n.showTitle,
+            showTitle: n.showTitle ?? (n.type === "checklist" ? true : undefined),
             collapsed: n.collapsed,
             nodeId: n._id,
             canEdit,

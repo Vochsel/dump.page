@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { NodeProps } from "@xyflow/react";
 import { Trash2, GripVertical, X } from "lucide-react";
 import { useBoardOps } from "@/context/board-ops-context";
@@ -225,8 +225,17 @@ export function ChecklistNode({ data }: NodeProps) {
     setDragOverIdx(null);
   }, []);
 
+  // Auto-size width based on longest item text (~7px per char + padding for grip/checkbox/delete)
+  const nodeWidth = useMemo(() => {
+    const longest = items.reduce((max, item) => Math.max(max, item.text.length), 0);
+    // ~7px per char + ~60px padding (grip + checkbox + delete + margins)
+    const estimated = longest * 7 + 60;
+    const clamped = Math.max(220, Math.min(640, estimated));
+    return clamped;
+  }, [items]);
+
   return (
-    <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md min-w-[220px] max-w-[640px] group border border-gray-200 dark:border-gray-700">
+    <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md min-w-[220px] max-w-[640px] group border border-gray-200 dark:border-gray-700" style={{ width: nodeWidth }}>
       {/* Title bar — only visible when showTitle is true */}
       {showTitle && (
         <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60">

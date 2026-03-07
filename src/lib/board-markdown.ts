@@ -133,7 +133,7 @@ export async function getItemMarkdown(
       };
     }
 
-    let markdown = `# ${board.icon} ${board.name}\n\n`;
+    let markdown = `# ${board.name}\n\n`;
 
     if (node.type === "text") {
       if (node.title) markdown += `## ${node.title}\n\n`;
@@ -187,7 +187,7 @@ export async function getBoardMarkdown(
 
     const { board, nodes } = result;
 
-    let markdown = `# ${board.icon} ${board.name}\n\n`;
+    let markdown = `# ${board.name}\n\n`;
 
     const textNodes = nodes.filter((n) => n.type === "text");
     const linkNodes = nodes.filter((n) => n.type === "link");

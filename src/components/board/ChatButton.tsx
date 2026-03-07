@@ -21,7 +21,7 @@ import {
 import { ChevronDown, Copy, Link2 } from "lucide-react";
 import { toast } from "sonner";
 
-const SITE_URL = "https://www.dump.page.com";
+const SITE_URL = "https://www.dump.page";
 
 const PROVIDERS = [
   {
