@@ -78,6 +78,13 @@ export default function HelpPage() {
               Help
             </span>
           </div>
+          <div className="flex items-center gap-2">
+            <Link href="/changelog">
+              <Button variant="ghost" size="sm" className="text-xs gap-1.5">
+                Changelog
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -181,13 +188,8 @@ export default function HelpPage() {
           </div>
         </section>
 
-        <div className="text-center text-xs text-stone-300 dark:text-stone-600 font-mono space-y-1">
-          <div>
-            <Link href="/changelog" className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors underline decoration-stone-300 dark:decoration-stone-600">
-              Changelog
-            </Link>
-          </div>
-          <div>v{BUILD_VERSION}</div>
+        <div className="text-center text-xs text-stone-300 dark:text-stone-600 font-mono">
+          v{BUILD_VERSION}
         </div>
       </main>
     </div>
