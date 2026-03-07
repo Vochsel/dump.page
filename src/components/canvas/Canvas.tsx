@@ -5,11 +5,13 @@ import {
   ReactFlow,
   Background,
   BackgroundVariant,
+  MiniMap,
   SelectionMode,
   Node,
   NodeChange,
   NodeTypes,
   useReactFlow,
+  useViewport,
   ReactFlowProvider,
 } from "@xyflow/react";
 import { type BoardSettingsData, resolveBgColor } from "@/components/board/BoardSettings";
@@ -32,7 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon } from "lucide-react";
+import { Type, Link, Plus, Minus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -70,13 +72,15 @@ interface CanvasInnerProps {
 
 function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerProps) {
   const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata } = useBoardOps();
-  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { screenToFlowPosition, fitView, zoomIn, zoomOut, zoomTo } = useReactFlow();
+  const { zoom } = useViewport();
   const mousePosRef = useRef({ x: 0, y: 0 });
   const contextMenuPosRef = useRef({ x: 0, y: 0 });
 
   // Link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const [editLinkNodeId, setEditLinkNodeId] = useState<string | null>(null);
 
   // Theme
   const { resolved: theme, setMode: setThemeMode, mode: themeMode } = useTheme();
@@ -87,6 +91,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
   // Client preferences
   const [snapToGrid, setSnapToGrid] = useLocalStorage("dump-snap-to-grid", false);
   const [controlsVariant, setControlsVariant] = useLocalStorage<"default" | "map">("dump-controls-variant", "default");
+  const [showMinimap, setShowMinimap] = useLocalStorage("dump-show-minimap", false);
 
   // Archive panel
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -521,6 +526,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
   }, [boardId, createNode, screenToFlowPosition, pushAction]);
 
   const addLinkNodeAtCursor = useCallback(() => {
+    setEditLinkNodeId(null);
     setLinkUrl("");
     setLinkDialogOpen(true);
   }, []);
@@ -531,22 +537,42 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
       url = "https://" + url;
     }
-    const pos = screenToFlowPosition(contextMenuPosRef.current);
-    const inferred = inferUrlMetadata(url);
-    createNode({
-      boardId,
-      type: "link",
-      content: url,
-      position: { x: pos.x - 140, y: pos.y - 30 },
-      metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
-    }).then((nodeId) => {
-      pushAction({ type: "create", nodeId });
-      sfx.add();
-      fetchMetadata({ nodeId, url });
-    });
+
+    if (editLinkNodeId) {
+      // Edit existing link
+      const source = boardNodes?.find((n) => n._id === editLinkNodeId);
+      if (source) {
+        pushAction({
+          type: "edit",
+          nodeId: editLinkNodeId,
+          oldContent: source.content,
+          newContent: url,
+          oldMetadata: source.metadata ? { ...source.metadata } : undefined,
+          newMetadata: undefined,
+        });
+        updateNode({ nodeId: editLinkNodeId, content: url, metadata: {} });
+        fetchMetadata({ nodeId: editLinkNodeId, url });
+      }
+    } else {
+      // Add new link
+      const pos = screenToFlowPosition(contextMenuPosRef.current);
+      const inferred = inferUrlMetadata(url);
+      createNode({
+        boardId,
+        type: "link",
+        content: url,
+        position: { x: pos.x - 140, y: pos.y - 30 },
+        metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
+      }).then((nodeId) => {
+        pushAction({ type: "create", nodeId });
+        sfx.add();
+        fetchMetadata({ nodeId, url });
+      });
+    }
     setLinkDialogOpen(false);
+    setEditLinkNodeId(null);
     setLinkUrl("");
-  }, [linkUrl, boardId, createNode, fetchMetadata, screenToFlowPosition, pushAction]);
+  }, [linkUrl, editLinkNodeId, boardId, boardNodes, createNode, fetchMetadata, screenToFlowPosition, pushAction, updateNode]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     contextMenuPosRef.current = { x: e.clientX, y: e.clientY };
@@ -624,6 +650,17 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
     const data = node.data as { metadata?: { title?: string } };
     setRenameValue(data.metadata?.title || "");
     setRenameNodeId(nodeMenu.nodeId);
+    setNodeMenu(null);
+  }, [nodeMenu, localNodes]);
+
+  const handleNodeEditLink = useCallback(() => {
+    if (!nodeMenu) return;
+    const node = localNodes.find((n) => n.id === nodeMenu.nodeId);
+    if (!node) return;
+    const data = node.data as { content?: string };
+    setEditLinkNodeId(nodeMenu.nodeId);
+    setLinkUrl(data.content || "");
+    setLinkDialogOpen(true);
     setNodeMenu(null);
   }, [nodeMenu, localNodes]);
 
@@ -719,9 +756,19 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
       panOnScroll={controlsVariant === "default"}
       zoomOnScroll={controlsVariant !== "default"}
       proOptions={{ hideAttribution: true }}
-      style={{ backgroundColor: bgColor }}
+      style={{ backgroundColor: bgColor, overscrollBehaviorX: "none" }}
     >
       {renderBackground()}
+      {showMinimap && (
+        <MiniMap
+          position="bottom-right"
+          pannable
+          zoomable
+          className="!mb-16 !mr-2"
+          maskColor={isDark ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)"}
+          nodeColor={isDark ? "#525252" : "#d4d4d4"}
+        />
+      )}
       {canEdit && (
         <Toolbar
           canUndo={canUndo}
@@ -777,6 +824,15 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               className="h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 cursor-pointer"
             />
           </label>
+          <label className="flex items-center justify-between gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent/50 cursor-pointer">
+            <span>Minimap</span>
+            <input
+              type="checkbox"
+              checked={showMinimap}
+              onChange={(e) => setShowMinimap(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 cursor-pointer"
+            />
+          </label>
           <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
           <p className="px-2 pt-1 pb-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Controls</p>
           <div className="flex gap-1 px-1">
@@ -816,11 +872,75 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
     </div>
   );
 
+  const zoomPercent = Math.round(zoom * 100);
+
+  const zoomControls = (
+    <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1">
+      <button
+        onClick={() => zoomOut({ duration: 200 })}
+        className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        title="Zoom out"
+      >
+        <Minus className="h-4 w-4" />
+      </button>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            className="px-2 py-1.5 min-w-[52px] rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-xs font-medium text-gray-600 dark:text-gray-300 tabular-nums"
+            title="Zoom options"
+          >
+            {zoomPercent}%
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-36 p-1" side="top" align="end">
+          <button
+            onClick={() => fitView({ padding: 0.5, duration: 300 })}
+            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent/50"
+          >
+            Zoom to fit
+          </button>
+          <button
+            onClick={() => zoomTo(0.5, { duration: 200 })}
+            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent/50"
+          >
+            50%
+          </button>
+          <button
+            onClick={() => zoomTo(1, { duration: 200 })}
+            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent/50"
+          >
+            100%
+          </button>
+          <button
+            onClick={() => zoomTo(1.5, { duration: 200 })}
+            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent/50"
+          >
+            150%
+          </button>
+          <button
+            onClick={() => zoomTo(2, { duration: 200 })}
+            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent/50"
+          >
+            200%
+          </button>
+        </PopoverContent>
+      </Popover>
+      <button
+        onClick={() => zoomIn({ duration: 200 })}
+        className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        title="Zoom in"
+      >
+        <Plus className="h-4 w-4" />
+      </button>
+    </div>
+  );
+
   if (!canEdit) {
     return (
       <div className="w-full h-full relative" onMouseMove={onMouseMove}>
         {flowContent}
         {bottomButtons}
+        {zoomControls}
         <QuickTips />
       </div>
     );
@@ -849,6 +969,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               </div>
             )}
             {bottomButtons}
+            {zoomControls}
             <QuickTips />
           </div>
         </ContextMenuTrigger>
@@ -899,13 +1020,22 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               Duplicate
             </button>
             {localNodes.find((n) => n.id === nodeMenu.nodeId)?.type === "link" && (
-              <button
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                onClick={handleNodeRename}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Rename
-              </button>
+              <>
+                <button
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  onClick={handleNodeEditLink}
+                >
+                  <Link className="h-3.5 w-3.5" />
+                  Edit link
+                </button>
+                <button
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  onClick={handleNodeRename}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Rename
+                </button>
+              </>
             )}
             {(() => {
               const nodeType = localNodes.find((n) => n.id === nodeMenu.nodeId)?.type;
@@ -952,12 +1082,15 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
         </>
       )}
 
-      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+      <Dialog open={linkDialogOpen} onOpenChange={(open) => { setLinkDialogOpen(open); if (!open) setEditLinkNodeId(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Link
+              {editLinkNodeId ? (
+                <><Link className="h-4 w-4" />Edit Link</>
+              ) : (
+                <><Plus className="h-4 w-4" />Add Link</>
+              )}
             </DialogTitle>
           </DialogHeader>
           <form
@@ -974,7 +1107,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               autoFocus
             />
             <Button type="submit" disabled={!linkUrl.trim()}>
-              Add
+              {editLinkNodeId ? "Save" : "Add"}
             </Button>
           </form>
         </DialogContent>

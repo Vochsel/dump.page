@@ -73,15 +73,15 @@ export function TextNode({ data }: NodeProps) {
   }, []);
 
   return (
-    <div className="bg-yellow-100 dark:bg-yellow-900/40 rounded-sm shadow-md min-w-[180px] max-w-[360px] group border border-yellow-200/60 dark:border-yellow-700/40">
+    <div className="bg-yellow-100 dark:bg-amber-950/60 rounded-sm shadow-md min-w-[180px] max-w-[360px] group border border-yellow-200/60 dark:border-amber-800/40">
       {/* Title bar — only visible when showTitle is true */}
       {showTitle && (
-        <div className="bg-yellow-200/60 dark:bg-yellow-800/40 px-3 py-1.5 rounded-t-sm border-b border-yellow-300/50 dark:border-yellow-700/50 flex items-center gap-1">
+        <div className="bg-yellow-200/60 dark:bg-amber-900/40 px-3 py-1.5 rounded-t-sm border-b border-yellow-300/50 dark:border-amber-700/40 flex items-center gap-1">
           <div className="flex-1 min-w-0">
             {editingTitle && canEdit ? (
               <input
                 ref={titleInputRef}
-                className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-yellow-900/80 dark:text-yellow-100/80 placeholder:text-yellow-600/40 dark:placeholder:text-yellow-400/30"
+                className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-yellow-900/80 dark:text-amber-100/80 placeholder:text-yellow-600/40 dark:placeholder:text-yellow-400/30"
                 value={titleValue}
                 placeholder=""
                 onChange={(e) => setTitleValue(e.target.value)}
@@ -98,7 +98,7 @@ export function TextNode({ data }: NodeProps) {
               <div
                 className={`text-xs font-semibold truncate min-h-[1em] ${
                   title
-                    ? "text-yellow-900/80 dark:text-yellow-100/80"
+                    ? "text-yellow-900/80 dark:text-amber-100/80"
                     : ""
                 } ${canEdit ? "cursor-text" : ""}`}
                 onClick={() => canEdit && setEditingTitle(true)}
@@ -128,7 +128,7 @@ export function TextNode({ data }: NodeProps) {
         ) : collapsed ? (
           <div className="relative">
             <div
-              className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-yellow-100 line-clamp-2"
+              className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-amber-100 line-clamp-2"
               tabIndex={canEdit ? 0 : undefined}
               onKeyDown={(e) => { if (canEdit && e.key === "Enter") setEditing(true); }}
               onClick={() => canEdit && setEditing(true)}
@@ -143,12 +143,12 @@ export function TextNode({ data }: NodeProps) {
               ) : undefined}
             </div>
             {content && (
-              <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-yellow-100 dark:from-yellow-900/40 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-yellow-100 dark:from-amber-950/60 to-transparent pointer-events-none" />
             )}
           </div>
         ) : (
           <div
-            className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-yellow-100"
+            className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-amber-100"
             tabIndex={canEdit ? 0 : undefined}
             onKeyDown={(e) => { if (canEdit && e.key === "Enter") setEditing(true); }}
             onClick={() => canEdit && setEditing(true)}
@@ -166,7 +166,7 @@ export function TextNode({ data }: NodeProps) {
       </div>
       {collapsed && (
         <div
-          className={`flex items-center justify-center border-t border-yellow-300/40 dark:border-yellow-700/40 py-0.5 ${canEdit ? "cursor-pointer hover:bg-yellow-200/30 transition-colors" : ""}`}
+          className={`flex items-center justify-center border-t border-yellow-300/40 dark:border-amber-700/30 py-0.5 ${canEdit ? "cursor-pointer hover:bg-yellow-200/30 dark:hover:bg-amber-800/20 transition-colors" : ""}`}
           onClick={() => canEdit && updateNode({ nodeId, collapsed: false })}
           title={canEdit ? "Expand note" : "Note is collapsed"}
         >

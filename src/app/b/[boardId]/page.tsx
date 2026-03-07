@@ -62,7 +62,7 @@ function EditableBoardName({
   if (!editing) {
     return (
       <h1
-        className="font-semibold truncate cursor-text hover:bg-black/5 rounded px-1 -mx-1 transition-colors"
+        className="font-semibold truncate cursor-text hover:bg-black/5 dark:hover:bg-white/10 rounded px-1 -mx-1 transition-colors"
         onClick={() => setEditing(true)}
       >
         {name}
@@ -195,8 +195,8 @@ export default function BoardPage({
   const boardSettings = access.board.settings ?? {};
   const bgColorRaw = boardSettings.backgroundColor ?? "#f9fafb";
   const bgColor = resolveBgColor(bgColorRaw, theme === "dark");
-  const headerColor = theme === "dark" ? lightenHex(bgColor, 0.03) : lightenHex(bgColor, 0.03);
-  const headerBorder = theme === "dark" ? lightenHex(bgColor, 0.08) : darkenHex(bgColor, 0.15);
+  const headerColor = theme === "dark" ? lightenHex(bgColor, 0.06) : lightenHex(bgColor, 0.03);
+  const headerBorder = theme === "dark" ? lightenHex(bgColor, 0.12) : darkenHex(bgColor, 0.15);
 
   const rssUrl = `/b/${boardId}/rss.xml${token ? `?token=${token}` : ""}`;
 
@@ -271,7 +271,7 @@ export default function BoardPage({
           </div>
         </div>
       </header>
-      <div className="absolute bottom-2 right-3 z-10 text-[10px] text-gray-400/60 font-mono select-none pointer-events-none">
+      <div className="absolute bottom-2 right-3 z-10 text-[10px] text-gray-400/60 dark:text-gray-500/60 font-mono select-none pointer-events-none">
         v{BUILD_VERSION}
       </div>
     </div>

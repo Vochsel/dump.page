@@ -4,10 +4,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Type, Link, Plus, CheckSquare, Undo2, Redo2 } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
 import { useBoardOps } from "@/context/board-ops-context";
@@ -91,14 +93,18 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: Too
         <CheckSquare className="h-4 w-4" />
         Checklist
       </Button>
-      <Popover open={linkOpen} onOpenChange={setLinkOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-2">
-            <Link className="h-4 w-4" />
-            Link
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-80" side="top">
+      <Button variant="ghost" size="sm" className="gap-2" onClick={() => setLinkOpen(true)}>
+        <Link className="h-4 w-4" />
+        Link
+      </Button>
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Link</DialogTitle>
+            <DialogDescription>
+              Paste a URL to add it as a card on the board.
+            </DialogDescription>
+          </DialogHeader>
           <div className="flex gap-2">
             <Input
               placeholder="https://example.com"
@@ -107,12 +113,15 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: Too
               onKeyDown={(e) => e.key === "Enter" && addLinkNode()}
               autoFocus
             />
-            <Button size="sm" onClick={addLinkNode}>
-              <Plus className="h-4 w-4" />
+            <Button onClick={addLinkNode}>
+              Add
             </Button>
           </div>
-        </PopoverContent>
-      </Popover>
+          <p className="text-xs text-muted-foreground">
+            Tip: You can also paste a link directly onto the board to add it.
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

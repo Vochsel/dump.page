@@ -117,6 +117,10 @@ export function useUndoRedo({
       // Node may have been deleted by collaborator — silently skip
     } finally {
       isExecutingRef.current = false;
+      // Blur any focused input so subsequent Cmd+Z continues canvas undo
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
     }
   }, [past, convexNodes, createNode, deleteNode, updateNode, updateNodePosition]);
 
@@ -190,6 +194,9 @@ export function useUndoRedo({
       // Silently skip failed operations
     } finally {
       isExecutingRef.current = false;
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
     }
   }, [future, convexNodes, createNode, deleteNode, updateNode, updateNodePosition]);
 

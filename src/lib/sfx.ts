@@ -5,8 +5,8 @@ import { sfxr } from "jsfxr";
 // Pre-designed sounds encoded as b58 strings (consistent on every play)
 // Soft noise pop for adding/pasting items
 const SFX_ADD = "7BMHBGNtjdtgWGXCMN4i7JaX3BHp3AXeMyQVG7P72Ko1FvxE4HvsfMhQdQXch4sBwimWn7ntqSCjYb3zs6ZML1Uy4oLMGGfuUt9R4BiEvLjHGUUTnkw84jsuH";
-// Crunchy vibrato hit for deleting
-const SFX_DELETE = "7BMHBGMFGFPSrkLSKnvTKUcmJDtSuHxMn4uHQ94E7WcR6WmC3cr7i5RF2ybhRRKFQAQDEpCwBXACt6GSjR6vySegEWX5mhFBWyrFeij7dxYnBSSUiCwocjuUK";
+// Soft sine drop for deleting
+const SFX_DELETE = "11111mqnbhVWQJQhLvKTANxMz72hUA4eYmzkzyrEUb5hWrCWWjM6hXbVPsRTYseukBYzWyj2UfmzdTvAhQ9PWuBgQkxtjx6e6tNeWL3biVgtCzKUUsemcLP";
 // Short noise click for drag pick-up
 const SFX_CLICK = "7BMHBGN5brzd84wS453Cdjmbv3yFSPEwDs8GQPZyTsiBgWX7DpApHTjYpH6ZuNZJVTx83AQCNTdrk2Dvc1xdZp3ZfaJnvBCRHXRUvqjPt42b2HRgNAQSosZ59";
 // Square wave drop for drag release
