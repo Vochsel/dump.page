@@ -226,7 +226,7 @@ export function ChecklistNode({ data }: NodeProps) {
   }, []);
 
   return (
-    <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md min-w-[220px] max-w-[360px] group border border-gray-200 dark:border-gray-700">
+    <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md min-w-[220px] max-w-[640px] group border border-gray-200 dark:border-gray-700">
       {/* Title bar — only visible when showTitle is true */}
       {showTitle && (
         <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60">
