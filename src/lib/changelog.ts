@@ -11,6 +11,22 @@ export type ChangelogVersion = {
 
 export const changelog: ChangelogVersion[] = [
   {
+    version: "1.3.0",
+    date: "2026-03-07",
+    entries: [
+      { type: "feature", description: "Zoom controls — +/- buttons and percentage popover with zoom-to-fit, 50%, 100%, 150%, 200%" },
+      { type: "feature", description: "Minimap toggle — optional minimap in preferences, off by default" },
+      { type: "feature", description: "Edit link — right-click a link card to change its URL" },
+      { type: "feature", description: "Link toolbar dialog — add link button now opens a proper dialog with tips" },
+      { type: "feature", description: "Controls variant moved to client preferences (Design/Map modes)" },
+      { type: "fix", description: "Share magic link now includes the access token in the URL" },
+      { type: "fix", description: "Undo no longer gets stuck when recreated nodes steal focus" },
+      { type: "fix", description: "Disabled trackpad swipe-back/forward navigation on Mac" },
+      { type: "fix", description: "Softer, less distorted delete sound effect" },
+      { type: "fix", description: "Improved dark mode colors for text notes and board header" },
+    ],
+  },
+  {
     version: "1.2.0",
     date: "2026-03-07",
     entries: [

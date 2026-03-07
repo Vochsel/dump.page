@@ -34,6 +34,9 @@ export default defineSchema({
           )
         ),
         backgroundColor: v.optional(v.string()),
+        controlsVariant: v.optional(
+          v.union(v.literal("default"), v.literal("map"))
+        ),
       })
     ),
     createdAt: v.number(),
