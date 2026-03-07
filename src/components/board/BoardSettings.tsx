@@ -34,8 +34,10 @@ import {
   Crown,
   Bot,
   Wand2,
+  HelpCircle,
 } from "lucide-react";
 import { IconPicker } from "./IconPicker";
+import Link from "next/link";
 
 export type BoardSettingsData = {
   backgroundPattern?: "dots" | "paper" | "boxes" | "blank";
@@ -469,9 +471,14 @@ export function BoardSettingsPopover({
 
             {/* Context type */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
-                Context Type
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Context Type
+                </label>
+                <Link href="/help/context-type" target="_blank">
+                  <HelpCircle className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground transition-colors" />
+                </Link>
+              </div>
               <div className="grid grid-cols-3 gap-1.5">
                 {CONTEXT_TYPES.map((ct) => (
                   <button
