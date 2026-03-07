@@ -32,8 +32,8 @@ function getSounds() {
     sounds = {
       add: decode(SFX_ADD, 0.03),
       delete: decode(SFX_DELETE, 0.015),
-      click: decode(SFX_CLICK, 0.08),
-      release: decode(SFX_RELEASE, 0.04),
+      click: decode(SFX_CLICK, 0.01),
+      release: decode(SFX_RELEASE, 0.006),
     };
   }
   return sounds;
