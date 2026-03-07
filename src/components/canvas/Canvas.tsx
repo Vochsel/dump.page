@@ -48,6 +48,7 @@ import { useTheme } from "@/context/theme-context";
 import { darkenHex, lightenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
 import { useBoardOps } from "@/context/board-ops-context";
+import { useBoardScreenshot } from "@/hooks/useBoardScreenshot";
 import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -120,6 +121,29 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   const [snapToGrid, setSnapToGrid] = useLocalStorage("dump-snap-to-grid", false);
   const [controlsVariant, setControlsVariant] = useLocalStorage<"default" | "map">("dump-controls-variant", "default");
   const [showMinimap, setShowMinimap] = useLocalStorage("dump-show-minimap", false);
+
+  // Board screenshot capture
+  const { captureAndUpload } = useBoardScreenshot(boardId as Id<"boards"> | undefined);
+  const screenshotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasInitScreenshot = useRef(false);
+
+  // Trigger screenshot after initial load and after node changes (debounced)
+  const scheduleScreenshot = useCallback(() => {
+    if (screenshotTimerRef.current) clearTimeout(screenshotTimerRef.current);
+    screenshotTimerRef.current = setTimeout(() => {
+      captureAndUpload();
+    }, 3000);
+  }, [captureAndUpload]);
+
+  // Re-trigger screenshot when node count changes (add/delete)
+  const nodeCount = boardNodes?.length ?? 0;
+  const prevNodeCount = useRef(nodeCount);
+  useEffect(() => {
+    if (nodeCount !== prevNodeCount.current) {
+      prevNodeCount.current = nodeCount;
+      scheduleScreenshot();
+    }
+  }, [nodeCount, scheduleScreenshot]);
 
   // Archive panel
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -801,6 +825,10 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         if (savedViewportRef.current && !hasRestoredViewport.current) {
           hasRestoredViewport.current = true;
           setViewport(savedViewportRef.current, { duration: 0 });
+        }
+        if (!hasInitScreenshot.current) {
+          hasInitScreenshot.current = true;
+          scheduleScreenshot();
         }
       }}
       onMoveEnd={(_event, viewport) => {

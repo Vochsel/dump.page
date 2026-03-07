@@ -34,6 +34,11 @@ const TIPS: Tip[] = [
     body: "Connect Dump as an MCP server in Claude, Cursor, or any MCP-compatible client to give your LLM live access to your boards — keeping context perfectly in sync as you work.",
     cta: { label: "Learn more", href: "/mcp" },
   },
+  {
+    id: "quick-search",
+    title: "Quick search",
+    body: "Press Cmd/Ctrl+K to quickly search for items in any board or navigate to recent boards.",
+  },
 ];
 
 const STORAGE_KEY_DISMISSED = "dump-tips-dismissed";

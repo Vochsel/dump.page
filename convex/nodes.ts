@@ -1,13 +1,6 @@
-import { mutation, query, action, internalMutation, MutationCtx } from "./_generated/server";
+import { mutation, query, action, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
-
-async function scheduleScreenshot(ctx: MutationCtx, boardId: Id<"boards">) {
-  await ctx.scheduler.runAfter(0, internal.screenshots.requestScreenshot, {
-    boardId,
-  });
-}
 
 export const getNodesByBoard = query({
   args: { boardId: v.id("boards") },
@@ -37,8 +30,6 @@ export const archiveNode = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
     await ctx.db.patch(args.nodeId, { archived: true, updatedAt: Date.now() });
-    const node = await ctx.db.get(args.nodeId);
-    if (node) await scheduleScreenshot(ctx, node.boardId);
   },
 });
 
@@ -78,7 +69,7 @@ export const createNode = mutation({
     if (!user) throw new Error("User not found");
 
     const now = Date.now();
-    const nodeId = await ctx.db.insert("nodes", {
+    return await ctx.db.insert("nodes", {
       boardId: args.boardId,
       type: args.type,
       content: args.content,
@@ -89,9 +80,6 @@ export const createNode = mutation({
       createdAt: now,
       updatedAt: now,
     });
-
-    await scheduleScreenshot(ctx, args.boardId);
-    return nodeId;
   },
 });
 
@@ -129,9 +117,6 @@ export const updateNode = mutation({
     if (args.metadata !== undefined) updates.metadata = args.metadata;
 
     await ctx.db.patch(args.nodeId, updates);
-
-    const node = await ctx.db.get(args.nodeId);
-    if (node) await scheduleScreenshot(ctx, node.boardId);
   },
 });
 
@@ -157,9 +142,7 @@ export const deleteNode = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    const node = await ctx.db.get(args.nodeId);
     await ctx.db.delete(args.nodeId);
-    if (node) await scheduleScreenshot(ctx, node.boardId);
   },
 });
 
