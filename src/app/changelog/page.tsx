@@ -12,8 +12,8 @@ import { SmallLoginButton } from "@/components/auth/SmallLoginButton";
 type Filter = "all" | "feature" | "fix";
 
 function EntryIcon({ type }: { type: ChangelogEntry["type"] }) {
-  if (type === "feature") return <Sparkles className="h-3.5 w-3.5 text-stone-400 dark:text-stone-500" />;
-  return <Bug className="h-3.5 w-3.5 text-stone-400 dark:text-stone-500" />;
+  if (type === "feature") return <Sparkles className="h-3.5 w-3.5 text-violet-400 dark:text-violet-500" />;
+  return <Bug className="h-3.5 w-3.5 text-emerald-400 dark:text-emerald-500" />;
 }
 
 const stickyNotes = [
