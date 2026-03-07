@@ -108,6 +108,15 @@ export function TextNode({ data }: NodeProps) {
               </div>
             )}
           </div>
+          {collapsed && (
+            <button
+              className="nodrag flex-shrink-0 p-0.5 rounded hover:bg-yellow-300/40 transition-colors text-yellow-700/50 hover:text-yellow-800/70"
+              onClick={() => onPreview?.(nodeId)}
+              title="Preview contents"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </button>
+          )}
           {canEdit && (
             <button
               className="nodrag flex-shrink-0 p-0.5 rounded hover:bg-yellow-300/40 transition-colors text-yellow-700/50 hover:text-yellow-800/70"
@@ -165,24 +174,13 @@ export function TextNode({ data }: NodeProps) {
           </div>
         )}
       </div>
-      {collapsed && (
-        <div className="flex items-center justify-center border-t border-yellow-300/40 dark:border-amber-700/30 py-0.5 gap-1">
-          <button
-            className="nodrag p-0.5 rounded hover:bg-yellow-200/40 dark:hover:bg-amber-800/30 transition-colors"
-            onClick={() => onPreview?.(nodeId)}
-            title="Preview contents"
-          >
-            <Maximize2 className="h-3 w-3 text-yellow-600/40 hover:text-yellow-700/60" />
-          </button>
-          {canEdit && (
-            <button
-              className="nodrag p-0.5 rounded hover:bg-yellow-200/40 dark:hover:bg-amber-800/30 transition-colors"
-              onClick={() => updateNode({ nodeId, collapsed: false })}
-              title="Expand note"
-            >
-              <ChevronsUpDown className="h-3 w-3 text-yellow-600/40 hover:text-yellow-700/60" />
-            </button>
-          )}
+      {collapsed && canEdit && (
+        <div
+          className="flex items-center justify-center border-t border-yellow-300/40 dark:border-amber-700/30 py-0.5 cursor-pointer hover:bg-yellow-200/30 dark:hover:bg-amber-800/20 transition-colors"
+          onClick={() => updateNode({ nodeId, collapsed: false })}
+          title="Expand note"
+        >
+          <ChevronsUpDown className="h-3 w-3 text-yellow-600/40" />
         </div>
       )}
       {canEdit && (

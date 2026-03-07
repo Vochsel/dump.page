@@ -62,9 +62,12 @@ export function middleware(request: NextRequest) {
   // Only intercept board pages
   if (!pathname.startsWith("/b/")) return NextResponse.next();
 
-  // Skip sub-paths like /b/[boardId]/llms.txt or /b/[boardId]/rss.xml
   const segments = pathname.split("/").filter(Boolean);
-  if (segments.length > 2) return NextResponse.next();
+  // Skip sub-routes that are already content endpoints (llms.txt, rss.xml)
+  const lastSegment = segments[segments.length - 1];
+  if (lastSegment?.includes(".")) return NextResponse.next();
+  // Only handle /b/[boardId] and /b/[boardId]/[itemId]
+  if (segments.length > 3) return NextResponse.next();
 
   const userAgent = request.headers.get("user-agent") ?? "";
   const accept = request.headers.get("accept") ?? "";
@@ -75,14 +78,16 @@ export function middleware(request: NextRequest) {
 
   if (!isBot(userAgent) && !prefersText) return NextResponse.next();
 
-  // Extract board ID from path: /b/[boardId]
   const boardId = segments[1];
   if (!boardId) return NextResponse.next();
+  const itemId = segments[2]; // undefined for board-only URLs
 
   const token = request.nextUrl.searchParams.get("token") ?? undefined;
 
   // Redirect bots to the llms.txt route (plain text, no API hop — works with restricted fetch layers)
-  const llmsUrl = new URL(`/b/${boardId}/llms.txt`, request.url);
+  const llmsUrl = itemId
+    ? new URL(`/b/${boardId}/${itemId}/llms.txt`, request.url)
+    : new URL(`/b/${boardId}/llms.txt`, request.url);
   if (token) llmsUrl.searchParams.set("token", token);
 
   return NextResponse.rewrite(llmsUrl);

@@ -21,11 +21,14 @@ export function DraggableCard({
     baseY: number;
     started: boolean;
   } | null>(null);
+  const wasDragRef = useRef(false);
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (window.matchMedia("(pointer: coarse)").matches) return;
-      if ((e.target as HTMLElement).closest("a, button")) return;
+      if ((e.target as HTMLElement).closest("button, input, textarea")) return;
+      // Prevent browser native drag on links/images
+      e.preventDefault();
       dragState.current = {
         startX: e.clientX,
         startY: e.clientY,
@@ -51,6 +54,14 @@ export function DraggableCard({
     const onMouseUp = () => {
       if (dragState.current?.started) {
         setDragging(false);
+        wasDragRef.current = true;
+      } else if (dragState.current && !dragState.current.started) {
+        // Was a click, not a drag — trigger navigation for any link
+        const el = ref.current;
+        if (el) {
+          const link = el.querySelector("a[href]") as HTMLAnchorElement | null;
+          if (link) link.click();
+        }
       }
       dragState.current = null;
     };
@@ -66,6 +77,7 @@ export function DraggableCard({
     <div
       ref={ref}
       onMouseDown={onMouseDown}
+      onDragStart={(e) => e.preventDefault()}
       className={className}
       style={{
         ...externalStyle,
