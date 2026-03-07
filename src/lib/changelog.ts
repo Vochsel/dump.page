@@ -1,0 +1,49 @@
+export type ChangelogEntry = {
+  type: "feature" | "fix";
+  description: string;
+};
+
+export type ChangelogVersion = {
+  version: string;
+  date: string;
+  entries: ChangelogEntry[];
+};
+
+export const changelog: ChangelogVersion[] = [
+  {
+    version: "1.1.0",
+    date: "2026-03-07",
+    entries: [
+      { type: "feature", description: "Optional title bars on sticky notes and checklists — hidden by default, toggle via right-click" },
+      { type: "feature", description: "Collapsible sticky notes — collapse to show only 2 lines of text" },
+      { type: "feature", description: "Item-specific shareable links — right-click any item to copy a direct link" },
+      { type: "feature", description: "Item-specific /llms.txt routes for AI access to individual items" },
+      { type: "feature", description: "Help page with AI provider integration guides" },
+      { type: "feature", description: "Changelog page styled as a whiteboard" },
+      { type: "feature", description: "Build version number displayed on board and dashboard pages" },
+      { type: "feature", description: "Share dialog shows visibility type for non-owners" },
+      { type: "fix", description: "Mute toggle button moved from top-right (overlapping header) to bottom-left" },
+      { type: "fix", description: "All sound effects made significantly quieter and subtler" },
+      { type: "fix", description: "Improved keyboard navigation with tabIndex on text and checklist nodes" },
+      { type: "fix", description: "Dynamic page titles — tab shows board name and icon on /b routes" },
+    ],
+  },
+  {
+    version: "1.0.0",
+    date: "2026-02-15",
+    entries: [
+      { type: "feature", description: "Rich media embeds — YouTube, Spotify, SoundCloud, Google Maps, Twitter/X" },
+      { type: "feature", description: "Board creation without requiring an account" },
+      { type: "feature", description: "Markdown preview in share dialog" },
+      { type: "feature", description: "Sound effects for add, delete, drag start, drag end" },
+      { type: "feature", description: "RSS feed generation for boards" },
+      { type: "feature", description: "LLM-friendly /llms.txt export for boards" },
+      { type: "feature", description: "Board chat button — open context in ChatGPT, Claude, or Grok" },
+      { type: "feature", description: "Undo/redo with full action history" },
+      { type: "feature", description: "Drag-and-drop files and links onto the canvas" },
+      { type: "feature", description: "Board settings — background pattern, color, control variant" },
+      { type: "feature", description: "Member management with email invites" },
+      { type: "feature", description: "Three visibility modes — private, shared (magic link), public" },
+    ],
+  },
+];

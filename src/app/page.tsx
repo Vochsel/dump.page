@@ -303,7 +303,8 @@ export default function Home() {
       <div className="mt-16 flex flex-col items-center gap-3">
         <LoginButton />
         <p className="text-xs text-gray-400 font-[family-name:var(--font-poppins)]">
-          Free to use &middot; No credit card required
+          Free to use &middot; No credit card required &middot;{" "}
+          <a href="/help" className="underline hover:text-gray-600 transition-colors">Help</a>
         </p>
       </div>
     </div>
