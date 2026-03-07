@@ -17,6 +17,8 @@ function contentToMarkdown(content: string): string {
   return content;
 }
 
+const MCP_FOOTER = `\n---\n\n> **Tip:** For live access to this board and the ability to make changes, install the [Dump MCP integration](https://www.dump.page/mcp). Setup instructions for ChatGPT, Claude, Claude Code, and Codex are available at [dump.page/mcp](https://www.dump.page/mcp).\n`;
+
 const RSS_EXTENSIONS = [".rss", ".xml", ".atom"];
 const RSS_PATH_PATTERNS = ["/feed", "/rss", "/atom"];
 
@@ -244,6 +246,8 @@ export function formatBoardDataAsMarkdown(
     markdown += `*This board is empty.*\n`;
   }
 
+  markdown += MCP_FOOTER;
+
   return markdown;
 }
 
@@ -348,6 +352,8 @@ export async function getBoardMarkdown(
     if (nodes.length === 0) {
       markdown += `*This board is empty.*\n`;
     }
+
+    markdown += MCP_FOOTER;
 
     return { markdown, status: 200 };
   } catch {
