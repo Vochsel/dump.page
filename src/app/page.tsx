@@ -179,9 +179,9 @@ export default function Home() {
             </DraggableCard>
           ))}
         </div>
-        <p className="text-center text-xs text-gray-400 font-[family-name:var(--font-poppins)]">
+        <p className="text-center text-xs text-gray-600 font-[family-name:var(--font-poppins)]">
           Just paste a board link — or connect via{" "}
-          <span className="text-gray-500 font-medium">MCP server</span> for deeper integration.
+          <span className="text-gray-700 font-medium">MCP server</span> for deeper integration.
         </p>
       </div>
 
