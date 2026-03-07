@@ -122,7 +122,7 @@ function AuthorizeContent() {
     <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-4">
       <div className="max-w-md w-full p-8 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-800">
         <div className="text-center mb-6">
-          <div className="text-4xl mb-3">🐦‍⬛</div>
+          <img src="/dump.png" alt="Dump" className="w-12 h-12 mx-auto mb-3" />
           <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
             Connect to Dump
           </h1>

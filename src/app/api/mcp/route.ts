@@ -343,7 +343,7 @@ const handler = createMcpHandler(
     },
   },
   {
-    basePath: "",
+    basePath: "/api",
     maxDuration: 60,
     disableSse: true,
   }
