@@ -46,6 +46,9 @@ export default async function BoardOgImage({
 
   const icon = board.icon && !board.icon.startsWith("lucide:") ? board.icon : null;
 
+  const logoData = await readFile(join(process.cwd(), "public", "dump.png"));
+  const logoBase64 = `data:image/png;base64,${logoData.toString("base64")}`;
+
   if (thumbnailUrl) {
     return new ImageResponse(
       (
@@ -65,6 +68,26 @@ export default async function BoardOgImage({
             height={630}
             style={{ position: "absolute", inset: 0, objectFit: "cover" }}
           />
+          {/* Branding top-left */}
+          <div
+            style={{
+              position: "absolute",
+              top: 24,
+              left: 32,
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              background: "rgba(0,0,0,0.5)",
+              borderRadius: "12px",
+              padding: "8px 16px 8px 10px",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoBase64} alt="" width={28} height={28} />
+            <span style={{ fontSize: 18, fontWeight: 700, color: "white", fontFamily: "DynaPuff" }}>
+              dump.page
+            </span>
+          </div>
           <div
             style={{
               position: "absolute",
@@ -138,6 +161,23 @@ export default async function BoardOgImage({
             opacity: 0.15,
           }}
         />
+        {/* Branding top-left */}
+        <div
+          style={{
+            position: "absolute",
+            top: 24,
+            left: 32,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoBase64} alt="" width={32} height={32} />
+          <span style={{ fontSize: 20, fontWeight: 700, color: "#9ca3af", fontFamily: "DynaPuff" }}>
+            dump.page
+          </span>
+        </div>
         <div
           style={{
             display: "flex",
