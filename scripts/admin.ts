@@ -16,9 +16,10 @@ import path from "path";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
-function loadEnv() {
+function loadEnv(env: "dev" | "prod") {
   if (process.env.NEXT_PUBLIC_CONVEX_URL) return;
-  const envPath = path.resolve(__dirname, "../.env.local");
+  const envFile = env === "prod" ? ".env.production" : ".env.local";
+  const envPath = path.resolve(__dirname, "..", envFile);
   if (fs.existsSync(envPath)) {
     const content = fs.readFileSync(envPath, "utf-8");
     for (const line of content.split("\n")) {
@@ -66,16 +67,24 @@ function timeAgo(iso: string): string {
 }
 
 async function main() {
-  loadEnv();
+  const isDev = process.argv.includes("--dev");
+  const env = isDev ? "dev" : "prod";
+  const args = process.argv.slice(2).filter((a) => a !== "--dev");
+
+  loadEnv(env);
 
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
   if (!url) {
-    console.error("Error: NEXT_PUBLIC_CONVEX_URL not set. Add it to .env.local");
+    console.error(
+      `Error: NEXT_PUBLIC_CONVEX_URL not set. Add it to ${env === "prod" ? ".env.production" : ".env.local"}`
+    );
     process.exit(1);
   }
 
+  console.log(`\n[${env.toUpperCase()}] ${url}`);
+
   const convex = new ConvexHttpClient(url);
-  const command = process.argv[2] ?? "help";
+  const command = args[0] ?? "help";
 
   switch (command) {
     case "stats": {
@@ -198,8 +207,12 @@ Commands:
   suggestions   View feature suggestions
   help          Show this help
 
+Flags:
+  --dev       Use dev Convex (default: prod)
+
 Usage:
   pnpm admin <command>
+  pnpm admin <command> --dev
 `);
       break;
 
