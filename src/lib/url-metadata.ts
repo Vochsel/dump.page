@@ -200,9 +200,11 @@ const patterns: PatternRule[] = [
   {
     match: (url) =>
       (url.hostname === "www.youtube.com" || url.hostname === "youtube.com") &&
-      (url.pathname.startsWith("/@") || url.pathname.startsWith("/c/")),
+      (url.pathname.startsWith("/@") || url.pathname.startsWith("/c/") || url.pathname.startsWith("/user/")),
     infer: (url) => {
-      const name = url.pathname.split("/").filter(Boolean)[0].replace("@", "");
+      const parts = url.pathname.split("/").filter(Boolean);
+      // /@handle → ["@handle"], /c/name → ["c","name"], /user/name → ["user","name"]
+      const name = parts[0].startsWith("@") ? parts[0].slice(1) : (parts[1] || parts[0]);
       return { title: humanize(name), description: "YouTube channel" };
     },
   },

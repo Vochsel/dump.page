@@ -65,6 +65,16 @@ const URL_REGEX = /^https?:\/\/.+/i;
 const LOOSE_URL_REGEX = /^(https?:\/\/|www\.)\S+\.\S+/i;
 const URL_LIKE = /^(https?:\/\/|www\.)\S+|^\S+\.\S+/i;
 
+/** Check if text looks like a URL (for paste/drop detection) */
+function looksLikeUrl(text: string): boolean {
+  return URL_REGEX.test(text) || LOOSE_URL_REGEX.test(text);
+}
+
+/** Normalize a URL string (ensure https:// prefix) */
+function normalizeUrl(text: string): string {
+  return text.startsWith("http://") || text.startsWith("https://") ? text : "https://" + text;
+}
+
 interface CanvasInnerProps {
   canEdit: boolean;
   settings: BoardSettingsData;
@@ -141,6 +151,38 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     updateNode,
     updateNodePosition,
   });
+
+  // Shared helper: create a link or text node from raw text at a given position
+  const createNodeFromText = useCallback((text: string, position: { x: number; y: number }) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    if (looksLikeUrl(trimmed)) {
+      const url = normalizeUrl(trimmed);
+      const inferred = inferUrlMetadata(url);
+      createNode({
+        boardId,
+        type: "link",
+        content: url,
+        position: { x: position.x - 140, y: position.y - 30 },
+        metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
+      }).then((nodeId) => {
+        pushAction({ type: "create", nodeId });
+        sfx.add();
+        fetchMetadata({ nodeId, url });
+      });
+    } else {
+      createNode({
+        boardId,
+        type: "text",
+        content: trimmed,
+        position: { x: position.x - 120, y: position.y - 40 },
+      }).then((nodeId) => {
+        pushAction({ type: "create", nodeId });
+        sfx.add();
+      });
+    }
+  }, [boardId, createNode, fetchMetadata, pushAction]);
 
   // Track optimistically deleted node IDs so they stay hidden until server catches up
   const [optimisticDeletes, setOptimisticDeletes] = useState<Set<string>>(new Set());
@@ -305,43 +347,12 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
       if (!text) return;
 
       e.preventDefault();
-
-      const pos = screenToFlowPosition(mousePosRef.current);
-      const isUrl = URL_REGEX.test(text) || LOOSE_URL_REGEX.test(text);
-
-      if (isUrl) {
-        let url = text;
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-          url = "https://" + url;
-        }
-        const inferred = inferUrlMetadata(url);
-        createNode({
-          boardId,
-          type: "link",
-          content: url,
-          position: { x: pos.x - 140, y: pos.y - 30 },
-          metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
-        }).then((nodeId) => {
-          pushAction({ type: "create", nodeId });
-          sfx.add();
-          fetchMetadata({ nodeId, url });
-        });
-      } else {
-        createNode({
-          boardId,
-          type: "text",
-          content: text,
-          position: { x: pos.x - 120, y: pos.y - 40 },
-        }).then((nodeId) => {
-          pushAction({ type: "create", nodeId });
-          sfx.add();
-        });
-      }
+      createNodeFromText(text, screenToFlowPosition(mousePosRef.current));
     };
 
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
-  }, [canEdit, boardId, createNode, fetchMetadata, screenToFlowPosition, pushAction]);
+  }, [canEdit, createNodeFromText, screenToFlowPosition]);
 
   // Drag-and-drop handlers for external files and links
   // Skip when drag originates from internal checklist reorder
@@ -396,19 +407,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         for (const rawUrl of urls) {
           const url = rawUrl.trim();
           if (!url) continue;
-          const nodePos = { x: pos.x - 140, y: pos.y - 30 + offsetY };
-          const inferred = inferUrlMetadata(url);
-          createNode({
-            boardId,
-            type: "link",
-            content: url,
-            position: nodePos,
-            metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
-          }).then((nodeId) => {
-            pushAction({ type: "create", nodeId });
-            sfx.add();
-            fetchMetadata({ nodeId, url });
-          });
+          createNodeFromText(url, { x: pos.x, y: pos.y + offsetY });
           offsetY += 80;
         }
         return;
@@ -432,55 +431,18 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         for (const file of textFiles) {
           const text = await file.text();
           if (!text.trim()) continue;
-          const nodePos = { x: pos.x - 120, y: pos.y - 40 + offsetY };
-          const nodeId = await createNode({
-            boardId,
-            type: "text",
-            content: text,
-            position: nodePos,
-          });
-          pushAction({ type: "create", nodeId });
-          sfx.add();
+          createNodeFromText(text, { x: pos.x, y: pos.y + offsetY });
           offsetY += 120;
         }
         return;
       }
 
-      // Fallback: plain text that looks like a URL
-      if (plainText && (URL_REGEX.test(plainText) || LOOSE_URL_REGEX.test(plainText))) {
-        let url = plainText;
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-          url = "https://" + url;
-        }
-        const inferred = inferUrlMetadata(url);
-        createNode({
-          boardId,
-          type: "link",
-          content: url,
-          position: { x: pos.x - 140, y: pos.y - 30 },
-          metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
-        }).then((nodeId) => {
-          pushAction({ type: "create", nodeId });
-          sfx.add();
-          fetchMetadata({ nodeId, url });
-        });
-        return;
-      }
-
-      // Fallback: plain text (non-URL)
+      // Fallback: plain text (URL or regular text)
       if (plainText) {
-        createNode({
-          boardId,
-          type: "text",
-          content: plainText,
-          position: { x: pos.x - 120, y: pos.y - 40 },
-        }).then((nodeId) => {
-          pushAction({ type: "create", nodeId });
-          sfx.add();
-        });
+        createNodeFromText(plainText, pos);
       }
     },
-    [canEdit, boardId, createNode, fetchMetadata, screenToFlowPosition, pushAction, isExternalDrag]
+    [canEdit, createNodeFromText, screenToFlowPosition, isExternalDrag]
   );
 
   // "f" key: fit selected nodes, or all nodes if none selected
@@ -572,9 +534,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
 
     if (editLinkNodeId || URL_LIKE.test(input)) {
       // Editing existing link or input looks like a URL
-      url = input.startsWith("http://") || input.startsWith("https://")
-        ? input
-        : "https://" + input;
+      url = normalizeUrl(input);
     } else {
       // Not a URL — search for it
       setLinkSearching(true);
@@ -1035,38 +995,12 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         </ContextMenuTrigger>
         <ContextMenuContent className="w-56">
           {clipboardText && (() => {
-            const isUrl = URL_REGEX.test(clipboardText) || LOOSE_URL_REGEX.test(clipboardText);
+            const isUrl = looksLikeUrl(clipboardText);
             const preview = clipboardText.length > 40 ? clipboardText.slice(0, 40) + "…" : clipboardText;
             return (
               <>
                 <ContextMenuItem onClick={() => {
-                  const pos = screenToFlowPosition(contextMenuPosRef.current);
-                  if (isUrl) {
-                    let url = clipboardText;
-                    if (!url.startsWith("http://") && !url.startsWith("https://")) url = "https://" + url;
-                    const inferred = inferUrlMetadata(url);
-                    createNode({
-                      boardId,
-                      type: "link",
-                      content: url,
-                      position: { x: pos.x - 140, y: pos.y - 30 },
-                      metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
-                    }).then((nodeId) => {
-                      pushAction({ type: "create", nodeId });
-                      sfx.add();
-                      fetchMetadata({ nodeId, url });
-                    });
-                  } else {
-                    createNode({
-                      boardId,
-                      type: "text",
-                      content: clipboardText,
-                      position: { x: pos.x - 120, y: pos.y - 30 },
-                    }).then((nodeId) => {
-                      pushAction({ type: "create", nodeId });
-                      sfx.add();
-                    });
-                  }
+                  createNodeFromText(clipboardText, screenToFlowPosition(contextMenuPosRef.current));
                 }}>
                   <ClipboardPaste className="h-4 w-4 mr-2 flex-shrink-0" />
                   <span className="truncate">Paste {isUrl ? "link" : "text"}: <span className="text-muted-foreground">{preview}</span></span>
