@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { NodeProps } from "@xyflow/react";
-import { Trash2, GripVertical, X } from "lucide-react";
+import { Trash2, GripVertical, X, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { useBoardOps } from "@/context/board-ops-context";
 
 type ChecklistItem = {
@@ -243,8 +243,17 @@ export function ChecklistNode({ data }: NodeProps) {
     return (
       <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md min-w-[180px] max-w-[640px] group border border-gray-200 dark:border-gray-700" style={{ width: Math.max(180, nodeWidth) }}>
         {showTitle && title && (
-          <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60">
-            <div className="text-xs font-semibold truncate text-gray-700 dark:text-gray-200">{title}</div>
+          <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60 flex items-center gap-1">
+            <div className="flex-1 min-w-0 text-xs font-semibold truncate text-gray-700 dark:text-gray-200">{title}</div>
+            {canEdit && (
+              <button
+                className="nodrag flex-shrink-0 p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors text-gray-500/50 hover:text-gray-600/70 dark:text-gray-400/50 dark:hover:text-gray-300/70"
+                onClick={() => updateNode({ nodeId, collapsed: false })}
+                title="Expand checklist"
+              >
+                <ChevronsUpDown className="h-3 w-3" />
+              </button>
+            )}
           </div>
         )}
         <div className="p-3 space-y-1.5">
@@ -277,34 +286,45 @@ export function ChecklistNode({ data }: NodeProps) {
     <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md min-w-[220px] max-w-[640px] group border border-gray-200 dark:border-gray-700" style={{ width: nodeWidth }}>
       {/* Title bar — only visible when showTitle is true */}
       {showTitle && (
-        <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60">
-          {editingTitle && canEdit ? (
-            <input
-              ref={titleInputRef}
-              className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-gray-700 dark:text-gray-200 placeholder:text-gray-400/40 dark:placeholder:text-gray-500/40"
-              value={titleValue}
-              placeholder=""
-              onChange={(e) => setTitleValue(e.target.value)}
-              onBlur={commitTitle}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitTitle();
-                if (e.key === "Escape") {
-                  setTitleValue(title ?? "");
-                  setEditingTitle(false);
-                }
-              }}
-            />
-          ) : (
-            <div
-              className={`text-xs font-semibold truncate min-h-[1em] ${
-                title
-                  ? "text-gray-700 dark:text-gray-200"
-                  : ""
-              } ${canEdit ? "cursor-text" : ""}`}
-              onClick={() => canEdit && setEditingTitle(true)}
+        <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60 flex items-center gap-1">
+          <div className="flex-1 min-w-0">
+            {editingTitle && canEdit ? (
+              <input
+                ref={titleInputRef}
+                className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-gray-700 dark:text-gray-200 placeholder:text-gray-400/40 dark:placeholder:text-gray-500/40"
+                value={titleValue}
+                placeholder=""
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={commitTitle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitTitle();
+                  if (e.key === "Escape") {
+                    setTitleValue(title ?? "");
+                    setEditingTitle(false);
+                  }
+                }}
+              />
+            ) : (
+              <div
+                className={`text-xs font-semibold truncate min-h-[1em] ${
+                  title
+                    ? "text-gray-700 dark:text-gray-200"
+                    : ""
+                } ${canEdit ? "cursor-text" : ""}`}
+                onClick={() => canEdit && setEditingTitle(true)}
+              >
+                {title || ""}
+              </div>
+            )}
+          </div>
+          {canEdit && (
+            <button
+              className="nodrag flex-shrink-0 p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors text-gray-500/50 hover:text-gray-600/70 dark:text-gray-400/50 dark:hover:text-gray-300/70"
+              onClick={() => updateNode({ nodeId, collapsed: !collapsed })}
+              title={collapsed ? "Expand checklist" : "Collapse checklist"}
             >
-              {title || ""}
-            </div>
+              {collapsed ? <ChevronsUpDown className="h-3 w-3" /> : <ChevronsDownUp className="h-3 w-3" />}
+            </button>
           )}
         </div>
       )}
