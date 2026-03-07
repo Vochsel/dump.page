@@ -135,6 +135,23 @@ export function useBoardScreenshot(boardId: Id<"boards"> | undefined) {
         clone.appendChild(bgClone);
       }
 
+      // Replace external images with placeholders to avoid CORS issues
+      clone.querySelectorAll("img").forEach((img) => {
+        const src = img.getAttribute("src") || "";
+        if (src.startsWith("http") || src.startsWith("//")) {
+          // Replace with a colored placeholder
+          const placeholder = document.createElement("div");
+          placeholder.style.cssText = `
+            width: ${img.width || 16}px;
+            height: ${img.height || 16}px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            flex-shrink: 0;
+          `;
+          img.replaceWith(placeholder);
+        }
+      });
+
       offscreen.appendChild(clone);
 
       // Wait for the clone to render
