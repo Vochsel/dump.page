@@ -17,6 +17,7 @@ import type * as mcp from "../mcp.js";
 import type * as mcpAuth from "../mcpAuth.js";
 import type * as migrations from "../migrations.js";
 import type * as nodes from "../nodes.js";
+import type * as screenshots from "../screenshots.js";
 import type * as statsSnapshot from "../statsSnapshot.js";
 import type * as users from "../users.js";
 
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   mcpAuth: typeof mcpAuth;
   migrations: typeof migrations;
   nodes: typeof nodes;
+  screenshots: typeof screenshots;
   statsSnapshot: typeof statsSnapshot;
   users: typeof users;
 }>;

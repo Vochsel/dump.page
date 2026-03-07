@@ -47,6 +47,8 @@ export default defineSchema({
         systemPrompt: v.optional(v.string()),
       })
     ),
+    thumbnailStorageId: v.optional(v.id("_storage")),
+    screenshotLastRequestedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

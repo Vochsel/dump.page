@@ -245,6 +245,11 @@ export const deleteBoard = mutation({
     if (!board || board.ownerId !== user._id)
       throw new Error("Not authorized");
 
+    // Delete stored thumbnail
+    if (board.thumbnailStorageId) {
+      await ctx.storage.delete(board.thumbnailStorageId);
+    }
+
     // Delete all nodes
     const nodes = await ctx.db
       .query("nodes")
@@ -472,7 +477,10 @@ export const getMyBoardsWithRecentNodes = query({
             metadata: n.metadata,
             updatedAt: n.updatedAt,
           }));
-        return { ...board, role: m.role, memberCount, recentNodes };
+        const thumbnailUrl = board.thumbnailStorageId
+          ? await ctx.storage.getUrl(board.thumbnailStorageId)
+          : null;
+        return { ...board, role: m.role, memberCount, recentNodes, thumbnailUrl };
       })
     );
 

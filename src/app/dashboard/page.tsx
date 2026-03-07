@@ -61,7 +61,16 @@ function BoardGrid({ boards }: { boards: any[] }) {
                 </div>
               </div>
               <div className="px-5 pb-4 flex-1">
-                {board.recentNodes && board.recentNodes.length > 0 ? (
+                {board.thumbnailUrl ? (
+                  <div className="relative w-full h-24 -mx-0.5 rounded overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={board.thumbnailUrl}
+                      alt={`${board.name} preview`}
+                      className="w-full h-full object-cover object-top rounded"
+                    />
+                  </div>
+                ) : board.recentNodes && board.recentNodes.length > 0 ? (
                   <ul className="space-y-1.5">
                     {board.recentNodes.map((node: { _id: string; type: string; content: string; metadata?: { title?: string }; title?: string }) => (
                       <li
