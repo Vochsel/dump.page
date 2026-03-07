@@ -315,6 +315,69 @@ export const createNote = mutation({
   },
 });
 
+export const addItems = mutation({
+  args: {
+    userId: v.id("users"),
+    boardSlug: v.string(),
+    items: v.array(
+      v.object({
+        type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),
+        content: v.string(),
+        title: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const board = await ctx.db
+      .query("boards")
+      .withIndex("by_slug", (q) => q.eq("slug", args.boardSlug))
+      .unique();
+    if (!board) throw new Error("Board not found");
+
+    const membership = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_boardId_userId", (q) =>
+        q.eq("boardId", board._id).eq("userId", args.userId)
+      )
+      .unique();
+    if (!membership) throw new Error("Not authorized");
+
+    const nodes = await ctx.db
+      .query("nodes")
+      .withIndex("by_boardId", (q) => q.eq("boardId", board._id))
+      .collect();
+    const activeNodes = nodes.filter((n) => !n.archived);
+    let maxY = activeNodes.reduce(
+      (max, n) => Math.max(max, n.position.y + n.dimensions.height),
+      0
+    );
+
+    const now = Date.now();
+    const ids: string[] = [];
+
+    for (const item of args.items) {
+      const nodeId = await ctx.db.insert("nodes", {
+        boardId: board._id,
+        type: item.type,
+        content: item.content,
+        title: item.title,
+        showTitle: item.title ? true : undefined,
+        position: { x: 100, y: maxY + 40 },
+        dimensions: { width: 280, height: 120 },
+        createdBy: args.userId,
+        createdAt: now,
+        updatedAt: now,
+      });
+      ids.push(nodeId);
+      maxY += 160;
+    }
+
+    await ctx.db.patch(board._id, { updatedAt: now });
+
+    return { ids, boardSlug: board.slug, count: ids.length };
+  },
+});
+
 export const updateNote = mutation({
   args: {
     userId: v.id("users"),

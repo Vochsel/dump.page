@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Type, Link, Plus, Minus, CheckSquare, Undo2, Redo2 } from "lucide-react";
+import { Type, Link, Plus, Minus, CheckSquare, Undo2, Redo2, Loader2 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -27,9 +27,12 @@ interface ToolbarProps {
   onNodeCreated: (nodeId: string) => void;
 }
 
+const URL_LIKE = /^(https?:\/\/|www\.)\S+|^\S+\.\S+/i;
+
 export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: ToolbarProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
   const { createNode, fetchLinkMetadata: fetchMetadata, boardId } = useBoardOps();
   const { screenToFlowPosition, fitView, zoomIn, zoomOut, zoomTo } = useReactFlow();
   const { zoom } = useViewport();
@@ -64,11 +67,32 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: Too
   };
 
   const addLinkNode = async () => {
-    if (!linkUrl.trim()) return;
-    let url = linkUrl.trim();
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      url = "https://" + url;
+    const input = linkUrl.trim();
+    if (!input) return;
+
+    let url: string;
+    if (URL_LIKE.test(input)) {
+      url = input.startsWith("http://") || input.startsWith("https://")
+        ? input
+        : "https://" + input;
+    } else {
+      // Not a URL — search for it
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/search-url?q=${encodeURIComponent(input)}`);
+        const data = await res.json();
+        if (!data.url) {
+          setSearching(false);
+          return;
+        }
+        url = data.url;
+      } catch {
+        setSearching(false);
+        return;
+      }
+      setSearching(false);
     }
+
     const pos = getCenter();
     const nodeId = await createNode({
       boardId,
@@ -144,18 +168,19 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: Too
           </DialogHeader>
           <div className="flex gap-2">
             <Input
-              placeholder="https://example.com"
+              placeholder="URL or search term"
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addLinkNode()}
+              disabled={searching}
               autoFocus
             />
-            <Button onClick={addLinkNode}>
-              Add
+            <Button onClick={addLinkNode} disabled={searching || !linkUrl.trim()}>
+              {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Tip: You can also paste a link directly onto the board to add it.
+            Paste a URL or type a search term to find and add the top result.
           </p>
         </DialogContent>
       </Dialog>

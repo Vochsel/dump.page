@@ -279,6 +279,82 @@ function createServer(): McpServer {
       }
     );
 
+    // --- add_items (feature-flagged) ---
+    server.registerTool(
+      "add_items",
+      {
+        title: "Quick Add Items",
+        description:
+          "Quickly add one or more items to a board. Each item specifies its type (text, link, or checklist) and content. Items are positioned automatically.",
+        inputSchema: z.object({
+          board_slug: z.string().describe("Slug of the board to add items to"),
+          items: z
+            .array(
+              z.object({
+                type: z
+                  .enum(["text", "link", "checklist"])
+                  .describe("Type of item"),
+                content: z
+                  .string()
+                  .describe(
+                    "Content: plain text/HTML for text, URL for link, JSON array for checklist"
+                  ),
+                title: z.string().optional().describe("Optional title"),
+              })
+            )
+            .describe("Array of items to add"),
+        }),
+      },
+      async ({ board_slug, items }, { authInfo }) => {
+        const userId = authInfo?.extra?.userId as string | undefined;
+        if (!userId) {
+          return {
+            content: [
+              { type: "text" as const, text: "Error: Not authenticated." },
+            ],
+          };
+        }
+
+        const scope = (authInfo?.scopes || []) as string[];
+        if (!scope.includes("write")) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: 'Error: Write permission required. Please reconnect with "write" scope.',
+              },
+            ],
+          };
+        }
+
+        try {
+          const result = await convex.mutation(api.mcp.addItems, {
+            userId: userId as Id<"users">,
+            boardSlug: board_slug,
+            items,
+          });
+
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Added ${result.count} item(s) to board \`${result.boardSlug}\` (ids: ${result.ids.join(", ")}).`,
+              },
+            ],
+          };
+        } catch (e) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Error adding items: ${e instanceof Error ? e.message : "Unknown error"}`,
+              },
+            ],
+          };
+        }
+      }
+    );
+
     // --- update_note (feature-flagged) ---
     server.registerTool(
       "update_note",

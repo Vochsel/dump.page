@@ -131,6 +131,7 @@ export default defineSchema({
     showTitle: v.optional(v.boolean()),
     collapsed: v.optional(v.boolean()),
     archived: v.optional(v.boolean()),
+    docPosition: v.optional(v.object({ x: v.number(), y: v.number() })),
     createdBy: v.id("users"),
     createdAt: v.number(),
     updatedAt: v.number(),

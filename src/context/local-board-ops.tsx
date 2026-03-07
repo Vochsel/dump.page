@@ -77,6 +77,7 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
           ...(args.showTitle !== undefined ? { showTitle: args.showTitle } : {}),
           ...(args.collapsed !== undefined ? { collapsed: args.collapsed } : {}),
           ...(args.archived !== undefined ? { archived: args.archived } : {}),
+          ...(args.docPosition !== undefined ? { docPosition: args.docPosition } : {}),
           ...(args.metadata !== undefined ? { metadata: args.metadata } : {}),
         };
       })

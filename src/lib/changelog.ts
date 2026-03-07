@@ -11,6 +11,21 @@ export type ChangelogVersion = {
 
 export const changelog: ChangelogVersion[] = [
   {
+    version: "1.6.0",
+    date: "2026-03-07",
+    entries: [
+      { type: "feature", description: "Link search — type a search term instead of a URL when adding a link, and the top result is added automatically" },
+      { type: "feature", description: "Confetti — a burst of confetti triggers when all items in a checklist are checked off" },
+      { type: "feature", description: "Document view redesign — items are now draggable cards on a freeform page, inspired by mmm.page, with positions saved per item" },
+      { type: "feature", description: "List view redesign — notes show title and truncated blurb, checklists show title and progress bar, links show favicon and metadata, all with a preview button" },
+      { type: "feature", description: "View switcher relocated — moved from header to a floating button with popover near the bottom-left preferences area" },
+      { type: "feature", description: "Viewport persistence — board canvas position and zoom are saved per board in localStorage and restored on return" },
+      { type: "feature", description: "MCP quick-add tool — new add_items MCP tool for quickly adding multiple items to a board in one call" },
+      { type: "fix", description: "Right-click 'Copy content' on link nodes now shows 'Copy link' for clarity" },
+      { type: "fix", description: "Dashboard board card color line is now taller for better visibility" },
+    ],
+  },
+  {
     version: "1.5.0",
     date: "2026-03-07",
     entries: [

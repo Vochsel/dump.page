@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { NodeProps } from "@xyflow/react";
 import { Trash2, GripVertical, X, ChevronsDownUp, ChevronsUpDown, Maximize2 } from "lucide-react";
 import { useBoardOps } from "@/context/board-ops-context";
+import confetti from "canvas-confetti";
 
 type ChecklistItem = {
   id: string;
@@ -181,6 +182,16 @@ export function ChecklistNode({ data }: NodeProps) {
         item.id === id ? { ...item, checked: !item.checked } : item
       );
       persistNow(newItems);
+
+      // Confetti when last item is checked
+      if (newItems.length > 0 && newItems.every((i) => i.checked)) {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.7 },
+          disableForReducedMotion: true,
+        });
+      }
     },
     [persistNow]
   );

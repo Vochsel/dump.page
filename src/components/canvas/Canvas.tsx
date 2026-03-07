@@ -73,9 +73,20 @@ interface CanvasInnerProps {
 
 function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerProps) {
   const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata } = useBoardOps();
-  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { screenToFlowPosition, fitView, setViewport } = useReactFlow();
   const mousePosRef = useRef({ x: 0, y: 0 });
   const contextMenuPosRef = useRef({ x: 0, y: 0 });
+
+  // Viewport persistence per board
+  const viewportKey = `dump-viewport-${boardId}`;
+  const savedViewportRef = useRef<{ x: number; y: number; zoom: number } | null>(null);
+  const hasRestoredViewport = useRef(false);
+  if (savedViewportRef.current === null && !hasRestoredViewport.current) {
+    try {
+      const stored = typeof window !== "undefined" ? localStorage.getItem(viewportKey) : null;
+      if (stored) savedViewportRef.current = JSON.parse(stored);
+    } catch { /* ignore */ }
+  }
 
   // Link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -127,9 +138,15 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
   // Track optimistically deleted node IDs so they stay hidden until server catches up
   const [optimisticDeletes, setOptimisticDeletes] = useState<Set<string>>(new Set());
 
+  // Keep a ref to boardNodes so deleteNodeWithUndo can read the latest value
+  // without needing boardNodes in its dependency array (which would cause
+  // the useEffect that builds node data to re-run on every server update).
+  const boardNodesRef = useRef(boardNodes);
+  boardNodesRef.current = boardNodes;
+
   const deleteNodeWithUndo = useCallback(
     (nodeId: string) => {
-      const node = boardNodes?.find((n) => n._id === nodeId);
+      const node = boardNodesRef.current?.find((n) => n._id === nodeId);
       if (!node) {
         deleteNode({ nodeId });
         return;
@@ -158,7 +175,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
         });
       });
     },
-    [boardNodes, deleteNode, pushAction]
+    [deleteNode, pushAction]
   );
 
   // Local node state for optimistic updates
@@ -767,8 +784,19 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
       onNodeContextMenu={canEdit ? onNodeContextMenu : undefined}
       onPaneClick={closeNodeMenu}
       selectionMode={SelectionMode.Partial}
-      fitView
+      fitView={!savedViewportRef.current}
       fitViewOptions={{ padding: 0.5 }}
+      onInit={() => {
+        if (savedViewportRef.current && !hasRestoredViewport.current) {
+          hasRestoredViewport.current = true;
+          setViewport(savedViewportRef.current, { duration: 0 });
+        }
+      }}
+      onMoveEnd={(_event, viewport) => {
+        try {
+          localStorage.setItem(viewportKey, JSON.stringify({ x: viewport.x, y: viewport.y, zoom: viewport.zoom }));
+        } catch { /* ignore */ }
+      }}
       minZoom={0.1}
       maxZoom={2}
       panOnScroll={controlsVariant === "default"}
@@ -934,11 +962,46 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
             Add Checklist
           </ContextMenuItem>
           {(() => {
+            const allSelected = localNodes.filter((n) => n.selected);
+            if (allSelected.length < 2) return null;
+            return (
+              <>
+                <ContextMenuSeparator />
+                <ContextMenuItem onClick={() => {
+                  const texts = allSelected.map((n) => {
+                    const data = n.data as { content?: string; metadata?: { title?: string } };
+                    if (n.type === "link") return data.content || "";
+                    if (n.type === "checklist") {
+                      try {
+                        const items = JSON.parse(data.content || "[]");
+                        return items.map((i: { text: string; checked: boolean }) => `${i.checked ? "[x]" : "[ ]"} ${i.text}`).join("\n");
+                      } catch { return data.content || ""; }
+                    }
+                    return (data.content || "").replace(/<[^>]*>/g, "");
+                  });
+                  navigator.clipboard.writeText(texts.join("\n\n"));
+                  toast.success(`Copied ${allSelected.length} items`);
+                }}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy contents ({allSelected.length})
+                </ContextMenuItem>
+                <ContextMenuItem
+                  className="text-red-600 focus:text-red-600"
+                  onClick={() => {
+                    for (const n of allSelected) deleteNodeWithUndo(n.id);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete ({allSelected.length})
+                </ContextMenuItem>
+              </>
+            );
+          })()}
+          {(() => {
             const selected = localNodes.filter((n) => n.selected && n.type === "text");
             if (selected.length < 2) return null;
             return (
               <>
-                <ContextMenuSeparator />
                 <ContextMenuItem onClick={() => {
                   const items = selected.map((n) => {
                     const data = n.data as { content?: string };
@@ -1043,7 +1106,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               onClick={handleNodeCopy}
             >
               <Copy className="h-3.5 w-3.5" />
-              Copy content
+              {localNodes.find((n) => n.id === nodeMenu.nodeId)?.type === "link" ? "Copy link" : "Copy content"}
             </button>
             {boardSlug && (
               <button

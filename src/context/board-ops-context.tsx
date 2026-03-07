@@ -20,6 +20,7 @@ export type BoardNode = {
   showTitle?: boolean;
   collapsed?: boolean;
   position: Position;
+  docPosition?: Position;
   metadata?: Metadata;
 };
 
@@ -40,6 +41,7 @@ export interface BoardOps {
     showTitle?: boolean;
     collapsed?: boolean;
     archived?: boolean;
+    docPosition?: Position;
     metadata?: Metadata;
   }) => Promise<null>;
   updateNodePosition: (args: {

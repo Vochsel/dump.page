@@ -30,6 +30,7 @@ export function ConvexBoardOpsProvider({ boardId, children }: ConvexBoardOpsProv
       showTitle: n.showTitle,
       collapsed: n.collapsed,
       position: n.position,
+      docPosition: n.docPosition,
       metadata: n.metadata,
     }));
   }, [convexNodes]);
@@ -56,6 +57,7 @@ export function ConvexBoardOpsProvider({ boardId, children }: ConvexBoardOpsProv
           showTitle: args.showTitle,
           collapsed: args.collapsed,
           archived: args.archived,
+          docPosition: args.docPosition,
           metadata: args.metadata,
         });
         return null;

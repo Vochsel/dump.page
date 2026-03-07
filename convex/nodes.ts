@@ -91,6 +91,7 @@ export const updateNode = mutation({
     showTitle: v.optional(v.boolean()),
     collapsed: v.optional(v.boolean()),
     archived: v.optional(v.boolean()),
+    docPosition: v.optional(v.object({ x: v.number(), y: v.number() })),
     dimensions: v.optional(v.object({ width: v.number(), height: v.number() })),
     metadata: v.optional(
       v.object({
@@ -111,6 +112,7 @@ export const updateNode = mutation({
     if (args.showTitle !== undefined) updates.showTitle = args.showTitle;
     if (args.collapsed !== undefined) updates.collapsed = args.collapsed;
     if (args.archived !== undefined) updates.archived = args.archived;
+    if (args.docPosition !== undefined) updates.docPosition = args.docPosition;
     if (args.dimensions !== undefined) updates.dimensions = args.dimensions;
     if (args.metadata !== undefined) updates.metadata = args.metadata;
 

@@ -11,7 +11,7 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { useAuth } from "@/context/auth-context";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText } from "lucide-react";
+import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown } from "lucide-react";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { ChatButton } from "@/components/board/ChatButton";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,11 @@ import { BUILD_VERSION } from "@/lib/constants";
 import { ListView } from "@/components/board/ListView";
 import { DocumentView } from "@/components/board/DocumentView";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 function EditableBoardName({
   boardId,
@@ -229,7 +234,7 @@ export default function BoardPage({
             </div>
           ) : (
             <div className="h-full overflow-y-auto pt-16" style={{ backgroundColor: bgColor }}>
-              <DocumentView boardName={access.board.name} />
+              <DocumentView boardName={access.board.name} canEdit={access.canEdit} />
             </div>
           )}
         </ConvexBoardOpsProvider>
@@ -258,30 +263,6 @@ export default function BoardPage({
               />
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-              {/* View mode toggle */}
-              <div className="flex items-center bg-black/5 dark:bg-white/5 rounded-lg p-0.5">
-                <button
-                  onClick={() => setViewMode("board")}
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === "board" ? "bg-white dark:bg-gray-700 shadow-sm" : "hover:bg-black/5 dark:hover:bg-white/5"}`}
-                  title="Board view"
-                >
-                  <LayoutGrid className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-white dark:bg-gray-700 shadow-sm" : "hover:bg-black/5 dark:hover:bg-white/5"}`}
-                  title="List view"
-                >
-                  <List className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => setViewMode("document")}
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === "document" ? "bg-white dark:bg-gray-700 shadow-sm" : "hover:bg-black/5 dark:hover:bg-white/5"}`}
-                  title="Document view"
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                </button>
-              </div>
               <ChatButton
                 boardId={access.board._id}
                 slug={access.board.slug ?? boardId}
@@ -314,6 +295,41 @@ export default function BoardPage({
           </div>
         </div>
       </header>
+      {/* View switcher — floating bottom-left, right of preferences area */}
+      <div className="absolute bottom-4 left-16 z-10">
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300 text-sm"
+              title="Switch view"
+            >
+              {viewMode === "board" ? <LayoutGrid className="h-3.5 w-3.5" /> : viewMode === "list" ? <List className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+              <span className="capitalize">{viewMode}</span>
+              <ChevronDown className="h-3 w-3 text-gray-400" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-40 p-1" side="top" align="start">
+            {([
+              { value: "board" as const, label: "Board", icon: LayoutGrid },
+              { value: "list" as const, label: "List", icon: List },
+              { value: "document" as const, label: "Document", icon: FileText },
+            ]).map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setViewMode(option.value)}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors ${
+                  viewMode === option.value
+                    ? "bg-accent font-medium"
+                    : "hover:bg-accent/50"
+                }`}
+              >
+                <option.icon className="h-3.5 w-3.5" />
+                {option.label}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+      </div>
       <div className="absolute bottom-2 right-3 z-10 text-[10px] text-gray-400/60 dark:text-gray-500/60 font-mono select-none pointer-events-none">
         v{BUILD_VERSION}
       </div>
