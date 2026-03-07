@@ -353,28 +353,67 @@ const handler = createMcpHandler(
 const authedHandler = withMcpAuth(
   handler,
   async (_req: Request, bearerToken?: string) => {
+    console.log("[MCP Auth] verifyToken called, hasBearer:", !!bearerToken);
     if (!bearerToken) return undefined;
 
-    const tokenInfo = await convex.query(api.mcpAuth.validateToken, {
-      accessToken: bearerToken,
-    });
+    try {
+      const tokenInfo = await convex.query(api.mcpAuth.validateToken, {
+        accessToken: bearerToken,
+      });
+      console.log("[MCP Auth] validateToken result:", tokenInfo ? "valid" : "null");
 
-    if (!tokenInfo) return undefined;
+      if (!tokenInfo) return undefined;
 
-    return {
-      token: bearerToken,
-      clientId: "dump-mcp",
-      scopes: tokenInfo.scope.split(/[\s,]+/),
-      extra: {
-        userId: tokenInfo.userId,
-        userName: tokenInfo.user.name,
-        userEmail: tokenInfo.user.email,
-      },
-    };
+      return {
+        token: bearerToken,
+        clientId: "dump-mcp",
+        scopes: tokenInfo.scope.split(/[\s,]+/),
+        extra: {
+          userId: tokenInfo.userId,
+          userName: tokenInfo.user.name,
+          userEmail: tokenInfo.user.email,
+        },
+      };
+    } catch (err) {
+      console.error("[MCP Auth] validateToken error:", err);
+      return undefined;
+    }
   },
   {
     required: true,
   }
 );
 
-export { authedHandler as GET, authedHandler as POST, authedHandler as DELETE };
+// Logging wrapper
+function withLogging(fn: (req: Request) => Promise<Response>) {
+  return async (req: Request) => {
+    const url = new URL(req.url);
+    console.log(`[MCP] ${req.method} ${url.pathname}`, {
+      hasAuth: !!req.headers.get("authorization"),
+      contentType: req.headers.get("content-type"),
+    });
+
+    try {
+      const res = await fn(req);
+      console.log(`[MCP] Response: ${res.status} ${res.statusText}`, {
+        contentType: res.headers.get("content-type"),
+      });
+
+      // Clone and log body for non-200 responses
+      if (res.status >= 400) {
+        const cloned = res.clone();
+        const body = await cloned.text().catch(() => "(unreadable)");
+        console.error(`[MCP] Error body:`, body);
+      }
+
+      return res;
+    } catch (err) {
+      console.error(`[MCP] Handler threw:`, err);
+      throw err;
+    }
+  };
+}
+
+const loggedHandler = withLogging(authedHandler);
+
+export { loggedHandler as GET, loggedHandler as POST, loggedHandler as DELETE };
