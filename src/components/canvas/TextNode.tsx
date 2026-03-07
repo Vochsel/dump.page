@@ -117,6 +117,8 @@ export function TextNode({ data }: NodeProps) {
         ) : collapsed ? (
           <div
             className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-yellow-100 line-clamp-2"
+            tabIndex={canEdit ? 0 : undefined}
+            onKeyDown={(e) => { if (canEdit && e.key === "Enter") setEditing(true); }}
             onClick={() => canEdit && setEditing(true)}
             dangerouslySetInnerHTML={
               content ? { __html: content } : undefined
@@ -131,6 +133,8 @@ export function TextNode({ data }: NodeProps) {
         ) : (
           <div
             className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-yellow-100"
+            tabIndex={canEdit ? 0 : undefined}
+            onKeyDown={(e) => { if (canEdit && e.key === "Enter") setEditing(true); }}
             onClick={() => canEdit && setEditing(true)}
             dangerouslySetInnerHTML={
               content ? { __html: content } : undefined

@@ -311,6 +311,7 @@ export function ChecklistNode({ data }: NodeProps) {
                 type="text"
                 value={item.text}
                 placeholder="New item..."
+                tabIndex={0}
                 onChange={(e) => updateText(item.id, e.target.value)}
                 onFocus={() => { hasFocusRef.current = true; }}
                 onBlur={handleBlur}
