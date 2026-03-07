@@ -86,7 +86,10 @@ export function middleware(request: NextRequest) {
   const prefersText = (accept.includes("text/markdown") || accept.includes("text/plain")) &&
     !accept.includes("text/html");
 
-  // OG scrapers (Discord, Slack, etc.) need HTML to read meta tags
+  // OG scrapers (Discord, Slack, etc.) need HTML to read meta tags.
+  // TODO: Some LLMs may share user-agents with these scrapers in future,
+  // which would break their access to the markdown/llms.txt content.
+  // Consider serving both OG tags AND markdown, or using a query param override.
   if (isOgScraper(userAgent)) return NextResponse.next();
 
   if (!isBot(userAgent) && !prefersText) return NextResponse.next();
