@@ -1,4 +1,5 @@
 import { query } from "./_generated/server";
+import { v } from "convex/values";
 
 export const stats = query({
   args: {},
@@ -135,5 +136,24 @@ export const activeBoards = query({
           updatedAt: new Date(b.updatedAt).toISOString(),
         };
       });
+  },
+});
+
+export const dailyHistory = query({
+  args: {
+    days: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.days ?? 90;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - limit);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+    const snapshots = await ctx.db
+      .query("dailyStats")
+      .withIndex("by_date", (q) => q.gte("date", cutoffStr))
+      .collect();
+
+    return snapshots.sort((a, b) => a.date.localeCompare(b.date));
   },
 });

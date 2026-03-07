@@ -65,6 +65,13 @@ export default defineSchema({
     createdAt: v.number(),
   }),
 
+  dailyStats: defineTable({
+    date: v.string(),
+    users: v.number(),
+    boards: v.number(),
+    nodes: v.number(),
+  }).index("by_date", ["date"]),
+
   nodes: defineTable({
     boardId: v.id("boards"),
     type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),
