@@ -74,7 +74,7 @@ export default function HelpPage() {
               </Button>
             </Link>
             <img src="/dump.png" alt="Dump" className="h-9" />
-            <span className="font-[family-name:var(--font-dynapuff)] text-lg text-gray-800">
+            <span className="font-[family-name:var(--font-dynapuff)] text-lg text-gray-800 dark:text-gray-200">
               Help
             </span>
           </div>
@@ -85,7 +85,7 @@ export default function HelpPage() {
         <h1 className="font-[family-name:var(--font-poppins)] text-2xl font-semibold text-stone-900 dark:text-stone-100 mb-2">
           Getting Started with Dump
         </h1>
-        <p className="text-stone-500 mb-10">
+        <p className="text-stone-500 dark:text-stone-400 mb-10">
           Dump is a shared whiteboard for links, notes, and checklists — readable by humans and AI agents.
         </p>
 
@@ -103,7 +103,7 @@ export default function HelpPage() {
             ].map((item) => (
               <div key={item.title} className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 p-4">
                 <h3 className="font-medium text-stone-800 dark:text-stone-200 text-sm">{item.title}</h3>
-                <p className="text-xs text-stone-500 mt-1">{item.desc}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -114,14 +114,14 @@ export default function HelpPage() {
           <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
             Sharing your board
           </h2>
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 p-4 text-sm text-stone-600 space-y-2">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 p-4 text-sm text-stone-600 dark:text-stone-300 space-y-2">
             <p>Click the <strong>share button</strong> in the board header to set your board&apos;s visibility and copy the share link.</p>
-            <ul className="space-y-1.5 ml-4 list-disc text-stone-500 text-xs">
-              <li><strong className="text-stone-700">Private</strong> — only you and invited members can access</li>
-              <li><strong className="text-stone-700">Shared</strong> — anyone with the magic link can view</li>
-              <li><strong className="text-stone-700">Public</strong> — anyone with the board URL can view</li>
+            <ul className="space-y-1.5 ml-4 list-disc text-stone-500 dark:text-stone-400 text-xs">
+              <li><strong className="text-stone-700 dark:text-stone-300">Private</strong> — only you and invited members can access</li>
+              <li><strong className="text-stone-700 dark:text-stone-300">Shared</strong> — anyone with the magic link can view</li>
+              <li><strong className="text-stone-700 dark:text-stone-300">Public</strong> — anyone with the board URL can view</li>
             </ul>
-            <p className="text-xs text-stone-400">Shared and public boards are automatically accessible to AI assistants via the board&apos;s <code className="bg-stone-100 px-1 rounded font-mono">/llms.txt</code> endpoint.</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500">Shared and public boards are automatically accessible to AI assistants via the board&apos;s <code className="bg-stone-100 dark:bg-gray-800 px-1 rounded font-mono">/llms.txt</code> endpoint.</p>
           </div>
         </section>
 
@@ -130,8 +130,8 @@ export default function HelpPage() {
           <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
             Using with AI assistants
           </h2>
-          <p className="text-stone-500 text-sm mb-6">
-            Every shared or public board has a <code className="bg-stone-200 px-1.5 py-0.5 rounded text-xs font-mono">/llms.txt</code> endpoint that serves board content in a plain-text format optimized for AI consumption.
+          <p className="text-stone-500 dark:text-stone-400 text-sm mb-6">
+            Every shared or public board has a <code className="bg-stone-200 dark:bg-gray-800 px-1.5 py-0.5 rounded text-xs font-mono">/llms.txt</code> endpoint that serves board content in a plain-text format optimized for AI consumption.
           </p>
           <div className="space-y-4">
             {AI_PROVIDERS.map((provider) => (
@@ -139,15 +139,15 @@ export default function HelpPage() {
                 key={provider.name}
                 className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 overflow-hidden group"
               >
-                <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-stone-50 transition-colors">
+                <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-stone-50 dark:hover:bg-gray-800 transition-colors">
                   <img src={provider.icon} alt={provider.name} className="h-5 w-5 flex-shrink-0" />
-                  <span className="font-medium text-sm text-stone-800">{provider.name}</span>
+                  <span className="font-medium text-sm text-stone-800 dark:text-stone-200">{provider.name}</span>
                 </summary>
-                <div className="px-4 pb-4 border-t border-stone-100">
+                <div className="px-4 pb-4 border-t border-stone-100 dark:border-gray-800">
                   <ol className="space-y-2 mt-3">
                     {provider.steps.map((step, i) => (
-                      <li key={i} className="flex gap-2 text-sm text-stone-600">
-                        <span className="text-stone-400 font-mono text-xs mt-0.5">{i + 1}.</span>
+                      <li key={i} className="flex gap-2 text-sm text-stone-600 dark:text-stone-300">
+                        <span className="text-stone-400 dark:text-stone-500 font-mono text-xs mt-0.5">{i + 1}.</span>
                         <span>{step}</span>
                       </li>
                     ))}
@@ -163,7 +163,7 @@ export default function HelpPage() {
           <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
             Keyboard shortcuts
           </h2>
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 divide-y divide-stone-100">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 divide-y divide-stone-100 dark:divide-gray-800">
             {[
               { keys: "Cmd/Ctrl + C", desc: "Copy board share link (when nothing is selected)" },
               { keys: "Cmd/Ctrl + Z", desc: "Undo" },
@@ -172,8 +172,8 @@ export default function HelpPage() {
               { keys: "Right-click", desc: "Context menu to add items or manage nodes" },
             ].map((shortcut) => (
               <div key={shortcut.keys} className="flex items-center justify-between px-4 py-2.5">
-                <span className="text-sm text-stone-600">{shortcut.desc}</span>
-                <kbd className="bg-stone-100 border border-stone-200 px-2 py-0.5 rounded text-xs font-mono text-stone-600">
+                <span className="text-sm text-stone-600 dark:text-stone-300">{shortcut.desc}</span>
+                <kbd className="bg-stone-100 dark:bg-gray-800 border border-stone-200 dark:border-gray-700 px-2 py-0.5 rounded text-xs font-mono text-stone-600 dark:text-stone-300">
                   {shortcut.keys}
                 </kbd>
               </div>
@@ -181,9 +181,9 @@ export default function HelpPage() {
           </div>
         </section>
 
-        <div className="text-center text-xs text-stone-300 font-mono space-y-1">
+        <div className="text-center text-xs text-stone-300 dark:text-stone-600 font-mono space-y-1">
           <div>
-            <Link href="/changelog" className="text-stone-400 hover:text-stone-600 transition-colors underline decoration-stone-300">
+            <Link href="/changelog" className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors underline decoration-stone-300 dark:decoration-stone-600">
               Changelog
             </Link>
           </div>
