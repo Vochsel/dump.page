@@ -35,8 +35,10 @@ export async function POST(req: NextRequest) {
   }
 
   const getParam = (key: string): string | undefined => {
-    if (body) return body.get(key) ?? undefined;
-    if (json) return json[key];
+    const fromBody = body ? (body.get(key) ?? undefined) : undefined;
+    if (fromBody) return fromBody;
+    const fromJson = json ? json[key] : undefined;
+    if (fromJson) return fromJson;
     // Fall back to Basic auth for client_id
     if (key === "client_id" && basicClientId) return basicClientId;
     return undefined;
