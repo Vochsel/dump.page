@@ -11,7 +11,7 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { useAuth } from "@/context/auth-context";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown } from "lucide-react";
+import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown, Sun, Moon } from "lucide-react";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { ChatButton } from "@/components/board/ChatButton";
 import { Button } from "@/components/ui/button";
@@ -106,7 +106,7 @@ export default function BoardPage({
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? undefined;
   const { user, loading: authLoading } = useAuth();
-  const { resolved: theme } = useTheme();
+  const { resolved: theme, setMode: setThemeMode } = useTheme();
 
   const [viewMode, setViewMode] = useLocalStorage<"board" | "list" | "document">("dump-view-mode", "board");
 
@@ -300,6 +300,16 @@ export default function BoardPage({
       {/* View switcher for non-board views */}
       {viewMode !== "board" && (
         <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5">
+          <button
+            onClick={() => {
+              const next = theme === "dark" ? "light" : "dark";
+              setThemeMode(next);
+            }}
+            className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            title={`Theme: ${theme}`}
+          >
+            {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          </button>
           <Popover>
             <PopoverTrigger asChild>
               <button
