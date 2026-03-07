@@ -58,6 +58,8 @@ export const updateNode = mutation({
     nodeId: v.id("nodes"),
     content: v.optional(v.string()),
     title: v.optional(v.string()),
+    showTitle: v.optional(v.boolean()),
+    collapsed: v.optional(v.boolean()),
     dimensions: v.optional(v.object({ width: v.number(), height: v.number() })),
     metadata: v.optional(
       v.object({
@@ -75,6 +77,8 @@ export const updateNode = mutation({
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (args.content !== undefined) updates.content = args.content;
     if (args.title !== undefined) updates.title = args.title;
+    if (args.showTitle !== undefined) updates.showTitle = args.showTitle;
+    if (args.collapsed !== undefined) updates.collapsed = args.collapsed;
     if (args.dimensions !== undefined) updates.dimensions = args.dimensions;
     if (args.metadata !== undefined) updates.metadata = args.metadata;
 

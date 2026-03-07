@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown } from "lucide-react";
 
 import { darkenHex } from "@/lib/utils";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
@@ -147,6 +147,8 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
           data: {
             content: n.content,
             title: n.title,
+            showTitle: n.showTitle,
+            collapsed: n.collapsed,
             nodeId: n._id,
             canEdit,
             metadata: n.metadata,
@@ -577,6 +579,22 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
     setNodeMenu(null);
   }, [nodeMenu, localNodes]);
 
+  const handleNodeToggleTitle = useCallback(() => {
+    if (!nodeMenu) return;
+    const node = boardNodes?.find((n) => n._id === nodeMenu.nodeId);
+    if (!node) return;
+    updateNode({ nodeId: nodeMenu.nodeId, showTitle: !node.showTitle });
+    setNodeMenu(null);
+  }, [nodeMenu, boardNodes, updateNode]);
+
+  const handleNodeToggleCollapse = useCallback(() => {
+    if (!nodeMenu) return;
+    const node = boardNodes?.find((n) => n._id === nodeMenu.nodeId);
+    if (!node) return;
+    updateNode({ nodeId: nodeMenu.nodeId, collapsed: !node.collapsed });
+    setNodeMenu(null);
+  }, [nodeMenu, boardNodes, updateNode]);
+
   const handleRenameSubmit = useCallback(() => {
     if (!renameNodeId) return;
     const newTitle = renameValue.trim();
@@ -747,6 +765,32 @@ function CanvasInner({ canEdit, settings }: CanvasInnerProps) {
                 Rename
               </button>
             )}
+            {(() => {
+              const nodeType = localNodes.find((n) => n.id === nodeMenu.nodeId)?.type;
+              if (nodeType !== "text" && nodeType !== "checklist") return null;
+              const source = boardNodes?.find((n) => n._id === nodeMenu.nodeId);
+              return (
+                <>
+                  <div className="my-1 border-t border-gray-100" />
+                  <button
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    onClick={handleNodeToggleTitle}
+                  >
+                    <PanelTop className="h-3.5 w-3.5" />
+                    {source?.showTitle ? "Hide title bar" : "Show title bar"}
+                  </button>
+                  {nodeType === "text" && (
+                    <button
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      onClick={handleNodeToggleCollapse}
+                    >
+                      <ChevronsUpDown className="h-3.5 w-3.5" />
+                      {source?.collapsed ? "Expand note" : "Collapse note"}
+                    </button>
+                  )}
+                </>
+              );
+            })()}
             <div className="my-1 border-t border-gray-100" />
             <button
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 transition-colors"

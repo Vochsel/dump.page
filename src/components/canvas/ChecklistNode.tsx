@@ -16,6 +16,7 @@ import type { UndoAction } from "@/hooks/useUndoRedo";
 type ChecklistNodeData = {
   content: string;
   title?: string;
+  showTitle?: boolean;
   nodeId: string;
   canEdit: boolean;
   pushAction: (action: UndoAction) => void;
@@ -37,7 +38,7 @@ function parseItems(content: string): ChecklistItem[] {
 }
 
 export function ChecklistNode({ data }: NodeProps) {
-  const { content, title, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as ChecklistNodeData;
+  const { content, title, showTitle, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as ChecklistNodeData;
   const { updateNode } = useBoardOps();
 
   // Title editing state
@@ -239,37 +240,39 @@ export function ChecklistNode({ data }: NodeProps) {
 
   return (
     <div ref={containerRef} className="bg-white dark:bg-gray-900 rounded-sm shadow-md min-w-[220px] max-w-[360px] group border border-gray-200 dark:border-gray-700">
-      {/* Title bar */}
-      <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60">
-        {editingTitle && canEdit ? (
-          <input
-            ref={titleInputRef}
-            className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-gray-700 dark:text-gray-200 placeholder:text-gray-400/40 dark:placeholder:text-gray-500/40"
-            value={titleValue}
-            placeholder=""
-            onChange={(e) => setTitleValue(e.target.value)}
-            onBlur={commitTitle}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitTitle();
-              if (e.key === "Escape") {
-                setTitleValue(title ?? "");
-                setEditingTitle(false);
-              }
-            }}
-          />
-        ) : (
-          <div
-            className={`text-xs font-semibold truncate min-h-[1em] ${
-              title
-                ? "text-gray-700 dark:text-gray-200"
-                : ""
-            } ${canEdit ? "cursor-text" : ""}`}
-            onClick={() => canEdit && setEditingTitle(true)}
-          >
-            {title || ""}
-          </div>
-        )}
-      </div>
+      {/* Title bar — only visible when showTitle is true */}
+      {showTitle && (
+        <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60">
+          {editingTitle && canEdit ? (
+            <input
+              ref={titleInputRef}
+              className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-gray-700 dark:text-gray-200 placeholder:text-gray-400/40 dark:placeholder:text-gray-500/40"
+              value={titleValue}
+              placeholder=""
+              onChange={(e) => setTitleValue(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitTitle();
+                if (e.key === "Escape") {
+                  setTitleValue(title ?? "");
+                  setEditingTitle(false);
+                }
+              }}
+            />
+          ) : (
+            <div
+              className={`text-xs font-semibold truncate min-h-[1em] ${
+                title
+                  ? "text-gray-700 dark:text-gray-200"
+                  : ""
+              } ${canEdit ? "cursor-text" : ""}`}
+              onClick={() => canEdit && setEditingTitle(true)}
+            >
+              {title || ""}
+            </div>
+          )}
+        </div>
+      )}
       <div className="p-2 space-y-0.5">
         {items.map((item, idx) => (
           <div

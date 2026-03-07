@@ -11,6 +11,8 @@ import type { UndoAction } from "@/hooks/useUndoRedo";
 type TextNodeData = {
   content: string;
   title?: string;
+  showTitle?: boolean;
+  collapsed?: boolean;
   nodeId: string;
   canEdit: boolean;
   pushAction: (action: UndoAction) => void;
@@ -18,7 +20,7 @@ type TextNodeData = {
 };
 
 export function TextNode({ data }: NodeProps) {
-  const { content, title, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as TextNodeData;
+  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo } = data as unknown as TextNodeData;
   const [editing, setEditing] = useState(!content && canEdit);
   const { updateNode } = useBoardOps();
 
@@ -72,37 +74,39 @@ export function TextNode({ data }: NodeProps) {
 
   return (
     <div className="bg-yellow-100 dark:bg-yellow-900/40 rounded-sm shadow-md min-w-[180px] max-w-[360px] group border border-yellow-200/60 dark:border-yellow-700/40">
-      {/* Title bar */}
-      <div className="bg-yellow-200/60 dark:bg-yellow-800/40 px-3 py-1.5 rounded-t-sm border-b border-yellow-300/50 dark:border-yellow-700/50">
-        {editingTitle && canEdit ? (
-          <input
-            ref={titleInputRef}
-            className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-yellow-900/80 dark:text-yellow-100/80 placeholder:text-yellow-600/40 dark:placeholder:text-yellow-400/30"
-            value={titleValue}
-            placeholder=""
-            onChange={(e) => setTitleValue(e.target.value)}
-            onBlur={commitTitle}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitTitle();
-              if (e.key === "Escape") {
-                setTitleValue(title ?? "");
-                setEditingTitle(false);
-              }
-            }}
-          />
-        ) : (
-          <div
-            className={`text-xs font-semibold truncate min-h-[1em] ${
-              title
-                ? "text-yellow-900/80 dark:text-yellow-100/80"
-                : ""
-            } ${canEdit ? "cursor-text" : ""}`}
-            onClick={() => canEdit && setEditingTitle(true)}
-          >
-            {title || ""}
-          </div>
-        )}
-      </div>
+      {/* Title bar — only visible when showTitle is true */}
+      {showTitle && (
+        <div className="bg-yellow-200/60 dark:bg-yellow-800/40 px-3 py-1.5 rounded-t-sm border-b border-yellow-300/50 dark:border-yellow-700/50">
+          {editingTitle && canEdit ? (
+            <input
+              ref={titleInputRef}
+              className="nodrag nowheel w-full bg-transparent border-none outline-none text-xs font-semibold text-yellow-900/80 dark:text-yellow-100/80 placeholder:text-yellow-600/40 dark:placeholder:text-yellow-400/30"
+              value={titleValue}
+              placeholder=""
+              onChange={(e) => setTitleValue(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitTitle();
+                if (e.key === "Escape") {
+                  setTitleValue(title ?? "");
+                  setEditingTitle(false);
+                }
+              }}
+            />
+          ) : (
+            <div
+              className={`text-xs font-semibold truncate min-h-[1em] ${
+                title
+                  ? "text-yellow-900/80 dark:text-yellow-100/80"
+                  : ""
+              } ${canEdit ? "cursor-text" : ""}`}
+              onClick={() => canEdit && setEditingTitle(true)}
+            >
+              {title || ""}
+            </div>
+          )}
+        </div>
+      )}
       <div className="p-3">
         {editing && canEdit ? (
           <TipTapEditor
@@ -110,6 +114,20 @@ export function TextNode({ data }: NodeProps) {
             onSave={handleSave}
             onCancel={handleCancel}
           />
+        ) : collapsed ? (
+          <div
+            className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-yellow-100 line-clamp-2"
+            onClick={() => canEdit && setEditing(true)}
+            dangerouslySetInnerHTML={
+              content ? { __html: content } : undefined
+            }
+          >
+            {!content ? (
+              <span className="text-yellow-600/50 italic">
+                Click to edit...
+              </span>
+            ) : undefined}
+          </div>
         ) : (
           <div
             className="tiptap-editor text-sm min-h-[24px] cursor-text text-yellow-900 dark:text-yellow-100"

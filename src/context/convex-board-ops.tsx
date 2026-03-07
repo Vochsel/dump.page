@@ -27,6 +27,8 @@ export function ConvexBoardOpsProvider({ boardId, children }: ConvexBoardOpsProv
       type: n.type,
       content: n.content,
       title: n.title,
+      showTitle: n.showTitle,
+      collapsed: n.collapsed,
       position: n.position,
       metadata: n.metadata,
     }));
@@ -51,6 +53,8 @@ export function ConvexBoardOpsProvider({ boardId, children }: ConvexBoardOpsProv
           nodeId: args.nodeId as Id<"nodes">,
           content: args.content,
           title: args.title,
+          showTitle: args.showTitle,
+          collapsed: args.collapsed,
           metadata: args.metadata,
         });
         return null;
