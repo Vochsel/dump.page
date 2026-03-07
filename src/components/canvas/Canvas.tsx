@@ -550,7 +550,8 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
     if (!nodeMenu) return;
     const node = localNodes.find((n) => n.id === nodeMenu.nodeId);
     if (!node) return;
-    const data = node.data as { content?: string };
+    const source = boardNodes?.find((n) => n._id === nodeMenu.nodeId);
+    const data = node.data as { content?: string; title?: string };
     createNode({
       boardId,
       type: node.type as "text" | "link" | "checklist",
@@ -559,12 +560,20 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
     }).then((newNodeId) => {
       pushAction({ type: "create", nodeId: newNodeId });
       sfx.add();
+      // Carry over title, showTitle, and collapsed preferences
+      const updates: Record<string, unknown> = {};
+      if (data.title) updates.title = data.title;
+      if (source?.showTitle) updates.showTitle = source.showTitle;
+      if (source?.collapsed) updates.collapsed = source.collapsed;
+      if (Object.keys(updates).length > 0) {
+        updateNode({ nodeId: newNodeId, ...updates } as Parameters<typeof updateNode>[0]);
+      }
       if (node.type === "link" && data.content) {
         fetchMetadata({ nodeId: newNodeId, url: data.content });
       }
     });
     setNodeMenu(null);
-  }, [nodeMenu, localNodes, boardId, createNode, fetchMetadata, pushAction]);
+  }, [nodeMenu, localNodes, boardNodes, boardId, createNode, fetchMetadata, pushAction, updateNode]);
 
   const handleNodeDelete = useCallback(() => {
     if (!nodeMenu) return;
