@@ -11,7 +11,6 @@ import {
   NodeChange,
   NodeTypes,
   useReactFlow,
-  useViewport,
   ReactFlowProvider,
 } from "@xyflow/react";
 import { type BoardSettingsData, resolveBgColor } from "@/components/board/BoardSettings";
@@ -34,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, Minus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -72,8 +71,7 @@ interface CanvasInnerProps {
 
 function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerProps) {
   const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata } = useBoardOps();
-  const { screenToFlowPosition, fitView, zoomIn, zoomOut, zoomTo } = useReactFlow();
-  const { zoom } = useViewport();
+  const { screenToFlowPosition, fitView } = useReactFlow();
   const mousePosRef = useRef({ x: 0, y: 0 });
   const contextMenuPosRef = useRef({ x: 0, y: 0 });
 
@@ -872,75 +870,12 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
     </div>
   );
 
-  const zoomPercent = Math.round(zoom * 100);
-
-  const zoomControls = (
-    <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1">
-      <button
-        onClick={() => zoomOut({ duration: 200 })}
-        className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-        title="Zoom out"
-      >
-        <Minus className="h-4 w-4" />
-      </button>
-      <Popover>
-        <PopoverTrigger asChild>
-          <button
-            className="px-2 py-1.5 min-w-[52px] rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-xs font-medium text-gray-600 dark:text-gray-300 tabular-nums"
-            title="Zoom options"
-          >
-            {zoomPercent}%
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-36 p-1" side="top" align="end">
-          <button
-            onClick={() => fitView({ padding: 0.5, duration: 300 })}
-            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent/50"
-          >
-            Zoom to fit
-          </button>
-          <button
-            onClick={() => zoomTo(0.5, { duration: 200 })}
-            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent/50"
-          >
-            50%
-          </button>
-          <button
-            onClick={() => zoomTo(1, { duration: 200 })}
-            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent/50"
-          >
-            100%
-          </button>
-          <button
-            onClick={() => zoomTo(1.5, { duration: 200 })}
-            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent/50"
-          >
-            150%
-          </button>
-          <button
-            onClick={() => zoomTo(2, { duration: 200 })}
-            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent/50"
-          >
-            200%
-          </button>
-        </PopoverContent>
-      </Popover>
-      <button
-        onClick={() => zoomIn({ duration: 200 })}
-        className="p-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-        title="Zoom in"
-      >
-        <Plus className="h-4 w-4" />
-      </button>
-    </div>
-  );
-
   if (!canEdit) {
     return (
       <div className="w-full h-full relative" onMouseMove={onMouseMove}>
         {flowContent}
         {bottomButtons}
-        {zoomControls}
+
         <QuickTips />
       </div>
     );
@@ -969,7 +904,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
               </div>
             )}
             {bottomButtons}
-            {zoomControls}
+    
             <QuickTips />
           </div>
         </ContextMenuTrigger>

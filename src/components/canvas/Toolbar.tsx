@@ -10,8 +10,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Type, Link, Plus, CheckSquare, Undo2, Redo2 } from "lucide-react";
-import { useReactFlow } from "@xyflow/react";
+import { Type, Link, Plus, Minus, CheckSquare, Undo2, Redo2 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useReactFlow, useViewport } from "@xyflow/react";
 import { useBoardOps } from "@/context/board-ops-context";
 
 interface ToolbarProps {
@@ -26,7 +31,8 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: Too
   const [linkUrl, setLinkUrl] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
   const { createNode, fetchLinkMetadata: fetchMetadata, boardId } = useBoardOps();
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView, zoomIn, zoomOut, zoomTo } = useReactFlow();
+  const { zoom } = useViewport();
 
   const getCenter = () => {
     return screenToFlowPosition({
@@ -96,6 +102,37 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated }: Too
       <Button variant="ghost" size="sm" className="gap-2" onClick={() => setLinkOpen(true)}>
         <Link className="h-4 w-4" />
         Link
+      </Button>
+      <div className="w-px h-6 bg-border" />
+      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => zoomOut({ duration: 200 })} title="Zoom out">
+        <Minus className="h-4 w-4" />
+      </Button>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 min-w-[48px] px-2 text-xs tabular-nums" title="Zoom options">
+            {Math.round(zoom * 100)}%
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-36 p-1" side="top" align="center">
+          <button
+            onClick={() => fitView({ padding: 0.5, duration: 300 })}
+            className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent"
+          >
+            Zoom to fit
+          </button>
+          {[50, 100, 150, 200].map((pct) => (
+            <button
+              key={pct}
+              onClick={() => zoomTo(pct / 100, { duration: 200 })}
+              className="w-full px-3 py-1.5 text-sm text-left rounded-md hover:bg-accent"
+            >
+              {pct}%
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
+      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => zoomIn({ duration: 200 })} title="Zoom in">
+        <Plus className="h-4 w-4" />
       </Button>
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
         <DialogContent className="sm:max-w-md">
