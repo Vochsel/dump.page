@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   description:
     "Shared whiteboards of links and text, accessible to all agents and chatbots.",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.get-dump.com"
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.dump.page.com"
   ),
   openGraph: {
     title: "Dump — The context dump for humans and AI",

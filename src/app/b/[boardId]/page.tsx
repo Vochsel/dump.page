@@ -134,7 +134,7 @@ export default function BoardPage({
   const shareUrl = (() => {
     if (!access?.board) return "";
     const slug = access.board.slug ?? boardId;
-    const base = `https://www.get-dump.com/b/${slug}`;
+    const base = `https://www.dump.page/b/${slug}`;
     if (access.board.visibility === "shared" && access.board.shareToken) {
       return `${base}?token=${access.board.shareToken}`;
     }

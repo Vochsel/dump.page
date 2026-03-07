@@ -21,7 +21,7 @@ import {
 import { ChevronDown, Copy, Link2 } from "lucide-react";
 import { toast } from "sonner";
 
-const SITE_URL = "https://www.get-dump.com";
+const SITE_URL = "https://www.dump.page.com";
 
 const PROVIDERS = [
   {
@@ -67,7 +67,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
 
   const needsToken = visibility === "shared" && shareToken;
   const tokenParam = needsToken ? `?token=${shareToken}` : "";
-  const boardUrl = `${SITE_URL}/b/${slug}/llms.txt${tokenParam}`;
+  const boardUrl = `${SITE_URL}/b/${slug}${tokenParam}`;
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as ProviderId | null;
@@ -131,7 +131,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
       await new Promise((r) => setTimeout(r, 500));
       // Re-fetch to get the new share token
       const chosen = pendingProvider ?? provider;
-      const newBoardUrl = `${SITE_URL}/b/${slug}/llms.txt`;
+      const newBoardUrl = `${SITE_URL}/b/${slug}`;
       const prompt = `Use this board for context: ${newBoardUrl}\n`;
       openProviderWithPrompt(prompt, chosen);
       setShowPrivateDialog(false);

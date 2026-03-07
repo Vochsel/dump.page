@@ -288,7 +288,7 @@ export default function Home() {
           <p className="text-sm text-gray-500 font-[family-name:var(--font-poppins)] pt-2 border-t border-gray-100">
             See the dump we use for making Dump!{" "}
             <a
-              href="https://www.get-dump.com/b/hy0rfopn"
+              href="https://www.dump.page/b/hy0rfopn"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-800 font-semibold underline decoration-gray-300 hover:decoration-gray-500 transition-colors"
