@@ -12,17 +12,17 @@ import { SmallLoginButton } from "@/components/auth/SmallLoginButton";
 type Filter = "all" | "feature" | "fix";
 
 function EntryIcon({ type }: { type: ChangelogEntry["type"] }) {
-  if (type === "feature") return <Sparkles className="h-3.5 w-3.5 text-stone-400" />;
-  return <Bug className="h-3.5 w-3.5 text-stone-400" />;
+  if (type === "feature") return <Sparkles className="h-3.5 w-3.5 text-stone-400 dark:text-stone-500" />;
+  return <Bug className="h-3.5 w-3.5 text-stone-400 dark:text-stone-500" />;
 }
 
 const stickyNotes = [
-  { top: "8%", left: "calc(50% - 520px)", rotate: "rotate-[3deg]", bg: "bg-yellow-100 border-yellow-200/80", color: "text-yellow-700", title: "TODO:", body: "Add dark mode for the changelog page... eventually" },
-  { top: "22%", left: "calc(50% + 400px)", rotate: "rotate-[-2deg]", bg: "bg-pink-100 border-pink-200/80", color: "text-pink-700", title: undefined, body: "Remember: ship it before it's perfect" },
-  { top: "42%", left: "calc(50% - 540px)", rotate: "rotate-[1.5deg]", bg: "bg-blue-100 border-blue-200/80", color: "text-blue-700", title: "Fun fact", body: "This changelog was built on a Dump board" },
-  { top: "58%", left: "calc(50% + 410px)", rotate: "rotate-[-3deg]", bg: "bg-green-100 border-green-200/80", color: "text-green-700", title: undefined, body: "If you're reading this, you're our favorite user" },
-  { top: "75%", left: "calc(50% - 530px)", rotate: "rotate-[2deg]", bg: "bg-purple-100 border-purple-200/80", color: "text-purple-700", title: "Secret", body: "There's a hidden sound when you add a card" },
-  { top: "88%", left: "calc(50% + 390px)", rotate: "rotate-[-1deg]", bg: "bg-orange-100 border-orange-200/80", color: "text-orange-700", title: undefined, body: "We spent way too long picking these colors" },
+  { top: "8%", left: "calc(50% - 520px)", rotate: "rotate-[3deg]", bg: "bg-yellow-100 dark:bg-yellow-900/40 border-yellow-200/80 dark:border-yellow-700/40", color: "text-yellow-700 dark:text-yellow-300", title: "TODO:", body: "Add dark mode for the changelog page... eventually" },
+  { top: "22%", left: "calc(50% + 400px)", rotate: "rotate-[-2deg]", bg: "bg-pink-100 dark:bg-pink-900/40 border-pink-200/80 dark:border-pink-700/40", color: "text-pink-700 dark:text-pink-300", title: undefined, body: "Remember: ship it before it's perfect" },
+  { top: "42%", left: "calc(50% - 540px)", rotate: "rotate-[1.5deg]", bg: "bg-blue-100 dark:bg-blue-900/40 border-blue-200/80 dark:border-blue-700/40", color: "text-blue-700 dark:text-blue-300", title: "Fun fact", body: "This changelog was built on a Dump board" },
+  { top: "58%", left: "calc(50% + 410px)", rotate: "rotate-[-3deg]", bg: "bg-green-100 dark:bg-green-900/40 border-green-200/80 dark:border-green-700/40", color: "text-green-700 dark:text-green-300", title: undefined, body: "If you're reading this, you're our favorite user" },
+  { top: "75%", left: "calc(50% - 530px)", rotate: "rotate-[2deg]", bg: "bg-purple-100 dark:bg-purple-900/40 border-purple-200/80 dark:border-purple-700/40", color: "text-purple-700 dark:text-purple-300", title: "Secret", body: "There's a hidden sound when you add a card" },
+  { top: "88%", left: "calc(50% + 390px)", rotate: "rotate-[-1deg]", bg: "bg-orange-100 dark:bg-orange-900/40 border-orange-200/80 dark:border-orange-700/40", color: "text-orange-700 dark:text-orange-300", title: undefined, body: "We spent way too long picking these colors" },
 ];
 
 const linkCards = [
@@ -52,8 +52,8 @@ export default function ChangelogPage() {
       </div>
 
       {/* Tape strips at top corners */}
-      <div className="absolute top-4 left-8 w-16 h-6 bg-amber-200/40 rotate-[-8deg] rounded-sm" />
-      <div className="absolute top-4 right-8 w-16 h-6 bg-amber-200/40 rotate-[5deg] rounded-sm" />
+      <div className="absolute top-4 left-8 w-16 h-6 bg-amber-200/40 dark:bg-amber-700/20 rotate-[-8deg] rounded-sm" />
+      <div className="absolute top-4 right-8 w-16 h-6 bg-amber-200/40 dark:bg-amber-700/20 rotate-[5deg] rounded-sm" />
 
       {/* Draggable sticky notes scattered across viewport */}
       {stickyNotes.map((note, i) => (
@@ -71,14 +71,14 @@ export default function ChangelogPage() {
       {linkCards.map((card, i) => (
         <DraggableCard
           key={`link-${i}`}
-          className={`absolute ${card.rotate} bg-white border border-stone-200 rounded-lg p-2.5 shadow-sm w-40 hidden xl:block z-20`}
+          className={`absolute ${card.rotate} bg-white dark:bg-gray-900 border border-stone-200 dark:border-gray-700 rounded-lg p-2.5 shadow-sm w-40 hidden xl:block z-20`}
           style={{ top: card.top, left: card.left }}
         >
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 bg-stone-100 rounded flex items-center justify-center text-[10px]">{card.emoji}</div>
+            <div className="w-5 h-5 bg-stone-100 dark:bg-gray-800 rounded flex items-center justify-center text-[10px]">{card.emoji}</div>
             <div>
-              <p className="text-[10px] font-medium text-stone-700 truncate">{card.title}</p>
-              <p className="text-[9px] text-stone-400">{card.subtitle}</p>
+              <p className="text-[10px] font-medium text-stone-700 dark:text-stone-300 truncate">{card.title}</p>
+              <p className="text-[9px] text-stone-400 dark:text-stone-500">{card.subtitle}</p>
             </div>
           </div>
         </DraggableCard>
@@ -93,7 +93,7 @@ export default function ChangelogPage() {
               </Button>
             </Link>
             <img src="/dump.png" alt="Dump" className="h-9" />
-            <span className="font-[family-name:var(--font-dynapuff)] text-lg text-gray-800">
+            <span className="font-[family-name:var(--font-dynapuff)] text-lg text-gray-800 dark:text-gray-200">
               Changelog
             </span>
           </div>
@@ -111,7 +111,7 @@ export default function ChangelogPage() {
       <main className="relative z-10 max-w-3xl mx-auto px-6 py-10">
         {/* Filter tabs */}
         <div className="flex items-center gap-2 mb-8">
-          <span className="text-xs text-stone-400 font-medium uppercase tracking-wide mr-2">
+          <span className="text-xs text-stone-400 dark:text-stone-500 font-medium uppercase tracking-wide mr-2">
             Filter
           </span>
           {(["all", "feature", "fix"] as const).map((f) => (
@@ -120,8 +120,8 @@ export default function ChangelogPage() {
               onClick={() => setFilter(f)}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                 filter === f
-                  ? "bg-stone-800 text-white shadow-sm"
-                  : "bg-white/60 text-stone-500 hover:bg-white border border-stone-200"
+                  ? "bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 shadow-sm"
+                  : "bg-white/60 dark:bg-gray-800/60 text-stone-500 dark:text-stone-400 hover:bg-white dark:hover:bg-gray-800 border border-stone-200 dark:border-gray-700"
               }`}
             >
               {f === "all" ? "All" : f === "feature" ? "Features" : "Fixes"}
@@ -142,7 +142,7 @@ export default function ChangelogPage() {
                 className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl border border-stone-200/60 dark:border-gray-800 shadow-sm p-6 relative"
               >
                 {/* Sticky note tab */}
-                <div className="absolute -top-3 left-6 bg-amber-100 px-3 py-0.5 rounded-t-md border border-b-0 border-amber-200/60 text-xs font-mono text-amber-700">
+                <div className="absolute -top-3 left-6 bg-amber-100 dark:bg-amber-900/60 px-3 py-0.5 rounded-t-md border border-b-0 border-amber-200/60 dark:border-amber-700/40 text-xs font-mono text-amber-700 dark:text-amber-300">
                   v{version.version}
                 </div>
 
@@ -150,7 +150,7 @@ export default function ChangelogPage() {
                   <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-100">
                     Version {version.version}
                   </h2>
-                  <span className="text-xs text-stone-400 font-mono">{version.date}</span>
+                  <span className="text-xs text-stone-400 dark:text-stone-500 font-mono">{version.date}</span>
                 </div>
 
                 <div className="space-y-2">
@@ -171,7 +171,7 @@ export default function ChangelogPage() {
                     );
                   })}
                   {filteredEntries.length === 0 && (
-                    <p className="text-sm text-stone-400 italic py-2">
+                    <p className="text-sm text-stone-400 dark:text-stone-500 italic py-2">
                       No {filter === "feature" ? "features" : "fixes"} in this version.
                     </p>
                   )}
@@ -181,7 +181,7 @@ export default function ChangelogPage() {
           })}
         </div>
 
-        <div className="text-center text-xs text-stone-300 font-mono mt-10">
+        <div className="text-center text-xs text-stone-300 dark:text-stone-600 font-mono mt-10">
           v{BUILD_VERSION}
         </div>
       </main>
