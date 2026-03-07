@@ -36,7 +36,6 @@ import {
   Wand2,
   HelpCircle,
 } from "lucide-react";
-import { IconPicker } from "./IconPicker";
 import Link from "next/link";
 
 export type BoardSettingsData = {
@@ -413,7 +412,6 @@ const BG_PATTERNS: { value: BoardSettingsData["backgroundPattern"]; label: strin
 
 interface BoardSettingsPopoverProps {
   boardId: Id<"boards">;
-  icon: string;
   settings: BoardSettingsData;
   canEdit: boolean;
 }
@@ -426,12 +424,10 @@ const CONTEXT_TYPES: { value: BoardSettingsData["contextType"]; label: string; d
 
 export function BoardSettingsPopover({
   boardId,
-  icon,
   settings,
   canEdit,
 }: BoardSettingsPopoverProps) {
   const updateSettings = useMutation(api.boards.updateBoardSettings);
-  const updateBoard = useMutation(api.boards.updateBoard);
   const { resolved: theme } = useTheme();
   const [promptOpen, setPromptOpen] = useState(false);
   const [promptValue, setPromptValue] = useState(settings.systemPrompt ?? "");
@@ -456,19 +452,6 @@ export function BoardSettingsPopover({
         </PopoverTrigger>
         <PopoverContent className="w-72" align="end">
           <div className="space-y-4">
-            {/* Board icon */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
-                Icon
-              </label>
-              <IconPicker
-                value={icon}
-                onChange={(newIcon) => updateBoard({ boardId, icon: newIcon })}
-              />
-            </div>
-
-            <Separator />
-
             {/* Context type */}
             <div>
               <div className="flex items-center justify-between mb-2">

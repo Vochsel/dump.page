@@ -17,6 +17,7 @@ import { ChatButton } from "@/components/board/ChatButton";
 import { Button } from "@/components/ui/button";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { BoardIcon } from "@/components/board/BoardIcon";
+import { BoardIconPicker } from "@/components/board/BoardIconPicker";
 import { darkenHex, lightenHex } from "@/lib/utils";
 import { useTheme } from "@/context/theme-context";
 import { resolveBgColor } from "@/components/board/BoardSettings";
@@ -230,7 +231,11 @@ export default function BoardPage({
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               </Link>
-              <BoardIcon icon={access.board.icon} className="text-lg flex-shrink-0" size={20} />
+              <BoardIconPicker
+                boardId={access.board._id}
+                icon={access.board.icon}
+                canEdit={access.role === "owner"}
+              />
               <EditableBoardName
                 boardId={access.board._id}
                 name={access.board.name}
@@ -246,7 +251,6 @@ export default function BoardPage({
               />
               <BoardSettingsPopover
                 boardId={access.board._id}
-                icon={access.board.icon}
                 settings={boardSettings}
                 canEdit={access.role === "owner"}
               />
