@@ -73,7 +73,7 @@ export function ChecklistNode({ data }: NodeProps) {
 
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
-  const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+  const inputRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const focusIdRef = useRef<string | null>(null);
   // Track whether any input is focused to skip external sync
   const hasFocusRef = useRef(false);
@@ -87,16 +87,26 @@ export function ChecklistNode({ data }: NodeProps) {
     }
   }, [content]);
 
-  // Focus newly created items
+  // Focus newly created items and auto-size textareas
   useEffect(() => {
     if (focusIdRef.current) {
       const el = inputRefs.current.get(focusIdRef.current);
       if (el) {
         el.focus();
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
         focusIdRef.current = null;
       }
     }
   });
+
+  // Auto-size all textareas on mount and when items change
+  useEffect(() => {
+    inputRefs.current.forEach((el) => {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    });
+  }, [items]);
 
   const persistNow = useCallback(
     (newItems: ChecklistItem[]) => {
@@ -177,29 +187,6 @@ export function ChecklistNode({ data }: NodeProps) {
       }
     },
     [persistNow]
-  );
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent, id: string) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        addItemAfter(id);
-      }
-      if (e.key === "Backspace") {
-        const cur = itemsRef.current;
-        const item = cur.find((i) => i.id === id);
-        if (item && item.text === "" && cur.length > 1) {
-          e.preventDefault();
-          const idx = cur.findIndex((i) => i.id === id);
-          const focusTarget = cur[idx - 1] || cur[idx + 1];
-          if (focusTarget) {
-            focusIdRef.current = focusTarget.id;
-          }
-          deleteItem(id);
-        }
-      }
-    },
-    [addItemAfter, deleteItem]
   );
 
   // DnD handlers — only triggered from the grip handle
@@ -303,20 +290,44 @@ export function ChecklistNode({ data }: NodeProps) {
               className="nodrag h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 shrink-0 cursor-pointer mt-0.5"
             />
             {canEdit ? (
-              <input
+              <textarea
                 ref={(el) => {
                   if (el) inputRefs.current.set(item.id, el);
                   else inputRefs.current.delete(item.id);
                 }}
-                type="text"
                 value={item.text}
                 placeholder="New item..."
+                rows={1}
                 tabIndex={0}
-                onChange={(e) => updateText(item.id, e.target.value)}
-                onFocus={() => { hasFocusRef.current = true; }}
+                onChange={(e) => {
+                  updateText(item.id, e.target.value);
+                  e.target.style.height = "auto";
+                  e.target.style.height = e.target.scrollHeight + "px";
+                }}
+                onFocus={(e) => {
+                  hasFocusRef.current = true;
+                  e.target.style.height = "auto";
+                  e.target.style.height = e.target.scrollHeight + "px";
+                }}
                 onBlur={handleBlur}
-                onKeyDown={(e) => handleKeyDown(e, item.id)}
-                className={`nodrag nowheel flex-1 bg-transparent border-none outline-none text-sm px-1 py-0 text-gray-900 dark:text-gray-100 placeholder:text-gray-400/50 ${
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addItemAfter(item.id);
+                  }
+                  if (e.key === "Backspace") {
+                    const cur = itemsRef.current;
+                    const curItem = cur.find((i) => i.id === item.id);
+                    if (curItem && curItem.text === "" && cur.length > 1) {
+                      e.preventDefault();
+                      const idx = cur.findIndex((i) => i.id === item.id);
+                      const focusTarget = cur[idx - 1] || cur[idx + 1];
+                      if (focusTarget) focusIdRef.current = focusTarget.id;
+                      deleteItem(item.id);
+                    }
+                  }
+                }}
+                className={`nodrag nowheel flex-1 bg-transparent border-none outline-none text-sm px-1 py-0 text-gray-900 dark:text-gray-100 placeholder:text-gray-400/50 resize-none overflow-hidden min-w-0 ${
                   item.checked ? "line-through opacity-50" : ""
                 }`}
               />
