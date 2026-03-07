@@ -11,6 +11,20 @@ export type ChangelogVersion = {
 
 export const changelog: ChangelogVersion[] = [
   {
+    version: "1.2.0",
+    date: "2026-03-07",
+    entries: [
+      { type: "feature", description: "Archive items — right-click to archive, view and restore from preferences" },
+      { type: "feature", description: "Shared with me — dashboard separates your boards from boards shared with you" },
+      { type: "feature", description: "Preferences popover with snap-to-grid toggle, persisted per device" },
+      { type: "feature", description: "Dark mode board colors — each board color has a matching dark variant" },
+      { type: "fix", description: "Shift+Enter in checklists inserts a newline within the current item" },
+      { type: "fix", description: "Dynamic fit margin — F shortcut adapts padding based on number of items" },
+      { type: "fix", description: "Checklist nodes auto-grow width for longer items (up to 640px)" },
+      { type: "fix", description: "Checklists show title bar by default" },
+    ],
+  },
+  {
     version: "1.1.0",
     date: "2026-03-07",
     entries: [
