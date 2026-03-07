@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown, Loader2 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -63,6 +63,7 @@ const nodeTypes: NodeTypes = {
 
 const URL_REGEX = /^https?:\/\/.+/i;
 const LOOSE_URL_REGEX = /^(https?:\/\/|www\.)\S+\.\S+/i;
+const URL_LIKE = /^(https?:\/\/|www\.)\S+|^\S+\.\S+/i;
 
 interface CanvasInnerProps {
   canEdit: boolean;
@@ -94,6 +95,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [editLinkNodeId, setEditLinkNodeId] = useState<string | null>(null);
+  const [linkSearching, setLinkSearching] = useState(false);
 
   // Theme
   const { resolved: theme, setMode: setThemeMode, mode: themeMode } = useTheme();
@@ -548,17 +550,49 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     }).then((nodeId) => { pushAction({ type: "create", nodeId }); sfx.add(); });
   }, [boardId, createNode, screenToFlowPosition, pushAction]);
 
-  const addLinkNodeAtCursor = useCallback(() => {
+  const addLinkNodeAtCursor = useCallback((fromToolbar?: boolean) => {
     setEditLinkNodeId(null);
     setLinkUrl("");
+    if (fromToolbar) {
+      // Set position to screen center for toolbar-initiated adds
+      contextMenuPosRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    }
     setLinkDialogOpen(true);
   }, []);
 
-  const handleLinkSubmit = useCallback(() => {
-    let url = linkUrl.trim();
-    if (!url) return;
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      url = "https://" + url;
+  const handleLinkSubmit = useCallback(async () => {
+    const input = linkUrl.trim();
+    if (!input) return;
+
+    let url: string;
+    let searchMeta: { title?: string; description?: string } | null = null;
+
+    if (editLinkNodeId || URL_LIKE.test(input)) {
+      // Editing existing link or input looks like a URL
+      url = input.startsWith("http://") || input.startsWith("https://")
+        ? input
+        : "https://" + input;
+    } else {
+      // Not a URL — search for it
+      setLinkSearching(true);
+      try {
+        const res = await fetch(`/api/search-url?q=${encodeURIComponent(input)}`);
+        const data = await res.json();
+        if (!data.url) {
+          setLinkSearching(false);
+          toast.error("No results found");
+          return;
+        }
+        url = data.url;
+        if (data.title || data.description) {
+          searchMeta = { title: data.title, description: data.description };
+        }
+      } catch {
+        setLinkSearching(false);
+        toast.error("Search failed");
+        return;
+      }
+      setLinkSearching(false);
     }
 
     if (editLinkNodeId) {
@@ -579,17 +613,23 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     } else {
       // Add new link
       const pos = screenToFlowPosition(contextMenuPosRef.current);
-      const inferred = inferUrlMetadata(url);
+      const inferred = searchMeta ? null : inferUrlMetadata(url);
+      const metadata = searchMeta
+        ? { title: searchMeta.title, description: searchMeta.description }
+        : inferred ? { title: inferred.title, description: inferred.description } : undefined;
       createNode({
         boardId,
         type: "link",
         content: url,
         position: { x: pos.x - 140, y: pos.y - 30 },
-        metadata: inferred ? { title: inferred.title, description: inferred.description } : undefined,
+        metadata,
       }).then((nodeId) => {
         pushAction({ type: "create", nodeId });
         sfx.add();
-        fetchMetadata({ nodeId, url });
+        // Skip fetchMetadata if we already have search result metadata
+        if (!searchMeta) {
+          fetchMetadata({ nodeId, url });
+        }
       });
     }
     setLinkDialogOpen(false);
@@ -826,6 +866,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
           onUndo={undo}
           onRedo={redo}
           onNodeCreated={(nodeId) => { pushAction({ type: "create", nodeId }); sfx.add(); }}
+          onAddLink={() => addLinkNodeAtCursor(true)}
         />
       )}
     </ReactFlow>
@@ -989,7 +1030,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
             <Type className="h-4 w-4 mr-2" />
             Add Text
           </ContextMenuItem>
-          <ContextMenuItem onClick={addLinkNodeAtCursor}>
+          <ContextMenuItem onClick={() => addLinkNodeAtCursor()}>
             <Link className="h-4 w-4 mr-2" />
             Add Link
           </ContextMenuItem>
@@ -1226,7 +1267,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         );
       })()}
 
-      <Dialog open={linkDialogOpen} onOpenChange={(open) => { setLinkDialogOpen(open); if (!open) setEditLinkNodeId(null); }}>
+      <Dialog open={linkDialogOpen} onOpenChange={(open) => { setLinkDialogOpen(open); if (!open) { setEditLinkNodeId(null); setLinkSearching(false); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1247,13 +1288,19 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
             <Input
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://example.com"
+              placeholder={editLinkNodeId ? "https://example.com" : "URL or search term"}
+              disabled={linkSearching}
               autoFocus
             />
-            <Button type="submit" disabled={!linkUrl.trim()}>
-              {editLinkNodeId ? "Save" : "Add"}
+            <Button type="submit" disabled={!linkUrl.trim() || linkSearching}>
+              {linkSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : editLinkNodeId ? "Save" : "Add"}
             </Button>
           </form>
+          {!editLinkNodeId && (
+            <p className="text-xs text-muted-foreground">
+              Paste a URL or type a search term to find and add the top result.
+            </p>
+          )}
         </DialogContent>
       </Dialog>
 
