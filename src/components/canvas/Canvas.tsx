@@ -626,10 +626,9 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
       }).then((nodeId) => {
         pushAction({ type: "create", nodeId });
         sfx.add();
-        // Skip fetchMetadata if we already have search result metadata
-        if (!searchMeta) {
-          fetchMetadata({ nodeId, url });
-        }
+        // Always fetch full OG metadata (image, favicon, better title)
+        // Search metadata is just the initial preview
+        fetchMetadata({ nodeId, url });
       });
     }
     setLinkDialogOpen(false);
