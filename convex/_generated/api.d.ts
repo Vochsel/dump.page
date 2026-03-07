@@ -13,6 +13,8 @@ import type * as boardMembers from "../boardMembers.js";
 import type * as boards from "../boards.js";
 import type * as crons from "../crons.js";
 import type * as featureRequests from "../featureRequests.js";
+import type * as mcp from "../mcp.js";
+import type * as mcpAuth from "../mcpAuth.js";
 import type * as migrations from "../migrations.js";
 import type * as nodes from "../nodes.js";
 import type * as statsSnapshot from "../statsSnapshot.js";
@@ -30,6 +32,8 @@ declare const fullApi: ApiFromModules<{
   boards: typeof boards;
   crons: typeof crons;
   featureRequests: typeof featureRequests;
+  mcp: typeof mcp;
+  mcpAuth: typeof mcpAuth;
   migrations: typeof migrations;
   nodes: typeof nodes;
   statsSnapshot: typeof statsSnapshot;

@@ -80,6 +80,39 @@ export default defineSchema({
     nodes: v.number(),
   }).index("by_date", ["date"]),
 
+  // MCP OAuth tables
+  mcpOAuthCodes: defineTable({
+    code: v.string(),
+    userId: v.id("users"),
+    clientId: v.string(),
+    redirectUri: v.string(),
+    codeChallenge: v.string(),
+    scope: v.string(),
+    expiresAt: v.number(),
+    used: v.boolean(),
+  }).index("by_code", ["code"]),
+
+  mcpOAuthTokens: defineTable({
+    accessToken: v.string(),
+    refreshToken: v.string(),
+    userId: v.id("users"),
+    clientId: v.string(),
+    scope: v.string(),
+    expiresAt: v.number(),
+    revokedAt: v.optional(v.number()),
+  })
+    .index("by_accessToken", ["accessToken"])
+    .index("by_refreshToken", ["refreshToken"])
+    .index("by_userId", ["userId"]),
+
+  mcpOAuthClients: defineTable({
+    clientId: v.string(),
+    clientSecret: v.optional(v.string()),
+    clientName: v.string(),
+    redirectUris: v.array(v.string()),
+    createdAt: v.number(),
+  }).index("by_clientId", ["clientId"]),
+
   nodes: defineTable({
     boardId: v.id("boards"),
     type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),
