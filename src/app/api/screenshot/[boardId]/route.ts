@@ -6,7 +6,7 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium-min";
 
 const CHROMIUM_PACK_URL =
-  "https://github.com/nichochar/chromium-bun-layer/releases/download/v133.0.0/chromium-v133.0.0-pack.tar";
+  "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar";
 
 export const maxDuration = 30;
 
