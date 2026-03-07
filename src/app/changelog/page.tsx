@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Sparkles, Bug, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { changelog, type ChangelogEntry } from "@/lib/changelog";
-import { BUILD_VERSION } from "@/lib/constants";
+import { Footer } from "@/components/Footer";
 import { DraggableCard } from "@/components/landing/DraggableCard";
 import { SmallLoginButton } from "@/components/auth/SmallLoginButton";
 
@@ -181,9 +181,7 @@ export default function ChangelogPage() {
           })}
         </div>
 
-        <div className="text-center text-xs text-stone-300 dark:text-stone-600 font-mono mt-10">
-          v{BUILD_VERSION}
-        </div>
+        <Footer />
       </main>
     </div>
   );

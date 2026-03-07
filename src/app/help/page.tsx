@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BUILD_VERSION } from "@/lib/constants";
 import { SmallLoginButton } from "@/components/auth/SmallLoginButton";
+import { Footer } from "@/components/Footer";
 
 const AI_PROVIDERS = [
   {
@@ -190,9 +190,7 @@ export default function HelpPage() {
           </div>
         </section>
 
-        <div className="text-center text-xs text-stone-300 dark:text-stone-600 font-mono">
-          v{BUILD_VERSION}
-        </div>
+        <Footer />
       </main>
     </div>
   );

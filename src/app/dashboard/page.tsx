@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { Id } from "../../../convex/_generated/dataModel";
 import { SuggestFeatureButton } from "@/components/SuggestFeatureButton";
-import { BUILD_VERSION } from "@/lib/constants";
+import { Footer } from "@/components/Footer";
 import { useTheme } from "@/context/theme-context";
 import {
   Popover,
@@ -259,9 +259,7 @@ export default function DashboardPage() {
           </>
         )}
       </main>
-      <div className="fixed bottom-2 right-3 text-[10px] text-stone-300 font-mono select-none pointer-events-none">
-        v{BUILD_VERSION}
-      </div>
+      <Footer />
     </div>
   );
 }

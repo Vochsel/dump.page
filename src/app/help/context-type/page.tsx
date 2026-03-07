@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, FileText, Wand2, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Footer } from "@/components/Footer";
 
 export default function ContextTypeHelpPage() {
   return (
@@ -103,6 +104,8 @@ export default function ContextTypeHelpPage() {
             </Button>
           </Link>
         </div>
+
+        <Footer />
       </main>
     </div>
   );

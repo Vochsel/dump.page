@@ -4,6 +4,7 @@ import { AuthRedirect } from "@/components/landing/AuthRedirect";
 import { StartDumpingButton } from "@/components/landing/StartDumpingButton";
 import { BoardCounter } from "@/components/BoardCounter";
 import { LoginButton } from "@/components/auth/LoginButton";
+import { Footer } from "@/components/Footer";
 
 const features = [
   {
@@ -217,6 +218,8 @@ export default function Home() {
           <a href="/help" className="underline hover:text-gray-600 transition-colors">Help</a>
         </p>
       </div>
+
+      <Footer />
     </div>
   );
 }
