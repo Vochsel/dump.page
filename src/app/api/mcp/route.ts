@@ -365,19 +365,13 @@ async function validateAuth(req: Request): Promise<{
   }
 }
 
-// Stateless transport + server (reused across requests in same instance)
-let server: McpServer | null = null;
-let transport: WebStandardStreamableHTTPServerTransport | null = null;
-
-async function getServerAndTransport() {
-  if (!server || !transport) {
-    server = createServer();
-    transport = new WebStandardStreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, // stateless
-    });
-    await server.connect(transport);
-  }
-  return { server, transport };
+async function createTransport() {
+  const server = createServer();
+  const transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: undefined, // stateless
+  });
+  await server.connect(transport);
+  return transport;
 }
 
 const RESOURCE_METADATA_URL = "https://www.dump.page/.well-known/oauth-protected-resource";
@@ -404,7 +398,7 @@ async function handler(req: Request): Promise<Response> {
     return authErrorResponse("No authorization provided");
   }
 
-  const { transport: t } = await getServerAndTransport();
+  const t = await createTransport();
 
   const authInfo = {
     token: "",
