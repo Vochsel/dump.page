@@ -764,8 +764,10 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
           pannable
           zoomable
           className="!mb-16 !mr-2"
+          bgColor={isDark ? "#1f1f1f" : "#ffffff"}
           maskColor={isDark ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)"}
           nodeColor={isDark ? "#525252" : "#d4d4d4"}
+          style={{ borderColor: isDark ? "#374151" : "#e5e7eb" }}
         />
       )}
       {canEdit && (
