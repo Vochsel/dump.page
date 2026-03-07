@@ -11,7 +11,7 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { useAuth } from "@/context/auth-context";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown, Sun, Moon, Volume2, VolumeOff } from "lucide-react";
+import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown, Sun, Moon, Volume2, VolumeOff, Pencil } from "lucide-react";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { ChatButton } from "@/components/board/ChatButton";
 import { Button } from "@/components/ui/button";
@@ -111,6 +111,7 @@ export default function BoardPage({
 
   const [viewMode, setViewMode] = useLocalStorage<"board" | "list" | "document">("dump-view-mode", "board");
   const [isMuted, setIsMuted] = useState(() => sfx.isMuted());
+  const [docEditMode, setDocEditMode] = useState(false);
 
   const access = useQuery(api.boardMembers.checkAccess, {
     slug: boardId,
@@ -238,7 +239,7 @@ export default function BoardPage({
             </div>
           ) : (
             <div className="h-full overflow-y-auto pt-16" style={{ backgroundColor: bgColor }}>
-              <DocumentView boardName={access.board.name} canEdit={access.canEdit} />
+              <DocumentView boardName={access.board.name} canEdit={access.canEdit} editMode={docEditMode} />
             </div>
           )}
         </ConvexBoardOpsProvider>
@@ -354,6 +355,19 @@ export default function BoardPage({
               ))}
             </PopoverContent>
           </Popover>
+          {viewMode === "document" && access?.canEdit && (
+            <button
+              onClick={() => setDocEditMode(!docEditMode)}
+              className={`p-2 rounded-full backdrop-blur-sm border shadow-sm transition-colors ${
+                docEditMode
+                  ? "bg-blue-500 border-blue-400 text-white hover:bg-blue-600"
+                  : "bg-white/80 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+              title={docEditMode ? "Stop editing" : "Edit layout"}
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
         </div>
       )}
       <div className="absolute bottom-2 right-3 z-10 text-[10px] text-gray-400/60 dark:text-gray-500/60 font-mono select-none pointer-events-none">

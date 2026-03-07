@@ -111,7 +111,7 @@ function DraggableItem({
 
       {(node.type === "checklist" || node.type === "link") && (
       <div
-        className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${canEdit ? "group-hover:border-blue-200 dark:group-hover:border-blue-800/50 cursor-grab active:cursor-grabbing" : ""}`}
+        className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${canEdit ? "group-hover:border-blue-200 dark:group-hover:border-blue-800/50 cursor-grab active:cursor-grabbing [&_a]:pointer-events-none" : ""}`}
         onMouseDown={canEdit ? onMouseDown : undefined}
       >
         <button
@@ -202,7 +202,7 @@ function DraggableItem({
   );
 }
 
-export function DocumentView({ boardName, canEdit = false }: { boardName: string; canEdit?: boolean }) {
+export function DocumentView({ boardName, canEdit = false, editMode = false }: { boardName: string; canEdit?: boolean; editMode?: boolean }) {
   const { nodes: boardNodes, updateNode } = useBoardOps();
   const [previewNodeId, setPreviewNodeId] = useState<string | null>(null);
 
@@ -256,7 +256,7 @@ export function DocumentView({ boardName, canEdit = false }: { boardName: string
             <DraggableItem
               key={node._id}
               node={node}
-              canEdit={canEdit}
+              canEdit={editMode}
               onDragEnd={onDragEnd}
               onPreview={setPreviewNodeId}
             />
