@@ -39,6 +39,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "sonner";
 import { useTheme } from "@/context/theme-context";
@@ -815,21 +816,11 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken }: CanvasInnerPr
         <PopoverContent className="w-48 p-2" side="top" align="start">
           <label className="flex items-center justify-between gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent/50 cursor-pointer">
             <span>Snap to grid</span>
-            <input
-              type="checkbox"
-              checked={snapToGrid}
-              onChange={(e) => setSnapToGrid(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 cursor-pointer"
-            />
+            <Switch checked={snapToGrid} onCheckedChange={setSnapToGrid} />
           </label>
           <label className="flex items-center justify-between gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent/50 cursor-pointer">
             <span>Minimap</span>
-            <input
-              type="checkbox"
-              checked={showMinimap}
-              onChange={(e) => setShowMinimap(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 cursor-pointer"
-            />
+            <Switch checked={showMinimap} onCheckedChange={setShowMinimap} />
           </label>
           <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
           <p className="px-2 pt-1 pb-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Controls</p>
