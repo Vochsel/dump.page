@@ -357,13 +357,15 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
 
     const handlePaste = (e: ClipboardEvent) => {
       // Don't intercept paste when editing a text input/textarea/contenteditable
+      // or when focus is inside a React Flow node (e.g. text node preview)
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
         target.isContentEditable ||
         target.closest("[contenteditable]") ||
-        target.closest(".ProseMirror")
+        target.closest(".ProseMirror") ||
+        target.closest(".react-flow__node")
       ) {
         return;
       }
