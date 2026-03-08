@@ -1,9 +1,12 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdmin } from "./lib/auth";
 
 export const stats = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const users = await ctx.db.query("users").collect();
     const boards = await ctx.db.query("boards").collect();
     const nodes = await ctx.db.query("nodes").collect();
@@ -60,6 +63,8 @@ export const stats = query({
 export const recentUsers = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const users = await ctx.db.query("users").collect();
     const boards = await ctx.db.query("boards").collect();
     const members = await ctx.db.query("boardMembers").collect();
@@ -81,6 +86,8 @@ export const recentUsers = query({
 export const recentBoards = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const boards = await ctx.db.query("boards").collect();
     const nodes = await ctx.db.query("nodes").collect();
     const users = await ctx.db.query("users").collect();
@@ -112,6 +119,8 @@ export const recentBoards = query({
 export const activeBoards = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const boards = await ctx.db.query("boards").collect();
     const nodes = await ctx.db.query("nodes").collect();
     const users = await ctx.db.query("users").collect();
@@ -144,6 +153,8 @@ export const dailyHistory = query({
     days: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
     const limit = args.days ?? 90;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - limit);

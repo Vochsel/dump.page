@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireBoardMember, checkBoardReadAccess } from "./lib/auth";
 
 export const generateUploadUrl = mutation({
   args: {},
@@ -16,8 +17,7 @@ export const storeThumbnail = mutation({
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    await requireBoardMember(ctx, args.boardId);
 
     const board = await ctx.db.get(args.boardId);
     if (!board) return;
@@ -34,8 +34,14 @@ export const storeThumbnail = mutation({
 });
 
 export const getThumbnailUrl = query({
-  args: { boardId: v.id("boards") },
+  args: {
+    boardId: v.id("boards"),
+    shareToken: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    const canRead = await checkBoardReadAccess(ctx, args.boardId, args.shareToken);
+    if (!canRead) return null;
+
     const board = await ctx.db.get(args.boardId);
     if (!board?.thumbnailStorageId) return null;
     return await ctx.storage.getUrl(board.thumbnailStorageId);

@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 
 function generateSlug(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -9,7 +9,7 @@ function generateSlug(): string {
   return slug;
 }
 
-export const backfillSlugs = mutation({
+export const backfillSlugs = internalMutation({
   args: {},
   handler: async (ctx) => {
     const boards = await ctx.db.query("boards").collect();
@@ -24,7 +24,7 @@ export const backfillSlugs = mutation({
   },
 });
 
-export const ensureOwnerMemberships = mutation({
+export const ensureOwnerMemberships = internalMutation({
   args: {},
   handler: async (ctx) => {
     const boards = await ctx.db.query("boards").collect();

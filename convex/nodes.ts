@@ -1,10 +1,17 @@
 import { mutation, query, action, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import { checkBoardReadAccess, requireBoardMember, requireBoardWriteAccess } from "./lib/auth";
 
 export const getNodesByBoard = query({
-  args: { boardId: v.id("boards") },
+  args: {
+    boardId: v.id("boards"),
+    shareToken: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    const canRead = await checkBoardReadAccess(ctx, args.boardId, args.shareToken);
+    if (!canRead) return [];
+
     const nodes = await ctx.db
       .query("nodes")
       .withIndex("by_boardId", (q) => q.eq("boardId", args.boardId))
@@ -16,6 +23,8 @@ export const getNodesByBoard = query({
 export const getArchivedNodesByBoard = query({
   args: { boardId: v.id("boards") },
   handler: async (ctx, args) => {
+    await requireBoardMember(ctx, args.boardId);
+
     const nodes = await ctx.db
       .query("nodes")
       .withIndex("by_boardId", (q) => q.eq("boardId", args.boardId))
@@ -27,8 +36,9 @@ export const getArchivedNodesByBoard = query({
 export const archiveNode = mutation({
   args: { nodeId: v.id("nodes") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const node = await ctx.db.get(args.nodeId);
+    if (!node) throw new Error("Node not found");
+    await requireBoardWriteAccess(ctx, node.boardId);
     await ctx.db.patch(args.nodeId, { archived: true, updatedAt: Date.now() });
   },
 });
@@ -36,8 +46,9 @@ export const archiveNode = mutation({
 export const unarchiveNode = mutation({
   args: { nodeId: v.id("nodes") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const node = await ctx.db.get(args.nodeId);
+    if (!node) throw new Error("Node not found");
+    await requireBoardWriteAccess(ctx, node.boardId);
     await ctx.db.patch(args.nodeId, { archived: false, updatedAt: Date.now() });
   },
 });
@@ -59,14 +70,7 @@ export const createNode = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
-    if (!user) throw new Error("User not found");
+    const { user } = await requireBoardWriteAccess(ctx, args.boardId);
 
     const now = Date.now();
     return await ctx.db.insert("nodes", {
@@ -103,8 +107,9 @@ export const updateNode = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const node = await ctx.db.get(args.nodeId);
+    if (!node) throw new Error("Node not found");
+    await requireBoardWriteAccess(ctx, node.boardId);
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (args.content !== undefined) updates.content = args.content;
@@ -126,8 +131,9 @@ export const updateNodePosition = mutation({
     position: v.object({ x: v.number(), y: v.number() }),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const node = await ctx.db.get(args.nodeId);
+    if (!node) throw new Error("Node not found");
+    await requireBoardWriteAccess(ctx, node.boardId);
 
     await ctx.db.patch(args.nodeId, {
       position: args.position,
@@ -139,8 +145,9 @@ export const updateNodePosition = mutation({
 export const deleteNode = mutation({
   args: { nodeId: v.id("nodes") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const node = await ctx.db.get(args.nodeId);
+    if (!node) throw new Error("Node not found");
+    await requireBoardWriteAccess(ctx, node.boardId);
 
     await ctx.db.delete(args.nodeId);
   },

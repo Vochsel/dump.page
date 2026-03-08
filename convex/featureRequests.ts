@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdmin } from "./lib/auth";
 
 export const submit = mutation({
   args: {
@@ -20,6 +21,7 @@ export const submit = mutation({
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const requests = await ctx.db.query("featureRequests").collect();
     return requests.sort((a, b) => b.createdAt - a.createdAt);
   },

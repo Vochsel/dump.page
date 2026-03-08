@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import { requireBoardMember } from "./lib/auth";
 
 export const addMember = mutation({
   args: {
@@ -79,6 +80,8 @@ export const removeMember = mutation({
 export const getMembers = query({
   args: { boardId: v.id("boards") },
   handler: async (ctx, args) => {
+    await requireBoardMember(ctx, args.boardId);
+
     const members = await ctx.db
       .query("boardMembers")
       .withIndex("by_boardId", (q) => q.eq("boardId", args.boardId))

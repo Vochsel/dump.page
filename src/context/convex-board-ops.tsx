@@ -8,11 +8,12 @@ import { BoardOpsContext, BoardOps, BoardNode } from "./board-ops-context";
 
 interface ConvexBoardOpsProviderProps {
   boardId: Id<"boards">;
+  shareToken?: string;
   children: ReactNode;
 }
 
-export function ConvexBoardOpsProvider({ boardId, children }: ConvexBoardOpsProviderProps) {
-  const convexNodes = useQuery(api.nodes.getNodesByBoard, { boardId });
+export function ConvexBoardOpsProvider({ boardId, shareToken, children }: ConvexBoardOpsProviderProps) {
+  const convexNodes = useQuery(api.nodes.getNodesByBoard, { boardId, shareToken });
   const createNodeMutation = useMutation(api.nodes.createNode);
   const updateNodeMutation = useMutation(api.nodes.updateNode);
   const updateNodePositionMutation = useMutation(api.nodes.updateNodePosition);

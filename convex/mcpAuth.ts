@@ -1,5 +1,6 @@
 import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAuthUser } from "./lib/auth";
 
 // --- OAuth Client Registration ---
 
@@ -199,6 +200,8 @@ export const validateToken = query({
 export const revokeToken = mutation({
   args: { accessToken: v.string() },
   handler: async (ctx, args) => {
+    const user = await requireAuthUser(ctx);
+
     const tokenRecord = await ctx.db
       .query("mcpOAuthTokens")
       .withIndex("by_accessToken", (q) =>
@@ -207,6 +210,9 @@ export const revokeToken = mutation({
       .unique();
 
     if (tokenRecord) {
+      if (tokenRecord.userId !== user._id) {
+        throw new Error("Not authorized to revoke this token");
+      }
       await ctx.db.patch(tokenRecord._id, { revokedAt: Date.now() });
     }
   },
