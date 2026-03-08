@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../../../../convex/_generated/api";
-
-const convex = new ConvexHttpClient(
-  process.env.NEXT_PUBLIC_CONVEX_URL as string
-);
+import { internal } from "../../../../../convex/_generated/api";
+import { adminMutation } from "@/lib/convex-server";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,12 +11,11 @@ const corsHeaders = {
 export async function POST(req: NextRequest) {
   const contentType = req.headers.get("content-type") || "";
   const rawBody = await req.clone().text();
-  console.log("[OAuth Token] POST", { contentType, rawBody: rawBody.slice(0, 500) });
 
   const body = contentType.includes("form") ? new URLSearchParams(rawBody) : null;
   const json = !body ? (() => { try { return JSON.parse(rawBody); } catch { return null; } })() : null;
 
-  // Support client_id/client_secret via HTTP Basic Auth (RFC 6749 Section 2.3.1)
+  // Support client_id via HTTP Basic Auth (RFC 6749 Section 2.3.1)
   let basicClientId: string | undefined;
   const authHeader = req.headers.get("authorization") || "";
   if (authHeader.toLowerCase().startsWith("basic ")) {
@@ -28,9 +23,8 @@ export async function POST(req: NextRequest) {
       const decoded = atob(authHeader.slice(6));
       const [id] = decoded.split(":");
       basicClientId = id;
-      console.log("[OAuth Token] Basic auth client_id:", basicClientId);
     } catch {
-      console.log("[OAuth Token] Failed to decode Basic auth header");
+      // Failed to decode Basic auth header
     }
   }
 
@@ -69,7 +63,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const result = await convex.mutation(api.mcpAuth.exchangeAuthCode, {
+      const result = await adminMutation(internal.mcpAuth.exchangeAuthCode, {
         code,
         clientId,
         codeVerifier,
@@ -109,7 +103,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const result = await convex.mutation(api.mcpAuth.refreshAccessToken, {
+      const result = await adminMutation(internal.mcpAuth.refreshAccessToken, {
         refreshToken,
         clientId,
       });

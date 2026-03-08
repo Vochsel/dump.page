@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../../../../convex/_generated/api";
+import { internal } from "../../../../../convex/_generated/api";
+import { getAdminAuth } from "@/lib/firebase-admin";
+import { adminQuery, adminMutation } from "@/lib/convex-server";
 
-const convex = new ConvexHttpClient(
-  process.env.NEXT_PUBLIC_CONVEX_URL as string
-);
+const ALLOWED_SCOPES = new Set(["read", "write"]);
 
 // This endpoint is called by the authorize page after Firebase auth
 // It validates the Firebase ID token and creates an OAuth auth code
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  console.log("[OAuth Callback] POST", { body: body ? { ...body, firebaseUid: body.firebaseUid ? "***" : undefined } : null });
+  console.log("[OAuth Callback] POST");
 
   if (!body) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
 
   const {
-    firebaseUid,
+    idToken,
     clientId,
     redirectUri,
     codeChallenge,
@@ -25,9 +24,9 @@ export async function POST(req: NextRequest) {
     state,
   } = body;
 
-  console.log("[OAuth Callback] params:", { hasFirebaseUid: !!firebaseUid, clientId, redirectUri, hasCodeChallenge: !!codeChallenge, scope, state: state?.slice(0, 20) });
+  console.log("[OAuth Callback] params:", { hasIdToken: !!idToken, clientId, redirectUri, hasCodeChallenge: !!codeChallenge, scope, state: state?.slice(0, 20) });
 
-  if (!firebaseUid || !clientId || !redirectUri || !codeChallenge) {
+  if (!idToken || !clientId || !redirectUri || !codeChallenge) {
     console.log("[OAuth Callback] Missing required params");
     return NextResponse.json(
       { error: "Missing required parameters" },
@@ -35,8 +34,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Look up user by Firebase UID
-  const user = await convex.query(api.mcpAuth.getUserByFirebaseUid, {
+  // Verify Firebase ID token server-side
+  let firebaseUid: string;
+  try {
+    const decodedToken = await getAdminAuth().verifyIdToken(idToken);
+    firebaseUid = decodedToken.uid;
+  } catch (err) {
+    console.error("[OAuth Callback] ID token verification failed:", err);
+    return NextResponse.json(
+      { error: "Invalid or expired authentication token" },
+      { status: 401 }
+    );
+  }
+
+  // Look up user by verified Firebase UID
+  const user = await adminQuery(internal.mcpAuth.getUserByFirebaseUid, {
     firebaseUid,
   });
 
@@ -50,12 +62,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Validate client_id if registered
-  const client = await convex.query(api.mcpAuth.getClient, { clientId });
+  const client = await adminQuery(internal.mcpAuth.getClient, { clientId });
   console.log("[OAuth Callback] client lookup:", client ? "registered" : "unregistered (allowing)");
 
   if (client) {
     if (!client.redirectUris.includes(redirectUri)) {
-      console.log("[OAuth Callback] Invalid redirect_uri. Registered:", client.redirectUris, "Got:", redirectUri);
+      console.log("[OAuth Callback] Invalid redirect_uri");
       return NextResponse.json(
         { error: "Invalid redirect_uri for this client" },
         { status: 400 }
@@ -63,13 +75,21 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Whitelist scopes — filter out unknown scopes
+  const requestedScopes = (scope || "read").split(/[\s,]+/).filter(Boolean);
+  const validScopes = requestedScopes.filter((s: string) => ALLOWED_SCOPES.has(s));
+  if (validScopes.length === 0) {
+    validScopes.push("read");
+  }
+  const validatedScope = validScopes.join(" ");
+
   // Create auth code
-  const code = await convex.mutation(api.mcpAuth.createAuthCode, {
+  const code = await adminMutation(internal.mcpAuth.createAuthCode, {
     userId: user._id,
     clientId,
     redirectUri,
     codeChallenge,
-    scope: scope || "read",
+    scope: validatedScope,
   });
 
   // Build redirect URL

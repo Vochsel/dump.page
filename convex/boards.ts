@@ -1,5 +1,5 @@
 import { mutation, query, internalMutation, MutationCtx } from "./_generated/server";
-import { internal, api } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { UserIdentity } from "convex/server";
@@ -101,7 +101,7 @@ export const createBoard = mutation({
         });
 
         if (node.type === "link") {
-          await ctx.scheduler.runAfter(0, api.nodes.fetchLinkMetadata, {
+          await ctx.scheduler.runAfter(0, internal.nodes.fetchLinkMetadata, {
             nodeId,
             url: node.content,
           });
@@ -419,7 +419,7 @@ export const seedDefaultBoard = internalMutation({
       });
 
       if (node.type === "link") {
-        await ctx.scheduler.runAfter(0, api.nodes.fetchLinkMetadata, {
+        await ctx.scheduler.runAfter(0, internal.nodes.fetchLinkMetadata, {
           nodeId,
           url: node.content,
         });

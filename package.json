@@ -1,7 +1,6 @@
 {
   "name": "dump",
   "version": "0.1.0",
-
   "scripts": {
     "dev": "env-cmd -f .env.local next dev",
     "dev:prod": "env-cmd -f .env.production next dev",
@@ -28,6 +27,7 @@
     "clsx": "^2.1.1",
     "convex": "^1.32.0",
     "firebase": "^12.10.0",
+    "firebase-admin": "^13.7.0",
     "html-to-image": "^1.11.13",
     "jsfxr": "^1.4.0",
     "lucide-react": "^0.576.0",

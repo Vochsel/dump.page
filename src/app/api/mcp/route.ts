@@ -1,8 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../../../convex/_generated/api";
-import { Id } from "../../../../convex/_generated/dataModel";
+import { api, internal } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
+import { adminQuery } from "@/lib/convex-server";
 import { z } from "zod";
 import { formatBoardDataAsMarkdown } from "@/lib/board-markdown";
 
@@ -11,6 +12,10 @@ const convex = new ConvexHttpClient(
 );
 
 const MCP_WRITE_ENABLED = process.env.MCP_WRITE_ENABLED === "true";
+
+function getAccessToken(authInfo: { extra?: Record<string, unknown> } | undefined): string | undefined {
+  return authInfo?.extra?.accessToken as string | undefined;
+}
 
 function createServer(): McpServer {
   const server = new McpServer({
@@ -28,8 +33,8 @@ function createServer(): McpServer {
       inputSchema: z.object({}),
     },
     async (_args, { authInfo }) => {
-      const userId = authInfo?.extra?.userId as string | undefined;
-      if (!userId) {
+      const accessToken = getAccessToken(authInfo);
+      if (!accessToken) {
         return {
           content: [
             { type: "text" as const, text: "Error: Not authenticated. Please reconnect." },
@@ -38,7 +43,7 @@ function createServer(): McpServer {
       }
 
       const boards = await convex.query(api.mcp.listBoards, {
-        userId: userId as Id<"users">,
+        accessToken,
       });
 
       if (!boards || boards.length === 0) {
@@ -77,15 +82,15 @@ function createServer(): McpServer {
       }),
     },
     async ({ slug }, { authInfo }) => {
-      const userId = authInfo?.extra?.userId as string | undefined;
-      if (!userId) {
+      const accessToken = getAccessToken(authInfo);
+      if (!accessToken) {
         return {
           content: [{ type: "text" as const, text: "Error: Not authenticated." }],
         };
       }
 
       const board = await convex.query(api.mcp.getBoardBySlug, {
-        userId: userId as Id<"users">,
+        accessToken,
         slug,
       });
 
@@ -120,15 +125,15 @@ function createServer(): McpServer {
       }),
     },
     async ({ query }, { authInfo }) => {
-      const userId = authInfo?.extra?.userId as string | undefined;
-      if (!userId) {
+      const accessToken = getAccessToken(authInfo);
+      if (!accessToken) {
         return {
           content: [{ type: "text" as const, text: "Error: Not authenticated." }],
         };
       }
 
       const boards = await convex.query(api.mcp.searchBoards, {
-        userId: userId as Id<"users">,
+        accessToken,
         query,
       });
 
@@ -173,15 +178,15 @@ function createServer(): McpServer {
       }),
     },
     async ({ query, board_slug }, { authInfo }) => {
-      const userId = authInfo?.extra?.userId as string | undefined;
-      if (!userId) {
+      const accessToken = getAccessToken(authInfo);
+      if (!accessToken) {
         return {
           content: [{ type: "text" as const, text: "Error: Not authenticated." }],
         };
       }
 
       const items = await convex.query(api.mcp.searchItems, {
-        userId: userId as Id<"users">,
+        accessToken,
         query,
         boardSlug: board_slug,
       });
@@ -230,28 +235,16 @@ function createServer(): McpServer {
         }),
       },
       async ({ board_slug, content, title, type }, { authInfo }) => {
-        const userId = authInfo?.extra?.userId as string | undefined;
-        if (!userId) {
+        const accessToken = getAccessToken(authInfo);
+        if (!accessToken) {
           return {
             content: [{ type: "text" as const, text: "Error: Not authenticated." }],
           };
         }
 
-        const scope = (authInfo?.scopes || []) as string[];
-        if (!scope.includes("write")) {
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: 'Error: Write permission required. Please reconnect with "write" scope.',
-              },
-            ],
-          };
-        }
-
         try {
           const result = await convex.mutation(api.mcp.createNote, {
-            userId: userId as Id<"users">,
+            accessToken,
             boardSlug: board_slug,
             content,
             title,
@@ -306,8 +299,8 @@ function createServer(): McpServer {
         }),
       },
       async ({ board_slug, items }, { authInfo }) => {
-        const userId = authInfo?.extra?.userId as string | undefined;
-        if (!userId) {
+        const accessToken = getAccessToken(authInfo);
+        if (!accessToken) {
           return {
             content: [
               { type: "text" as const, text: "Error: Not authenticated." },
@@ -315,21 +308,9 @@ function createServer(): McpServer {
           };
         }
 
-        const scope = (authInfo?.scopes || []) as string[];
-        if (!scope.includes("write")) {
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: 'Error: Write permission required. Please reconnect with "write" scope.',
-              },
-            ],
-          };
-        }
-
         try {
           const result = await convex.mutation(api.mcp.addItems, {
-            userId: userId as Id<"users">,
+            accessToken,
             boardSlug: board_slug,
             items,
           });
@@ -369,28 +350,16 @@ function createServer(): McpServer {
         }),
       },
       async ({ note_id, content, title }, { authInfo }) => {
-        const userId = authInfo?.extra?.userId as string | undefined;
-        if (!userId) {
+        const accessToken = getAccessToken(authInfo);
+        if (!accessToken) {
           return {
             content: [{ type: "text" as const, text: "Error: Not authenticated." }],
           };
         }
 
-        const scope = (authInfo?.scopes || []) as string[];
-        if (!scope.includes("write")) {
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: 'Error: Write permission required. Please reconnect with "write" scope.',
-              },
-            ],
-          };
-        }
-
         try {
           await convex.mutation(api.mcp.updateNote, {
-            userId: userId as Id<"users">,
+            accessToken,
             nodeId: note_id as Id<"nodes">,
             content,
             title,
@@ -422,6 +391,7 @@ function createServer(): McpServer {
 async function validateAuth(req: Request): Promise<{
   userId: string;
   scope: string;
+  accessToken: string;
   user: { name: string; email: string };
 } | null> {
   const authHeader = req.headers.get("Authorization");
@@ -431,10 +401,11 @@ async function validateAuth(req: Request): Promise<{
   if (!bearerToken) return null;
 
   try {
-    const tokenInfo = await convex.query(api.mcpAuth.validateToken, {
+    const tokenInfo = await adminQuery(internal.mcpAuth.validateToken, {
       accessToken: bearerToken,
     });
-    return tokenInfo;
+    if (!tokenInfo) return null;
+    return { ...tokenInfo, accessToken: bearerToken };
   } catch (err) {
     console.error("[MCP Auth] validateToken error:", err);
     return null;
@@ -481,6 +452,7 @@ async function handler(req: Request): Promise<Response> {
     clientId: "dump-mcp",
     scopes: tokenInfo.scope.split(/[\s,]+/),
     extra: {
+      accessToken: tokenInfo.accessToken,
       userId: tokenInfo.userId,
       userName: tokenInfo.user.name,
       userEmail: tokenInfo.user.email,

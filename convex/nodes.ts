@@ -1,7 +1,7 @@
-import { mutation, query, action, internalMutation } from "./_generated/server";
+import { mutation, query, internalAction, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import { checkBoardReadAccess, requireBoardMember, requireBoardWriteAccess } from "./lib/auth";
+import { checkBoardReadAccess, requireBoardMember, requireBoardWriteAccess, isUrlSafe } from "./lib/auth";
 
 export const getNodesByBoard = query({
   args: {
@@ -180,8 +180,27 @@ export const patchNodeMetadata = internalMutation({
   },
 });
 
-// Action: fetch URL, parse OG/meta tags, update node
-export const fetchLinkMetadata = action({
+// Public mutation: validates access & URL, then schedules internal action
+export const requestFetchLinkMetadata = mutation({
+  args: { nodeId: v.id("nodes"), url: v.string() },
+  handler: async (ctx, args) => {
+    const node = await ctx.db.get(args.nodeId);
+    if (!node) throw new Error("Node not found");
+    await requireBoardWriteAccess(ctx, node.boardId);
+
+    if (!isUrlSafe(args.url)) {
+      throw new Error("URL is not allowed");
+    }
+
+    await ctx.scheduler.runAfter(0, internal.nodes.fetchLinkMetadata, {
+      nodeId: args.nodeId,
+      url: args.url,
+    });
+  },
+});
+
+// Internal action: fetch URL, parse OG/meta tags, update node
+export const fetchLinkMetadata = internalAction({
   args: { nodeId: v.id("nodes"), url: v.string() },
   handler: async (ctx, args) => {
     try {
@@ -198,6 +217,15 @@ export const fetchLinkMetadata = action({
         redirect: "follow",
       });
       clearTimeout(timeout);
+
+      // Post-redirect SSRF check: verify final URL is still safe
+      if (res.url && !isUrlSafe(res.url)) {
+        await ctx.runMutation(internal.nodes.patchNodeMetadata, {
+          nodeId: args.nodeId,
+          metadata: {},
+        });
+        return;
+      }
 
       if (!res.ok) {
         await ctx.runMutation(internal.nodes.patchNodeMetadata, {

@@ -13,6 +13,10 @@ export const getOrCreateUser = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    if (identity.subject !== args.firebaseUid) {
+      throw new Error("Not authorized");
+    }
+
     const existing = await ctx.db
       .query("users")
       .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", args.firebaseUid))

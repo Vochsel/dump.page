@@ -33,11 +33,12 @@ function AuthorizeContent() {
     setError(null);
 
     try {
+      const idToken = await firebaseUser.getIdToken();
       const res = await fetch("/api/oauth/callback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firebaseUid: firebaseUser.uid,
+          idToken,
           clientId,
           redirectUri,
           codeChallenge,

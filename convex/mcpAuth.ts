@@ -1,8 +1,8 @@
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { requireAuthUser } from "./lib/auth";
 
-// --- OAuth Client Registration ---
+// --- OAuth Client Registration (public — required by RFC 7591 Dynamic Client Registration) ---
 
 export const registerClient = mutation({
   args: {
@@ -11,11 +11,9 @@ export const registerClient = mutation({
   },
   handler: async (ctx, args) => {
     const clientId = crypto.randomUUID();
-    const clientSecret = crypto.randomUUID();
 
     await ctx.db.insert("mcpOAuthClients", {
       clientId,
-      clientSecret,
       clientName: args.clientName,
       redirectUris: args.redirectUris,
       createdAt: Date.now(),
@@ -23,14 +21,14 @@ export const registerClient = mutation({
 
     return {
       client_id: clientId,
-      client_secret: clientSecret,
       client_name: args.clientName,
       redirect_uris: args.redirectUris,
     };
   },
 });
 
-export const getClient = query({
+// Internal: called only from server-side OAuth callback route
+export const getClient = internalQuery({
   args: { clientId: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -40,9 +38,9 @@ export const getClient = query({
   },
 });
 
-// --- Authorization Code ---
+// --- Authorization Code (internal — only callable from server-side routes) ---
 
-export const createAuthCode = mutation({
+export const createAuthCode = internalMutation({
   args: {
     userId: v.id("users"),
     clientId: v.string(),
@@ -68,7 +66,7 @@ export const createAuthCode = mutation({
   },
 });
 
-export const exchangeAuthCode = mutation({
+export const exchangeAuthCode = internalMutation({
   args: {
     code: v.string(),
     clientId: v.string(),
@@ -128,7 +126,7 @@ export const exchangeAuthCode = mutation({
   },
 });
 
-export const refreshAccessToken = mutation({
+export const refreshAccessToken = internalMutation({
   args: {
     refreshToken: v.string(),
     clientId: v.string(),
@@ -172,7 +170,7 @@ export const refreshAccessToken = mutation({
   },
 });
 
-export const validateToken = query({
+export const validateToken = internalQuery({
   args: { accessToken: v.string() },
   handler: async (ctx, args) => {
     const tokenRecord = await ctx.db
@@ -197,6 +195,7 @@ export const validateToken = query({
   },
 });
 
+// Public: requires Convex auth (user can only revoke their own tokens)
 export const revokeToken = mutation({
   args: { accessToken: v.string() },
   handler: async (ctx, args) => {
@@ -218,8 +217,8 @@ export const revokeToken = mutation({
   },
 });
 
-// Lookup user by Firebase UID (called from authorize page)
-export const getUserByFirebaseUid = query({
+// Internal: lookup user by Firebase UID (called from server-side OAuth callback)
+export const getUserByFirebaseUid = internalQuery({
   args: { firebaseUid: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db

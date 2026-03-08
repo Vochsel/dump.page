@@ -1,15 +1,19 @@
 import { query, mutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { requireMcpToken, isUrlSafe } from "./lib/auth";
 
-// MCP-specific queries that accept userId directly (auth handled by MCP OAuth layer)
+// MCP-specific queries that accept accessToken (validated in Convex)
 
 export const listBoards = query({
-  args: { userId: v.id("users") },
+  args: { accessToken: v.string() },
   handler: async (ctx, args) => {
+    const { userId } = await requireMcpToken(ctx, args.accessToken);
+
     const memberships = await ctx.db
       .query("boardMembers")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
       .collect();
 
     const boards = await Promise.all(
@@ -41,12 +45,14 @@ export const listBoards = query({
 });
 
 export const searchBoards = query({
-  args: { userId: v.id("users"), query: v.string() },
+  args: { accessToken: v.string(), query: v.string() },
   handler: async (ctx, args) => {
+    const { userId } = await requireMcpToken(ctx, args.accessToken);
+
     const searchLower = args.query.toLowerCase();
     const memberships = await ctx.db
       .query("boardMembers")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
       .collect();
 
     const boards = await Promise.all(
@@ -71,8 +77,10 @@ export const searchBoards = query({
 });
 
 export const getBoardBySlug = query({
-  args: { userId: v.id("users"), slug: v.string() },
+  args: { accessToken: v.string(), slug: v.string() },
   handler: async (ctx, args) => {
+    const { userId } = await requireMcpToken(ctx, args.accessToken);
+
     let board = await ctx.db
       .query("boards")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
@@ -88,17 +96,18 @@ export const getBoardBySlug = query({
     }
     if (!board) return null;
 
-    // Check access: member, public, or shared
+    // Access check: require membership OR public board
     const membership = await ctx.db
       .query("boardMembers")
       .withIndex("by_boardId_userId", (q) =>
-        q.eq("boardId", board!._id).eq("userId", args.userId)
+        q.eq("boardId", board!._id).eq("userId", userId)
       )
       .unique();
 
     const isMember = !!membership;
 
-    if (!isMember && board.visibility === "private") {
+    // Block access unless member or public board (shared boards without membership are blocked for MCP)
+    if (!isMember && board.visibility !== "public") {
       return null;
     }
 
@@ -136,11 +145,13 @@ export const getBoardBySlug = query({
 
 export const searchItems = query({
   args: {
-    userId: v.id("users"),
+    accessToken: v.string(),
     query: v.string(),
     boardSlug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const { userId } = await requireMcpToken(ctx, args.accessToken);
+
     const searchLower = args.query.toLowerCase();
 
     // If boardSlug provided, search only that board
@@ -151,14 +162,14 @@ export const searchItems = query({
         .unique();
       if (!board) return [];
 
-      // Check access
+      // Access check: require membership or public board
       const membership = await ctx.db
         .query("boardMembers")
         .withIndex("by_boardId_userId", (q) =>
-          q.eq("boardId", board._id).eq("userId", args.userId)
+          q.eq("boardId", board._id).eq("userId", userId)
         )
         .unique();
-      if (!membership && board.visibility === "private") return [];
+      if (!membership && board.visibility !== "public") return [];
 
       const nodes = await ctx.db
         .query("nodes")
@@ -195,7 +206,7 @@ export const searchItems = query({
     // Search across all user's boards
     const memberships = await ctx.db
       .query("boardMembers")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
       .collect();
 
     const results: Array<{
@@ -260,7 +271,7 @@ export const searchItems = query({
 
 export const createNote = mutation({
   args: {
-    userId: v.id("users"),
+    accessToken: v.string(),
     boardSlug: v.string(),
     content: v.string(),
     title: v.optional(v.string()),
@@ -269,6 +280,18 @@ export const createNote = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const { userId, scope } = await requireMcpToken(ctx, args.accessToken);
+
+    // Enforce write scope
+    if (!scope.split(/[\s,]+/).includes("write")) {
+      throw new Error("Write scope required");
+    }
+
+    // Enforce MCP_WRITE_ENABLED env var
+    if (process.env.MCP_WRITE_ENABLED !== "true") {
+      throw new Error("MCP write operations are disabled");
+    }
+
     const board = await ctx.db
       .query("boards")
       .withIndex("by_slug", (q) => q.eq("slug", args.boardSlug))
@@ -279,7 +302,7 @@ export const createNote = mutation({
     const membership = await ctx.db
       .query("boardMembers")
       .withIndex("by_boardId_userId", (q) =>
-        q.eq("boardId", board._id).eq("userId", args.userId)
+        q.eq("boardId", board._id).eq("userId", userId)
       )
       .unique();
     if (!membership) throw new Error("Not authorized");
@@ -295,21 +318,30 @@ export const createNote = mutation({
       0
     );
 
+    const nodeType = args.type || "text";
     const now = Date.now();
     const nodeId = await ctx.db.insert("nodes", {
       boardId: board._id,
-      type: args.type || "text",
+      type: nodeType,
       content: args.content,
       title: args.title,
       showTitle: args.title ? true : undefined,
       position: { x: 100, y: maxY + 40 },
       dimensions: { width: 280, height: 120 },
-      createdBy: args.userId,
+      createdBy: userId,
       createdAt: now,
       updatedAt: now,
     });
 
     await ctx.db.patch(board._id, { updatedAt: now });
+
+    // Fetch link metadata for link nodes (with SSRF validation)
+    if (nodeType === "link" && isUrlSafe(args.content)) {
+      await ctx.scheduler.runAfter(0, internal.nodes.fetchLinkMetadata, {
+        nodeId,
+        url: args.content,
+      });
+    }
 
     return { id: nodeId, boardSlug: board.slug };
   },
@@ -317,7 +349,7 @@ export const createNote = mutation({
 
 export const addItems = mutation({
   args: {
-    userId: v.id("users"),
+    accessToken: v.string(),
     boardSlug: v.string(),
     items: v.array(
       v.object({
@@ -328,6 +360,18 @@ export const addItems = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const { userId, scope } = await requireMcpToken(ctx, args.accessToken);
+
+    // Enforce write scope
+    if (!scope.split(/[\s,]+/).includes("write")) {
+      throw new Error("Write scope required");
+    }
+
+    // Enforce MCP_WRITE_ENABLED env var
+    if (process.env.MCP_WRITE_ENABLED !== "true") {
+      throw new Error("MCP write operations are disabled");
+    }
+
     const board = await ctx.db
       .query("boards")
       .withIndex("by_slug", (q) => q.eq("slug", args.boardSlug))
@@ -337,7 +381,7 @@ export const addItems = mutation({
     const membership = await ctx.db
       .query("boardMembers")
       .withIndex("by_boardId_userId", (q) =>
-        q.eq("boardId", board._id).eq("userId", args.userId)
+        q.eq("boardId", board._id).eq("userId", userId)
       )
       .unique();
     if (!membership) throw new Error("Not authorized");
@@ -364,12 +408,20 @@ export const addItems = mutation({
         showTitle: item.title ? true : undefined,
         position: { x: 100, y: maxY + 40 },
         dimensions: { width: 280, height: 120 },
-        createdBy: args.userId,
+        createdBy: userId,
         createdAt: now,
         updatedAt: now,
       });
       ids.push(nodeId);
       maxY += 160;
+
+      // Fetch link metadata for link nodes (with SSRF validation)
+      if (item.type === "link" && isUrlSafe(item.content)) {
+        await ctx.scheduler.runAfter(0, internal.nodes.fetchLinkMetadata, {
+          nodeId,
+          url: item.content,
+        });
+      }
     }
 
     await ctx.db.patch(board._id, { updatedAt: now });
@@ -380,12 +432,24 @@ export const addItems = mutation({
 
 export const updateNote = mutation({
   args: {
-    userId: v.id("users"),
+    accessToken: v.string(),
     nodeId: v.id("nodes"),
     content: v.optional(v.string()),
     title: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const { userId, scope } = await requireMcpToken(ctx, args.accessToken);
+
+    // Enforce write scope
+    if (!scope.split(/[\s,]+/).includes("write")) {
+      throw new Error("Write scope required");
+    }
+
+    // Enforce MCP_WRITE_ENABLED env var
+    if (process.env.MCP_WRITE_ENABLED !== "true") {
+      throw new Error("MCP write operations are disabled");
+    }
+
     const node = await ctx.db.get(args.nodeId);
     if (!node) throw new Error("Note not found");
 
@@ -393,7 +457,7 @@ export const updateNote = mutation({
     const membership = await ctx.db
       .query("boardMembers")
       .withIndex("by_boardId_userId", (q) =>
-        q.eq("boardId", node.boardId).eq("userId", args.userId)
+        q.eq("boardId", node.boardId).eq("userId", userId)
       )
       .unique();
     if (!membership) throw new Error("Not authorized");

@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useMemo } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { BoardOpsContext, BoardOps, BoardNode } from "./board-ops-context";
@@ -18,7 +18,7 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
   const updateNodeMutation = useMutation(api.nodes.updateNode);
   const updateNodePositionMutation = useMutation(api.nodes.updateNodePosition);
   const deleteNodeMutation = useMutation(api.nodes.deleteNode);
-  const fetchMetadataAction = useAction(api.nodes.fetchLinkMetadata);
+  const fetchMetadataMutation = useMutation(api.nodes.requestFetchLinkMetadata);
 
   const nodes: BoardNode[] | undefined = useMemo(() => {
     if (!convexNodes) return undefined;
@@ -77,13 +77,13 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
         return null;
       },
       fetchLinkMetadata: async (args) => {
-        await fetchMetadataAction({
+        await fetchMetadataMutation({
           nodeId: args.nodeId as Id<"nodes">,
           url: args.url,
         });
       },
     }),
-    [nodes, boardId, createNodeMutation, updateNodeMutation, updateNodePositionMutation, deleteNodeMutation, fetchMetadataAction]
+    [nodes, boardId, createNodeMutation, updateNodeMutation, updateNodePositionMutation, deleteNodeMutation, fetchMetadataMutation]
   );
 
   return (

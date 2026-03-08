@@ -84,6 +84,95 @@ export async function requireBoardWriteAccess(
   return requireBoardMember(ctx, boardId);
 }
 
+export async function requireMcpToken(
+  ctx: Ctx,
+  accessToken: string
+): Promise<{ userId: Id<"users">; scope: string }> {
+  const tokenRecord = await ctx.db
+    .query("mcpOAuthTokens")
+    .withIndex("by_accessToken", (q) => q.eq("accessToken", accessToken))
+    .unique();
+
+  if (!tokenRecord) throw new Error("Invalid access token");
+  if (tokenRecord.revokedAt) throw new Error("Token revoked");
+  if (tokenRecord.expiresAt < Date.now()) throw new Error("Token expired");
+
+  const user = await ctx.db.get(tokenRecord.userId);
+  if (!user) throw new Error("User not found");
+
+  return { userId: tokenRecord.userId, scope: tokenRecord.scope };
+}
+
+// SSRF protection: validate that a URL is safe to fetch.
+// NOTE: This blocks known private IP literals and IPv6 ranges but cannot
+// prevent DNS-rebinding attacks where a public hostname resolves to a
+// private IP. Full DNS-resolution-based SSRF prevention requires an
+// egress proxy or OS-level network policy.
+const PRIVATE_IPV4_PATTERNS = [
+  /^127\./,            // loopback
+  /^10\./,             // RFC 1918
+  /^172\.(1[6-9]|2\d|3[01])\./, // RFC 1918
+  /^192\.168\./,       // RFC 1918
+  /^169\.254\./,       // link-local
+  /^0\./,              // "this" network
+  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // CGNAT (RFC 6598)
+  /^198\.1[89]\./,     // benchmarking (RFC 2544)
+  /^192\.0\.0\./,      // IETF protocol assignments
+  /^192\.0\.2\./,      // TEST-NET-1
+  /^198\.51\.100\./,   // TEST-NET-2
+  /^203\.0\.113\./,    // TEST-NET-3
+];
+
+const BLOCKED_HOSTNAMES = new Set([
+  "localhost",
+  "[::1]",
+  "0.0.0.0",
+  "metadata.google.internal", // GCP metadata
+  "metadata.google.com",
+]);
+
+// Private/reserved IPv6 prefixes (lowercase hex, after bracket-stripping)
+const PRIVATE_IPV6_PREFIXES = [
+  "::1",     // loopback
+  "::ffff:", // IPv4-mapped (could wrap private IPv4)
+  "fc",      // fc00::/7 — unique local (ULA)
+  "fd",      // fc00::/7 — unique local (ULA)
+  "fe8",     // fe80::/10 — link-local
+  "fe9",     // fe80::/10
+  "fea",     // fe80::/10
+  "feb",     // fe80::/10
+  "::",      // unspecified address
+];
+
+export function isUrlSafe(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    const hostname = url.hostname.toLowerCase();
+    if (BLOCKED_HOSTNAMES.has(hostname)) return false;
+
+    // Strip brackets from IPv6
+    const bare = hostname.replace(/^\[|\]$/g, "");
+
+    // Check IPv6 private/reserved ranges
+    if (bare.includes(":")) {
+      for (const prefix of PRIVATE_IPV6_PREFIXES) {
+        if (bare.startsWith(prefix)) return false;
+      }
+      // Block if the entire address is "::" (unspecified)
+      if (bare === "::") return false;
+    }
+
+    // Check IPv4 private ranges
+    for (const pattern of PRIVATE_IPV4_PATTERNS) {
+      if (pattern.test(bare)) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function requireAdmin(ctx: Ctx): Promise<Doc<"users">> {
   const user = await requireAuthUser(ctx);
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
