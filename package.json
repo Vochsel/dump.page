@@ -1,7 +1,7 @@
 {
-  "name": "magpai-collab",
+  "name": "dump",
   "version": "0.1.0",
-  "private": true,
+
   "scripts": {
     "dev": "env-cmd -f .env.local next dev",
     "dev:prod": "env-cmd -f .env.production next dev",

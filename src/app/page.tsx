@@ -231,6 +231,8 @@ export default function Home() {
         <p className="text-xs text-gray-400 font-[family-name:var(--font-poppins)]">
           Free to use &middot; No credit card required &middot;{" "}
           <a href="/help" className="underline hover:text-gray-600 transition-colors">Help</a>
+          {" "}&middot;{" "}
+          <a href="https://github.com/Vochsel/dump.page" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600 transition-colors">GitHub</a>
         </p>
       </div>
 

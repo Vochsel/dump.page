@@ -7,11 +7,11 @@ export function Footer() {
       <a href="https://www.vochsel.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-600 dark:hover:text-stone-300 transition-colors">
         vochsel
       </a>
-      , powered by{" "}
-      <a href="https://www.magpai.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-600 dark:hover:text-stone-300 transition-colors">
-        Magpai
+      {" "}&middot;{" "}
+      <a href="https://github.com/Vochsel/dump.page" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-600 dark:hover:text-stone-300 transition-colors">
+        GitHub
       </a>
-      {" "}- v{BUILD_VERSION}
+      {" "}&middot; v{BUILD_VERSION}
     </footer>
   );
 }

@@ -400,14 +400,8 @@ export const seedDefaultBoard = internalMutation({
       },
       {
         type: "link",
-        content: "https://en.wikipedia.org/wiki/Australian_magpie",
+        content: "https://github.com",
         position: { x: 480, y: 260 },
-        dimensions: { width: 280, height: 120 },
-      },
-      {
-        type: "link",
-        content: "https://vochsel.com",
-        position: { x: 480, y: 420 },
         dimensions: { width: 280, height: 120 },
       },
     ];
