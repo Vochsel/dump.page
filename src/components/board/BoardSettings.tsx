@@ -83,9 +83,10 @@ interface BoardShareProps {
     shareToken?: string;
   };
   isOwner: boolean;
+  isMember?: boolean;
 }
 
-export function BoardShare({ board, isOwner }: BoardShareProps) {
+export function BoardShare({ board, isOwner, isMember }: BoardShareProps) {
   const [copied, setCopied] = useState(false);
   const [copiedRss, setCopiedRss] = useState(false);
   const [mdOpen, setMdOpen] = useState(false);
@@ -97,7 +98,7 @@ export function BoardShare({ board, isOwner }: BoardShareProps) {
   const regenerateToken = useMutation(api.boards.regenerateShareToken);
   const addMember = useMutation(api.boardMembers.addMember);
   const removeMember = useMutation(api.boardMembers.removeMember);
-  const members = useQuery(api.boardMembers.getMembers, { boardId: board._id });
+  const members = useQuery(api.boardMembers.getMembers, isMember ? { boardId: board._id } : "skip");
   const markdownData = useQuery(
     api.boards.getBoardForMarkdown,
     mdOpen ? { boardId: board._id } : "skip"

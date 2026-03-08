@@ -123,7 +123,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   const [showMinimap, setShowMinimap] = useLocalStorage("dump-show-minimap", false);
 
   // Board screenshot capture
-  const { captureAndUpload } = useBoardScreenshot(boardId as Id<"boards"> | undefined);
+  const { captureAndUpload } = useBoardScreenshot(canEdit ? boardId as Id<"boards"> | undefined : undefined);
   const screenshotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasInitScreenshot = useRef(false);
 

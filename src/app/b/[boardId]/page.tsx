@@ -282,6 +282,7 @@ export default function BoardPage({
               <BoardShare
                 board={access.board}
                 isOwner={access.role === "owner"}
+                isMember={!!access.role}
               />
               {access.role === "owner" && (
                 <DeleteBoardButton
