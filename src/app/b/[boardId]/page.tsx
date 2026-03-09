@@ -164,7 +164,12 @@ export default function BoardPage({
       if (tag === "INPUT" || tag === "TEXTAREA") return;
 
       e.preventDefault();
-      navigator.clipboard.writeText(shareUrl).then(() => {
+      const provider = localStorage.getItem("dump-chat-provider") ?? "claude";
+      const llmsUrl = shareUrl.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
+      const text = provider === "claude"
+        ? `scrape ${shareUrl} and ${llmsUrl} as context to answer:\n`
+        : `scrape ${shareUrl} as context to answer:\n`;
+      navigator.clipboard.writeText(text).then(() => {
         toast.success("Board link copied to clipboard");
       });
     };

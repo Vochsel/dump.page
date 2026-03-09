@@ -41,6 +41,7 @@ const PROVIDERS = [
     ],
     url: MCP_URL,
     note: "Claude will open a browser window to authorize with your Dump account via Google sign-in.",
+    youtubeId: "2rENNLjg954",
   },
   {
     name: "ChatGPT",
@@ -52,6 +53,7 @@ const PROVIDERS = [
     ],
     url: MCP_URL,
     note: "ChatGPT will redirect you to authorize with your Dump account. Once connected, Dump tools will appear in your conversations.",
+    youtubeId: "EH6_v0GtFmU",
   },
   {
     name: "Claude Code",
@@ -181,6 +183,18 @@ export default function McpPage() {
                   <p className="mt-3 ml-5 text-xs text-stone-400 dark:text-stone-500">
                     {provider.note}
                   </p>
+                )}
+
+                {provider.youtubeId && (
+                  <div className="mt-4 ml-5 aspect-video rounded-lg overflow-hidden border border-stone-200 dark:border-gray-700">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${provider.youtubeId}`}
+                      title={`${provider.name} MCP setup guide`}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    />
+                  </div>
                 )}
               </div>
             </details>

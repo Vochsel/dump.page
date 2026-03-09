@@ -15,6 +15,7 @@ const AI_PROVIDERS = [
       "Click the Chat button and select ChatGPT from the dropdown",
       "ChatGPT will open with your board context ready to go",
     ],
+    youtubeId: "EH6_v0GtFmU",
   },
   {
     name: "Claude",
@@ -24,6 +25,7 @@ const AI_PROVIDERS = [
       "Click the Chat button and select Claude from the dropdown",
       "Claude will open with your board context pre-loaded",
     ],
+    youtubeId: "2rENNLjg954",
   },
   {
     name: "Claude Code",
@@ -161,6 +163,17 @@ export default function HelpPage() {
                       </li>
                     ))}
                   </ol>
+                  {provider.youtubeId && (
+                    <div className="mt-4 aspect-video rounded-lg overflow-hidden border border-stone-200 dark:border-gray-700">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${provider.youtubeId}`}
+                        title={`${provider.name} setup guide`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-full"
+                      />
+                    </div>
+                  )}
                 </div>
               </details>
             ))}

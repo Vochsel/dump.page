@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ChevronDown, Copy, Link2 } from "lucide-react";
+import { ChevronDown, Copy, Link2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { getBoardUrl } from "@/lib/board-url";
 
@@ -49,6 +49,7 @@ const PROVIDERS = [
 type ProviderId = (typeof PROVIDERS)[number]["id"];
 
 const STORAGE_KEY = "dump-chat-provider";
+const SCRAPE_WARNED_KEY = "dump-scrape-warned";
 
 interface ChatButtonProps {
   boardId: Id<"boards">;
@@ -60,6 +61,7 @@ interface ChatButtonProps {
 export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButtonProps) {
   const [provider, setProvider] = useState<ProviderId>("claude");
   const [showPrivateDialog, setShowPrivateDialog] = useState(false);
+  const [showScrapeWarning, setShowScrapeWarning] = useState(false);
   const [pendingProvider, setPendingProvider] = useState<ProviderId | null>(null);
   const [copying, setCopying] = useState(false);
   const updateBoard = useMutation(api.boards.updateBoard);
@@ -88,19 +90,42 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
     [provider]
   );
 
-  const openChat = useCallback(
-    (id?: ProviderId) => {
-      const chosen = id ?? provider;
+  const proceedToChat = useCallback(
+    (chosen: ProviderId) => {
       if (visibility === "private" && !hasMcp) {
         setPendingProvider(chosen);
         setShowPrivateDialog(true);
         return;
       }
-      const prompt = `Use this board for context: ${boardUrl}\n`;
+      const llmsUrl = boardUrl.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
+      const prompt = chosen === "claude"
+        ? `scrape ${boardUrl} and ${llmsUrl} as context to answer:\n`
+        : `scrape ${boardUrl} as context to answer:\n`;
       openProviderWithPrompt(prompt, chosen);
     },
-    [provider, visibility, boardUrl, openProviderWithPrompt, hasMcp]
+    [visibility, boardUrl, openProviderWithPrompt, hasMcp]
   );
+
+  const openChat = useCallback(
+    (id?: ProviderId) => {
+      const chosen = id ?? provider;
+      if (!localStorage.getItem(SCRAPE_WARNED_KEY)) {
+        setPendingProvider(chosen);
+        setShowScrapeWarning(true);
+        return;
+      }
+      proceedToChat(chosen);
+    },
+    [provider, proceedToChat]
+  );
+
+  const handleScrapeWarningContinue = useCallback(() => {
+    localStorage.setItem(SCRAPE_WARNED_KEY, "1");
+    setShowScrapeWarning(false);
+    const chosen = pendingProvider ?? provider;
+    setPendingProvider(null);
+    proceedToChat(chosen);
+  }, [pendingProvider, provider, proceedToChat]);
 
   const handleCopyMarkdown = useCallback(async () => {
     setCopying(true);
@@ -126,7 +151,10 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
       const chosen = pendingProvider ?? provider;
       const token = result?.shareToken;
       const newBoardUrl = getBoardUrl(slug, { visibility: "shared", shareToken: token });
-      const prompt = `Use this board for context: ${newBoardUrl}\n`;
+      const llmsUrl = newBoardUrl.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
+      const prompt = chosen === "claude"
+        ? `scrape ${newBoardUrl} and ${llmsUrl} as context to answer:\n`
+        : `scrape ${newBoardUrl} as context to answer:\n`;
       openProviderWithPrompt(prompt, chosen);
       setShowPrivateDialog(false);
       toast.success("Board shared with magic link");
@@ -183,6 +211,28 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <Dialog open={showScrapeWarning} onOpenChange={setShowScrapeWarning}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Heads up
+            </DialogTitle>
+            <DialogDescription>
+              AI chat apps frequently change how they scrape external sites, so this may not always work reliably. For a consistent experience, use the <a href="/mcp" className="underline text-foreground font-medium">Dump MCP server</a> instead.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="outline" size="sm" onClick={() => setShowScrapeWarning(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleScrapeWarningContinue}>
+              Continue anyway
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showPrivateDialog} onOpenChange={setShowPrivateDialog}>
         <DialogContent className="sm:max-w-md">
