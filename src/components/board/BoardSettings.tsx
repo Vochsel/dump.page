@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+import { formatBoardDataAsMarkdown } from "@/lib/board-markdown";
 import {
   Popover,
   PopoverContent,
@@ -124,57 +125,23 @@ export function BoardShare({ board, isOwner, isMember }: BoardShareProps) {
 
   const mdContent = (() => {
     if (!mdOpen || !markdownData) return null;
-    const { board: b, nodes } = markdownData;
-    let md = `# ${b.icon} ${b.name}\n\n`;
-    const contextType = (b as { settings?: { contextType?: string } }).settings?.contextType;
-    if (contextType === "skill") {
-      md += `> **Context Type: Skill** — This board provides contextual information to be used as a skill. Refer to it frequently for updated context.\n\n`;
-    } else if (contextType === "agent") {
-      md += `> **Context Type: Agent** — This board defines an agent persona. The goals, personality, and instructions below should take over your current context.\n\n`;
-    }
-    const sysPrompt = (b as { settings?: { systemPrompt?: string } }).settings?.systemPrompt;
-    if (sysPrompt) {
-      md += `${sysPrompt}\n\n`;
-    }
-    const textNodes = nodes.filter((n) => n.type === "text");
-    const linkNodes = nodes.filter((n) => n.type === "link");
-    const checklistNodes = nodes.filter((n) => n.type === "checklist");
-    if (textNodes.length > 0) {
-      md += "## Notes\n\n";
-      for (const n of textNodes) {
-        if (n.title) md += `### ${n.title}\n\n`;
-        const content = n.content.trimStart().startsWith("<")
-          ? n.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
-          : n.content;
-        md += `${content}\n\n`;
-      }
-    }
-    if (checklistNodes.length > 0) {
-      md += "## Checklists\n\n";
-      for (const n of checklistNodes) {
-        if (n.title) md += `### ${n.title}\n\n`;
-        try {
-          const items = JSON.parse(n.content);
-          if (Array.isArray(items)) {
-            for (const item of items) {
-              md += `- [${item.checked ? "x" : " "}] ${item.text}\n`;
-            }
-            md += "\n";
-          }
-        } catch { md += `${n.content}\n\n`; }
-      }
-    }
-    if (linkNodes.length > 0) {
-      md += "## Links\n\n";
-      for (const n of linkNodes) {
-        const title = n.metadata?.title || n.content;
-        md += `- [${title}](${n.content})`;
-        if (n.metadata?.description) md += ` - ${n.metadata.description}`;
-        md += "\n";
-      }
-    }
-    if (nodes.length === 0) md += "*This board is empty.*\n";
-    return md;
+    const { board: b, nodes, edges } = markdownData;
+    const activeNodes = nodes.filter((n: { archived?: boolean }) => !n.archived);
+    return formatBoardDataAsMarkdown(
+      { name: `${b.icon} ${b.name}`, settings: b.settings },
+      activeNodes.map((n) => ({
+        id: n._id,
+        type: n.type,
+        content: n.content,
+        title: n.title,
+        position: n.position,
+        metadata: n.metadata,
+      })),
+      (edges || []).map((e) => ({
+        source: e.source as string,
+        target: e.target as string,
+      }))
+    );
   })();
 
   const boardSlug = board.slug ?? board._id;
