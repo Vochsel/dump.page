@@ -81,7 +81,7 @@ export function CommandPalette() {
         label,
         sublabel: item.boardName,
         icon: typeIcon,
-        href: `/b/${item.boardSlug}/${item._id}`,
+        href: `/b/${item.boardSlug}?focusNode=${item._id}`,
       });
     }
   } else if (!query.trim() && recentBoards) {

@@ -422,6 +422,123 @@ export const addItems = mutation({
   },
 });
 
+export const getItem = query({
+  args: {
+    accessToken: v.string(),
+    boardSlug: v.string(),
+    itemId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireMcpToken(ctx, args.accessToken);
+
+    const board = await ctx.db
+      .query("boards")
+      .withIndex("by_slug", (q) => q.eq("slug", args.boardSlug))
+      .unique();
+    if (!board) return null;
+
+    // Access check: require membership OR public board
+    const membership = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_boardId_userId", (q) =>
+        q.eq("boardId", board._id).eq("userId", userId)
+      )
+      .unique();
+
+    if (!membership && board.visibility !== "public") {
+      return null;
+    }
+
+    let node;
+    try {
+      node = await ctx.db.get(args.itemId as Id<"nodes">);
+    } catch {
+      return null;
+    }
+    if (!node || node.boardId !== board._id || node.archived) return null;
+
+    return {
+      id: node._id,
+      type: node.type,
+      content: node.content,
+      title: node.title,
+      metadata: node.metadata,
+      createdAt: node.createdAt,
+      updatedAt: node.updatedAt,
+    };
+  },
+});
+
+export const toggleChecklistItem = mutation({
+  args: {
+    accessToken: v.string(),
+    boardSlug: v.string(),
+    itemId: v.string(),
+    checklistIndex: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const { userId, scope } = await requireMcpToken(ctx, args.accessToken);
+
+    // Enforce write scope
+    if (!scope.split(/[\s,]+/).includes("write")) {
+      throw new Error("Write scope required");
+    }
+
+    const board = await ctx.db
+      .query("boards")
+      .withIndex("by_slug", (q) => q.eq("slug", args.boardSlug))
+      .unique();
+    if (!board) throw new Error("Board not found");
+
+    // Check membership (must be a member to modify)
+    const membership = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_boardId_userId", (q) =>
+        q.eq("boardId", board._id).eq("userId", userId)
+      )
+      .unique();
+    if (!membership) throw new Error("Not authorized");
+
+    const node = await ctx.db.get(args.itemId as Id<"nodes">);
+    if (!node || node.boardId !== board._id) throw new Error("Item not found");
+    if (node.type !== "checklist") throw new Error("Item is not a checklist");
+
+    let items: Array<{ text: string; checked: boolean }>;
+    try {
+      items = JSON.parse(node.content);
+      if (!Array.isArray(items)) throw new Error("Invalid checklist content");
+    } catch {
+      throw new Error("Invalid checklist content");
+    }
+
+    if (args.checklistIndex < 0 || args.checklistIndex >= items.length) {
+      throw new Error(
+        `Index ${args.checklistIndex} out of range (0-${items.length - 1})`
+      );
+    }
+
+    items[args.checklistIndex].checked = !items[args.checklistIndex].checked;
+
+    const now = Date.now();
+    await ctx.db.patch(args.itemId as Id<"nodes">, {
+      content: JSON.stringify(items),
+      updatedAt: now,
+    });
+    await ctx.db.patch(board._id, { updatedAt: now });
+
+    return {
+      id: node._id,
+      checklistIndex: args.checklistIndex,
+      checked: items[args.checklistIndex].checked,
+      items: items.map((item, i) => ({
+        index: i,
+        text: item.text,
+        checked: item.checked,
+      })),
+    };
+  },
+});
+
 export const updateNote = mutation({
   args: {
     accessToken: v.string(),

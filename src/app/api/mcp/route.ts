@@ -216,6 +216,82 @@ function createServer(): McpServer {
     }
   );
 
+  // --- get_item ---
+  server.registerTool(
+    "get_item",
+    {
+      title: "Get Item",
+      description:
+        "Get a specific item from a board by its ID. Returns the item's type, content, title, and metadata.",
+      inputSchema: z.object({
+        board_slug: z.string().describe("Board slug (e.g. 'a1b2c3d4')"),
+        item_id: z.string().describe("The ID of the item to retrieve"),
+      }),
+    },
+    async ({ board_slug, item_id }, { authInfo }) => {
+      const accessToken = getAccessToken(authInfo);
+      if (!accessToken) {
+        return {
+          content: [{ type: "text" as const, text: "Error: Not authenticated." }],
+        };
+      }
+
+      const item = await convex.query(api.mcp.getItem, {
+        accessToken,
+        boardSlug: board_slug,
+        itemId: item_id,
+      });
+
+      if (!item) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Item not found, not accessible, or does not belong to this board.",
+            },
+          ],
+        };
+      }
+
+      // Format as markdown similar to getItemMarkdown
+      let markdown = "";
+
+      if (item.type === "text") {
+        if (item.title) markdown += `## ${item.title}\n\n`;
+        markdown += `${item.content}\n`;
+      } else if (item.type === "checklist") {
+        if (item.title) markdown += `## ${item.title}\n\n`;
+        try {
+          const items = JSON.parse(item.content);
+          if (Array.isArray(items)) {
+            for (const entry of items) {
+              markdown += `- [${entry.checked ? "x" : " "}] ${entry.text}\n`;
+            }
+          } else {
+            markdown += `${item.content}\n`;
+          }
+        } catch {
+          markdown += `${item.content}\n`;
+        }
+      } else if (item.type === "link") {
+        const title = item.metadata?.title || item.content;
+        markdown += `- [${title}](${item.content})`;
+        if (item.metadata?.description) {
+          markdown += ` - ${item.metadata.description}`;
+        }
+        markdown += "\n";
+      } else {
+        markdown += `${item.content}\n`;
+      }
+
+      markdown += `\n---\n*ID: ${item.id} | Type: ${item.type}*`;
+
+      return {
+        content: [{ type: "text" as const, text: markdown }],
+      };
+    }
+  );
+
   // --- create_note (feature-flagged) ---
   if (MCP_WRITE_ENABLED) {
     server.registerTool(
@@ -376,6 +452,64 @@ function createServer(): McpServer {
               {
                 type: "text" as const,
                 text: `Error updating note: ${e instanceof Error ? e.message : "Unknown error"}`,
+              },
+            ],
+          };
+        }
+      }
+    );
+
+    // --- toggle_checklist_item (feature-flagged) ---
+    server.registerTool(
+      "toggle_checklist_item",
+      {
+        title: "Toggle Checklist Item",
+        description:
+          "Toggle a specific checklist item's checked state. Specify the board slug, the checklist node ID, and the zero-based index of the item to toggle.",
+        inputSchema: z.object({
+          board_slug: z.string().describe("Slug of the board containing the checklist"),
+          item_id: z.string().describe("The ID of the checklist node"),
+          checklist_index: z
+            .number()
+            .describe("Zero-based index of the checklist item to toggle"),
+        }),
+      },
+      async ({ board_slug, item_id, checklist_index }, { authInfo }) => {
+        const accessToken = getAccessToken(authInfo);
+        if (!accessToken) {
+          return {
+            content: [{ type: "text" as const, text: "Error: Not authenticated." }],
+          };
+        }
+
+        try {
+          const result = await convex.mutation(api.mcp.toggleChecklistItem, {
+            accessToken,
+            boardSlug: board_slug,
+            itemId: item_id,
+            checklistIndex: checklist_index,
+          });
+
+          const statusEmoji = result.checked ? "[x]" : "[ ]";
+          const toggledItem = result.items.find(
+            (i: { index: number }) => i.index === result.checklistIndex
+          );
+          const itemText = toggledItem ? toggledItem.text : "item";
+
+          let response = `Toggled checklist item ${result.checklistIndex}: ${statusEmoji} ${itemText}\n\nFull checklist:\n`;
+          for (const item of result.items) {
+            response += `- [${item.checked ? "x" : " "}] ${item.text}\n`;
+          }
+
+          return {
+            content: [{ type: "text" as const, text: response }],
+          };
+        } catch (e) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Error toggling checklist item: ${e instanceof Error ? e.message : "Unknown error"}`,
               },
             ],
           };

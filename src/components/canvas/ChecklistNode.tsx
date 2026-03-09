@@ -3,8 +3,10 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { NodeProps } from "@xyflow/react";
 import { Trash2, GripVertical, X, ChevronsDownUp, ChevronsUpDown, Maximize2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useBoardOps } from "@/context/board-ops-context";
 import confetti from "canvas-confetti";
+
 
 type ChecklistItem = {
   id: string;
@@ -28,6 +30,28 @@ type ChecklistNodeData = {
 
 function generateId() {
   return Math.random().toString(36).slice(2, 9);
+}
+
+function linkifyText(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) => {
+    if (/^https?:\/\/[^\s]+$/.test(part)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
 }
 
 function parseItems(content: string): { items: ChecklistItem[]; needsIdMigration: boolean } {
@@ -268,15 +292,18 @@ export function ChecklistNode({ data }: NodeProps) {
 
   const deleteItem = useCallback(
     (id: string) => {
+      const oldContent = JSON.stringify(itemsRef.current);
+      let finalItems: ChecklistItem[];
       const newItems = itemsRef.current.filter((item) => item.id !== id);
       if (newItems.length === 0) {
-        const fresh = { id: generateId(), text: "", checked: false };
-        persistNow([fresh]);
+        finalItems = [{ id: generateId(), text: "", checked: false }];
       } else {
-        persistNow(newItems);
+        finalItems = newItems;
       }
+      persistNow(finalItems);
+      stablePushAction({ type: "edit", nodeId, oldContent, newContent: JSON.stringify(finalItems) });
     },
-    [persistNow]
+    [persistNow, nodeId, stablePushAction]
   );
 
   // DnD handlers — only triggered from the grip handle
@@ -436,18 +463,19 @@ export function ChecklistNode({ data }: NodeProps) {
               <div
                 draggable
                 onDragStart={(e) => handleDragStart(e, idx)}
-                className="nodrag cursor-grab shrink-0 mt-0.5"
+                className="nodrag cursor-grab shrink-0 flex items-center h-5"
               >
                 <GripVertical className="h-3 w-3 text-gray-400/60" />
               </div>
             )}
-            <input
-              type="checkbox"
-              checked={item.checked}
-              onChange={() => canEdit && toggleCheck(item.id)}
-              disabled={!canEdit}
-              className="nodrag h-3.5 w-3.5 rounded border-gray-300 text-gray-600 focus:ring-gray-500 shrink-0 cursor-pointer mt-0.5"
-            />
+            <span className="nodrag shrink-0 flex items-center h-5">
+              <Checkbox
+                checked={item.checked}
+                onCheckedChange={() => canEdit && toggleCheck(item.id)}
+                disabled={!canEdit}
+                className="h-4 w-4 rounded-[3px] border-gray-300 dark:border-gray-600 data-[state=checked]:bg-gray-600 data-[state=checked]:border-gray-600 dark:data-[state=checked]:bg-gray-400 dark:data-[state=checked]:border-gray-400 cursor-pointer transition-all duration-150"
+              />
+            </span>
             {canEdit ? (
               <textarea
                 ref={(el) => {
@@ -533,13 +561,13 @@ export function ChecklistNode({ data }: NodeProps) {
                   item.checked ? "line-through opacity-50" : ""
                 }`}
               >
-                {item.text || <span className="text-gray-400/50 italic">Empty</span>}
+                {item.text ? linkifyText(item.text) : <span className="text-gray-400/50 italic">Empty</span>}
               </span>
             )}
             {canEdit && (
               <button
                 onClick={() => deleteItem(item.id)}
-                className="nodrag opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 hover:bg-gray-200/50 rounded shrink-0 mt-0.5"
+                className="nodrag opacity-0 group-hover/item:opacity-100 transition-opacity p-0.5 hover:bg-gray-200/50 rounded shrink-0 flex items-center h-5"
               >
                 <X className="h-3 w-3 text-gray-600/60" />
               </button>

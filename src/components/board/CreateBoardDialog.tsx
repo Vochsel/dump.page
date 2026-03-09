@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { IconPicker } from "./IconPicker";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 type TemplateNode = {
   type: "text" | "link" | "checklist";
@@ -192,7 +191,7 @@ export function CreateBoardDialog() {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("📋");
   const [visibility, setVisibility] = useState<"private" | "shared" | "public">("private");
-  const [selectedTemplate, setSelectedTemplate] = useLocalStorage("dump-last-template", "project-tracker");
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [step, setStep] = useState<"template" | "details">("template");
   const createBoard = useMutation(api.boards.createBoard);
   const router = useRouter();
@@ -201,10 +200,10 @@ export function CreateBoardDialog() {
     if (open) {
       setStep("template");
       setName("");
-      const tpl = TEMPLATES.find((t) => t.id === selectedTemplate);
-      setIcon(tpl?.icon ?? "📋");
+      setSelectedTemplate(null);
+      setIcon("📋");
     }
-  }, [open, selectedTemplate]);
+  }, [open]);
 
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -216,7 +215,7 @@ export function CreateBoardDialog() {
 
   const handleCreate = async () => {
     if (!name.trim()) return;
-    const tpl = TEMPLATES.find((t) => t.id === selectedTemplate);
+    const tpl = selectedTemplate ? TEMPLATES.find((t) => t.id === selectedTemplate) : undefined;
     const templateNodes = tpl && tpl.nodes.length > 0 ? tpl.nodes : undefined;
     const slug = await createBoard({
       name: name.trim(),

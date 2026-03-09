@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -7,6 +8,7 @@ import { CreateBoardDialog } from "@/components/board/CreateBoardDialog";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { BoardIcon } from "@/components/board/BoardIcon";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Users, Plus, Link as LinkIcon, FileText, ExternalLink, CheckSquare, Sun, Moon, Monitor, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
@@ -166,6 +168,14 @@ export default function DashboardPage() {
   const { user, loading } = useAuth();
   const boards = useQuery(api.boards.getMyBoardsWithRecentNodes);
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const router = useRouter();
+
+  // Redirect unauthenticated users to homepage
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/");
+    }
+  }, [user, loading, router]);
 
   if (loading || !user) {
     return (

@@ -5,6 +5,11 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
+import Link from "@tiptap/extension-link";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
 
 interface TipTapEditorProps {
   content: string;
@@ -16,7 +21,23 @@ export function TipTapEditor({ content, onSave, onCancel }: TipTapEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
     autofocus: "end",
-    extensions: [StarterKit, TaskList, TaskItem.configure({ nested: true })],
+    extensions: [
+      StarterKit,
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: "underline text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300",
+        },
+      }),
+      Table.configure({
+        resizable: false,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ],
     content,
     editorProps: {
       attributes: {

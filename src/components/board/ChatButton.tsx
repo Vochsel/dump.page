@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,8 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { ChevronDown, Copy, Link2 } from "lucide-react";
 import { toast } from "sonner";
-
-const SITE_URL = "https://www.dump.page";
+import { getBoardUrl } from "@/lib/board-url";
 
 const PROVIDERS = [
   {
@@ -64,10 +63,9 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
   const [pendingProvider, setPendingProvider] = useState<ProviderId | null>(null);
   const [copying, setCopying] = useState(false);
   const updateBoard = useMutation(api.boards.updateBoard);
+  const hasMcp = useQuery(api.mcpAuth.hasActiveMcpToken);
 
-  const needsToken = visibility === "shared" && shareToken;
-  const tokenParam = needsToken ? `?token=${shareToken}` : "";
-  const boardUrl = `${SITE_URL}/b/${slug}${tokenParam}`;
+  const boardUrl = getBoardUrl(slug, { visibility, shareToken });
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as ProviderId | null;
@@ -93,7 +91,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
   const openChat = useCallback(
     (id?: ProviderId) => {
       const chosen = id ?? provider;
-      if (visibility === "private") {
+      if (visibility === "private" && !hasMcp) {
         setPendingProvider(chosen);
         setShowPrivateDialog(true);
         return;
@@ -101,7 +99,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
       const prompt = `Use this board for context: ${boardUrl}\n`;
       openProviderWithPrompt(prompt, chosen);
     },
-    [provider, visibility, boardUrl, openProviderWithPrompt]
+    [provider, visibility, boardUrl, openProviderWithPrompt, hasMcp]
   );
 
   const handleCopyMarkdown = useCallback(async () => {
@@ -127,7 +125,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
       const result = await updateBoard({ boardId, visibility: "shared" });
       const chosen = pendingProvider ?? provider;
       const token = result?.shareToken;
-      const newBoardUrl = `${SITE_URL}/b/${slug}${token ? `?token=${token}` : ""}`;
+      const newBoardUrl = getBoardUrl(slug, { visibility: "shared", shareToken: token });
       const prompt = `Use this board for context: ${newBoardUrl}\n`;
       openProviderWithPrompt(prompt, chosen);
       setShowPrivateDialog(false);

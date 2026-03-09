@@ -240,6 +240,49 @@
   opacity: 0.6;
 }
 
+.tiptap-editor a {
+  text-decoration: underline;
+  color: #2563eb; /* blue-600 */
+}
+.dark .tiptap-editor a {
+  color: #60a5fa; /* blue-400 */
+}
+.tiptap-editor a:hover {
+  color: #1e40af; /* blue-800 */
+}
+.dark .tiptap-editor a:hover {
+  color: #93c5fd; /* blue-300 */
+}
+
+/* TipTap table styles (GFM tables) */
+.tiptap-editor table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+.tiptap-editor th,
+.tiptap-editor td {
+  border: 1px solid #d1d5db;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.dark .tiptap-editor th,
+.dark .tiptap-editor td {
+  border-color: #4b5563;
+}
+
+.tiptap-editor th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+.dark .tiptap-editor th {
+  background-color: #374151;
+}
+
 /* Landing page — whiteboard dot grid */
 .landing-dot-grid {
   background-color: #fafaf8;

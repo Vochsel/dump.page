@@ -41,11 +41,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "sonner";
 import { useTheme } from "@/context/theme-context";
 
 import { darkenHex, lightenHex } from "@/lib/utils";
+import { getBoardUrl } from "@/lib/board-url";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
 import { useBoardOps } from "@/context/board-ops-context";
 import { useBoardScreenshot } from "@/hooks/useBoardScreenshot";
@@ -83,9 +85,10 @@ interface CanvasInnerProps {
   shareToken?: string;
   viewMode?: "board" | "list" | "document";
   onViewModeChange?: (mode: "board" | "list" | "document") => void;
+  focusNodeId?: string;
 }
 
-function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onViewModeChange }: CanvasInnerProps) {
+function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onViewModeChange, focusNodeId }: CanvasInnerProps) {
   const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata } = useBoardOps();
   const { screenToFlowPosition, fitView, setViewport } = useReactFlow();
   const mousePosRef = useRef({ x: 0, y: 0 });
@@ -289,6 +292,22 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     });
   }, [boardNodes, canEdit, pushAction, deleteNodeWithUndo, optimisticDeletes]);
 
+  // Zoom to specific node if focusNodeId is provided (e.g. from cmd+k search)
+  const hasFocusedNode = useRef(false);
+  useEffect(() => {
+    if (!focusNodeId || hasFocusedNode.current || !localNodes.length) return;
+    const targetNode = localNodes.find((n) => n.id === focusNodeId);
+    if (!targetNode) return;
+    hasFocusedNode.current = true;
+    setTimeout(() => {
+      fitView({ nodes: [targetNode], padding: 0.5, duration: 500 });
+      // Also select the node to highlight it
+      setLocalNodes((prev) =>
+        prev.map((n) => ({ ...n, selected: n.id === focusNodeId }))
+      );
+    }, 300);
+  }, [focusNodeId, localNodes, fitView]);
+
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       if (!canEdit) return;
@@ -358,15 +377,20 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     const handlePaste = (e: ClipboardEvent) => {
       // Don't intercept paste when editing a text input/textarea/contenteditable
       // or when focus is inside a React Flow node (e.g. text node preview)
+      // Check both e.target and activeElement — paste event target can differ
+      // from the actually focused element in some browsers
       const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable ||
-        target.closest("[contenteditable]") ||
-        target.closest(".ProseMirror") ||
-        target.closest(".react-flow__node")
-      ) {
+      const active = document.activeElement as HTMLElement | null;
+      const isEditing = (el: HTMLElement | null) =>
+        el && (
+          el.tagName === "INPUT" ||
+          el.tagName === "TEXTAREA" ||
+          el.isContentEditable ||
+          el.closest("[contenteditable]") ||
+          el.closest(".ProseMirror") ||
+          el.closest(".react-flow__node")
+        );
+      if (isEditing(target) || isEditing(active)) {
         return;
       }
 
@@ -651,7 +675,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     if (!nodeMenu) return;
     const node = localNodes.find((n) => n.id === nodeMenu.nodeId);
     if (!node) return;
-    const data = node.data as { content?: string; metadata?: { title?: string } };
+    const data = node.data as { content?: string; title?: string; metadata?: { title?: string } };
     let text: string;
     if (node.type === "link") {
       // For links, always copy the URL
@@ -667,6 +691,10 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     } else {
       // For text nodes, strip HTML
       text = (data.content || "").replace(/<[^>]*>/g, "");
+    }
+    const title = data.title;
+    if (title) {
+      text = `# ${title}\n\n${text}`;
     }
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
@@ -738,9 +766,11 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
 
   const handleNodeCopyLink = useCallback(() => {
     if (!nodeMenu || !boardSlug) return;
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    let url = `${origin}/b/${boardSlug}/${nodeMenu.nodeId}`;
-    if (shareToken) url += `?token=${shareToken}`;
+    const url = getBoardUrl(boardSlug, {
+      visibility: shareToken ? "shared" : "public",
+      shareToken,
+      itemId: nodeMenu.nodeId,
+    });
     navigator.clipboard.writeText(url).then(() => {
       toast.success("Item link copied to clipboard");
     });
@@ -872,7 +902,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   );
 
   const bottomButtons = (
-    <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5">
+    <div className="absolute bottom-16 md:bottom-4 left-4 z-10 flex flex-col md:flex-row items-start md:items-center gap-1.5">
       <button
         onClick={() => {
           if (isMuted) { sfx.unmute(); } else { sfx.mute(); }
@@ -1060,15 +1090,23 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
                 <ContextMenuSeparator />
                 <ContextMenuItem onClick={() => {
                   const texts = allSelected.map((n) => {
-                    const data = n.data as { content?: string; metadata?: { title?: string } };
-                    if (n.type === "link") return data.content || "";
-                    if (n.type === "checklist") {
+                    const data = n.data as { content?: string; title?: string; metadata?: { title?: string } };
+                    let text: string;
+                    if (n.type === "link") {
+                      text = data.content || "";
+                    } else if (n.type === "checklist") {
                       try {
                         const items = JSON.parse(data.content || "[]");
-                        return items.map((i: { text: string; checked: boolean }) => `${i.checked ? "[x]" : "[ ]"} ${i.text}`).join("\n");
-                      } catch { return data.content || ""; }
+                        text = items.map((i: { text: string; checked: boolean }) => `${i.checked ? "[x]" : "[ ]"} ${i.text}`).join("\n");
+                      } catch { text = data.content || ""; }
+                    } else {
+                      text = (data.content || "").replace(/<[^>]*>/g, "");
                     }
-                    return (data.content || "").replace(/<[^>]*>/g, "");
+                    const title = data.title;
+                    if (title) {
+                      text = `# ${title}\n\n${text}`;
+                    }
+                    return text;
                   });
                   navigator.clipboard.writeText(texts.join("\n\n"));
                   toast.success(`Copied ${allSelected.length} items`);
@@ -1160,15 +1198,23 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   onClick={() => {
                     const texts = selectedNodes.map((n) => {
-                      const data = n.data as { content?: string; metadata?: { title?: string } };
-                      if (n.type === "link") return data.content || "";
-                      if (n.type === "checklist") {
+                      const data = n.data as { content?: string; title?: string; metadata?: { title?: string } };
+                      let text: string;
+                      if (n.type === "link") {
+                        text = data.content || "";
+                      } else if (n.type === "checklist") {
                         try {
                           const items = JSON.parse(data.content || "[]");
-                          return items.map((i: { text: string; checked: boolean }) => `${i.checked ? "[x]" : "[ ]"} ${i.text}`).join("\n");
-                        } catch { return data.content || ""; }
+                          text = items.map((i: { text: string; checked: boolean }) => `${i.checked ? "[x]" : "[ ]"} ${i.text}`).join("\n");
+                        } catch { text = data.content || ""; }
+                      } else {
+                        text = (data.content || "").replace(/<[^>]*>/g, "");
                       }
-                      return (data.content || "").replace(/<[^>]*>/g, "");
+                      const title = data.title;
+                      if (title) {
+                        text = `# ${title}\n\n${text}`;
+                      }
+                      return text;
                     });
                     navigator.clipboard.writeText(texts.join("\n\n"));
                     toast.success(`Copied ${selectedNodes.length} items`);
@@ -1367,7 +1413,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
                           if (!Array.isArray(items)) return <p className="text-sm text-muted-foreground">Empty</p>;
                           return items.map((item: { id: string; text: string; checked: boolean }) => (
                             <div key={item.id} className="flex items-start gap-2 px-1 py-0.5">
-                              <input type="checkbox" checked={item.checked} readOnly className="h-3.5 w-3.5 rounded border-gray-300 mt-0.5" />
+                              <Checkbox checked={item.checked} disabled className="h-3.5 w-3.5 rounded-[3px] border-gray-300 dark:border-gray-600 data-[state=checked]:bg-gray-600 data-[state=checked]:border-gray-600 dark:data-[state=checked]:bg-gray-400 dark:data-[state=checked]:border-gray-400 mt-0.5 cursor-default" />
                               <span className={`text-sm ${item.checked ? "line-through opacity-50" : ""}`}>{item.text}</span>
                             </div>
                           ));
@@ -1447,12 +1493,13 @@ interface CanvasProps {
   shareToken?: string;
   viewMode?: "board" | "list" | "document";
   onViewModeChange?: (mode: "board" | "list" | "document") => void;
+  focusNodeId?: string;
 }
 
-export function Canvas({ canEdit, settings = {}, boardSlug, shareToken, viewMode, onViewModeChange }: CanvasProps) {
+export function Canvas({ canEdit, settings = {}, boardSlug, shareToken, viewMode, onViewModeChange, focusNodeId }: CanvasProps) {
   return (
     <ReactFlowProvider>
-      <CanvasInner canEdit={canEdit} settings={settings} boardSlug={boardSlug} shareToken={shareToken} viewMode={viewMode} onViewModeChange={onViewModeChange} />
+      <CanvasInner canEdit={canEdit} settings={settings} boardSlug={boardSlug} shareToken={shareToken} viewMode={viewMode} onViewModeChange={onViewModeChange} focusNodeId={focusNodeId} />
     </ReactFlowProvider>
   );
 }

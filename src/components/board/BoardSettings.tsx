@@ -38,6 +38,7 @@ import {
   Share2,
 } from "lucide-react";
 import Link from "next/link";
+import { getBoardUrl } from "@/lib/board-url";
 
 export type BoardSettingsData = {
   backgroundPattern?: "dots" | "paper" | "boxes" | "blank";
@@ -176,21 +177,25 @@ export function BoardShare({ board, isOwner, isMember }: BoardShareProps) {
     return md;
   })();
 
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const boardSlug = board.slug ?? board._id;
 
   const shareUrl =
-    board.visibility === "shared" && board.shareToken
-      ? `${origin}/b/${board.slug ?? board._id}?token=${board.shareToken}`
-      : board.visibility === "public"
-        ? `${origin}/b/${board.slug ?? board._id}`
-        : null;
+    board.visibility === "shared" || board.visibility === "public"
+      ? getBoardUrl(boardSlug, { visibility: board.visibility, shareToken: board.shareToken })
+      : null;
 
   const rssUrl =
-    board.visibility === "shared" && board.shareToken
-      ? `${origin}/b/${board.slug ?? board._id}/rss.xml?token=${board.shareToken}`
-      : board.visibility === "public"
-        ? `${origin}/b/${board.slug ?? board._id}/rss.xml`
-        : null;
+    board.visibility === "shared" || board.visibility === "public"
+      ? (() => {
+          const base = getBoardUrl(boardSlug, { visibility: board.visibility, shareToken: board.shareToken });
+          // Insert /rss.xml before the query string (if any)
+          const qIdx = base.indexOf("?");
+          if (qIdx >= 0) {
+            return `${base.slice(0, qIdx)}/rss.xml${base.slice(qIdx)}`;
+          }
+          return `${base}/rss.xml`;
+        })()
+      : null;
 
   const copyShareUrl = async () => {
     if (!shareUrl) return;

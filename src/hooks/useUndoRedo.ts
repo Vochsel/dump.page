@@ -115,7 +115,9 @@ export function useUndoRedo({
         if (action.oldMetadata !== undefined) {
           updateArgs.metadata = action.oldMetadata;
         }
-        await updateNode(updateArgs);
+        // Fire-and-forget: edit undo is optimistic — local state updates
+        // via Convex reactive query, mutation runs in background
+        updateNode(updateArgs);
         return {
           type: "edit",
           nodeId: action.nodeId,

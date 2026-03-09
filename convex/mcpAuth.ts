@@ -230,6 +230,29 @@ export const getUserByFirebaseUid = internalQuery({
   },
 });
 
+// Public query: check if the current user has an active (non-expired, non-revoked) MCP token
+export const hasActiveMcpToken = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return false;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
+      .unique();
+    if (!user) return false;
+
+    const now = Date.now();
+    const tokens = await ctx.db
+      .query("mcpOAuthTokens")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    return tokens.some((t) => !t.revokedAt && t.expiresAt > now);
+  },
+});
+
 // Cleanup expired codes and tokens (can be called from a cron)
 export const cleanupExpired = internalMutation({
   args: {},

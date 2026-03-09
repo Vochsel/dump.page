@@ -19,6 +19,7 @@ import { LoginButton } from "@/components/auth/LoginButton";
 import { BoardIcon } from "@/components/board/BoardIcon";
 import { BoardIconPicker } from "@/components/board/BoardIconPicker";
 import { darkenHex, lightenHex } from "@/lib/utils";
+import { getBoardUrl } from "@/lib/board-url";
 import { useTheme } from "@/context/theme-context";
 import { resolveBgColor } from "@/components/board/BoardSettings";
 import { toast } from "sonner";
@@ -106,6 +107,7 @@ export default function BoardPage({
   const { boardId } = use(params);
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? undefined;
+  const focusNodeId = searchParams.get("focusNode") ?? undefined;
   const { user, loading: authLoading } = useAuth();
   const { resolved: theme, setMode: setThemeMode } = useTheme();
 
@@ -144,15 +146,12 @@ export default function BoardPage({
   }, [boardId, token, boardName]);
 
   // Cmd/Ctrl+C with nothing selected → copy share URL
-  const shareUrl = (() => {
-    if (!access?.board) return "";
-    const slug = access.board.slug ?? boardId;
-    const base = `https://www.dump.page/b/${slug}`;
-    if (access.board.visibility === "shared" && access.board.shareToken) {
-      return `${base}?token=${access.board.shareToken}`;
-    }
-    return base;
-  })();
+  const shareUrl = access?.board
+    ? getBoardUrl(access.board.slug ?? boardId, {
+        visibility: access.board.visibility,
+        shareToken: access.board.shareToken,
+      })
+    : "";
 
   useEffect(() => {
     if (!shareUrl) return;
@@ -232,6 +231,7 @@ export default function BoardPage({
               shareToken={access.board.shareToken}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
+              focusNodeId={focusNodeId}
             />
           ) : viewMode === "list" ? (
             <div className="h-full overflow-y-auto pt-16" style={{ backgroundColor: bgColor }}>
@@ -303,7 +303,7 @@ export default function BoardPage({
       </header>
       {/* View switcher for non-board views */}
       {viewMode !== "board" && (
-        <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5">
+        <div className="absolute bottom-16 md:bottom-4 left-4 z-10 flex flex-col md:flex-row items-start md:items-center gap-1.5">
           <button
             onClick={() => {
               if (isMuted) { sfx.unmute(); } else { sfx.mute(); }
