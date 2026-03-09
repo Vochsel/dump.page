@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { DraggableCard } from "@/components/landing/DraggableCard";
 import { AuthRedirect } from "@/components/landing/AuthRedirect";
 import { StartDumpingButton } from "@/components/landing/StartDumpingButton";
+import { AiWorksWithSection } from "@/components/landing/AiWorksWithSection";
 import { BoardCounter } from "@/components/BoardCounter";
 import { LoginButton } from "@/components/auth/LoginButton";
 import { Footer } from "@/components/Footer";
@@ -62,12 +63,6 @@ const useCases = [
   },
 ];
 
-const aiLogos = [
-  { name: "ChatGPT", icon: "https://cdn.worldvectorlogo.com/logos/chatgpt-6.svg" },
-  { name: "Claude", icon: "/claude-color.svg" },
-  { name: "Gemini", icon: "https://upload.wikimedia.org/wikipedia/commons/1/1d/Google_Gemini_icon_2025.svg" },
-  { name: "Grok", icon: "https://cdn.worldvectorlogo.com/logos/grok-1.svg" },
-];
 
 export default function Home() {
   return (
@@ -104,28 +99,7 @@ export default function Home() {
       </div>
 
       {/* Works with AI */}
-      <div className="mt-16 max-w-xl w-full space-y-3 px-2">
-        <p className="text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 dark:text-gray-300 uppercase tracking-widest">
-          Works with your favorite AI
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          {aiLogos.map((ai) => (
-            <DraggableCard
-              key={ai.name}
-              className="flex items-center gap-2 bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2"
-            >
-              <img src={ai.icon} alt={ai.name} className="h-5 w-5" />
-              <span className="text-sm text-gray-700 dark:text-gray-200 font-medium font-[family-name:var(--font-poppins)]">
-                {ai.name}
-              </span>
-            </DraggableCard>
-          ))}
-        </div>
-        <p className="text-center text-xs text-gray-600 font-[family-name:var(--font-poppins)]">
-          Just paste a board link — or connect via{" "}
-          <span className="text-gray-700 font-medium">MCP server</span> for deeper integration.
-        </p>
-      </div>
+      <AiWorksWithSection />
 
       {/* Feature cards */}
       <p className="mt-16 text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-6">

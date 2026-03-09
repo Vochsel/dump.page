@@ -6,10 +6,12 @@ export function DraggableCard({
   children,
   className,
   style: externalStyle,
+  onClick,
 }: {
   children: ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  onClick?: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -22,6 +24,8 @@ export function DraggableCard({
     started: boolean;
   } | null>(null);
   const wasDragRef = useRef(false);
+  const onClickRef = useRef(onClick);
+  onClickRef.current = onClick;
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -56,11 +60,12 @@ export function DraggableCard({
         setDragging(false);
         wasDragRef.current = true;
       } else if (dragState.current && !dragState.current.started) {
-        // Was a click, not a drag — trigger navigation for any link
+        // Was a click, not a drag — trigger navigation for any link or onClick
         const el = ref.current;
         if (el) {
           const link = el.querySelector("a[href]") as HTMLAnchorElement | null;
           if (link) link.click();
+          else if (onClickRef.current) onClickRef.current();
         }
       }
       dragState.current = null;
