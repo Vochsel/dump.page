@@ -395,92 +395,45 @@ export function formatBoardDataAsMarkdown(
     (e) => nodeIds.has(e.source) && nodeIds.has(e.target)
   );
 
-  // If no edges or no IDs, fall back to clustered/type-grouped rendering
-  if (validEdges.length === 0 || nodeIds.size === 0) {
-    // Use proximity clustering if positions available
-    const hasPositions = nodes.some((n) => n.position);
-    if (hasPositions) {
-      const clusters = clusterByProximity(nodes);
-      for (const cluster of clusters) {
-        for (const node of cluster) {
-          markdown += renderNode(node);
-        }
-      }
-    } else {
-      // Legacy: group by type
-      markdown += renderNodesByType(nodes);
-    }
-    markdown += MCP_FOOTER;
-    return markdown;
-  }
-
   // Split into connected chains and orphans
   const { chains, orphanIds } = buildConnectedChains(nodeIds, validEdges);
 
-  // Render connected chains, sorted by average Y of their nodes
-  const sortedChains = chains
-    .map((chain) => ({
-      chain,
-      avgY: chain.reduce((s, id) => s + (nodeById.get(id)?.position?.y ?? 0), 0) / chain.length,
-    }))
-    .sort((a, b) => a.avgY - b.avgY);
+  // Collect all render groups: each group is an ordered array of nodes
+  // with an avgY for top-to-bottom sorting between groups.
+  const groups: { nodes: MarkdownNode[]; avgY: number }[] = [];
 
-  for (const { chain } of sortedChains) {
-    for (const nodeId of chain) {
-      const node = nodeById.get(nodeId);
-      if (node) markdown += renderNode(node);
-    }
+  // Connected chains as groups
+  for (const chain of chains) {
+    const chainNodes = chain.map((id) => nodeById.get(id)).filter(Boolean) as MarkdownNode[];
+    const avgY = chainNodes.reduce((s, n) => s + (n.position?.y ?? 0), 0) / chainNodes.length;
+    groups.push({ nodes: chainNodes, avgY });
   }
 
-  // Render orphan nodes clustered by proximity
-  const orphanNodes = nodes.filter((n) => n.id && orphanIds.has(n.id));
+  // Orphan nodes clustered by proximity, each cluster is a group
+  const orphanNodes = nodes.filter((n) => n.id ? orphanIds.has(n.id) : true);
   if (orphanNodes.length > 0) {
-    const clusters = clusterByProximity(orphanNodes);
-    for (const cluster of clusters) {
-      for (const node of cluster) {
-        markdown += renderNode(node);
+    const hasPositions = orphanNodes.some((n) => n.position);
+    if (hasPositions) {
+      const clusters = clusterByProximity(orphanNodes);
+      for (const cluster of clusters) {
+        const avgY = cluster.reduce((s, n) => s + (n.position?.y ?? 0), 0) / cluster.length;
+        groups.push({ nodes: cluster, avgY });
       }
+    } else {
+      // No positions — render in original order as one group
+      groups.push({ nodes: orphanNodes, avgY: Infinity });
     }
   }
 
-  // Also render any nodes without IDs (shouldn't happen, but safety)
-  const noIdNodes = nodes.filter((n) => !n.id);
-  if (noIdNodes.length > 0) {
-    markdown += renderNodesByType(noIdNodes);
+  // Sort all groups top-to-bottom and render
+  groups.sort((a, b) => a.avgY - b.avgY);
+  for (const group of groups) {
+    for (const node of group.nodes) {
+      markdown += renderNode(node);
+    }
   }
 
   markdown += MCP_FOOTER;
-  return markdown;
-}
-
-/** Legacy type-grouped rendering for nodes without positions */
-function renderNodesByType(nodes: MarkdownNode[]): string {
-  let markdown = "";
-  const textNodes = nodes.filter((n) => n.type === "text");
-  const linkNodes = nodes.filter((n) => n.type === "link");
-  const checklistNodes = nodes.filter((n) => n.type === "checklist");
-
-  if (textNodes.length > 0) {
-    markdown += `## Notes\n\n`;
-    for (const node of textNodes) {
-      markdown += renderNode(node);
-    }
-  }
-
-  if (checklistNodes.length > 0) {
-    markdown += `## Checklists\n\n`;
-    for (const node of checklistNodes) {
-      markdown += renderNode(node);
-    }
-  }
-
-  if (linkNodes.length > 0) {
-    markdown += `## Links\n\n`;
-    for (const node of linkNodes) {
-      markdown += renderNode(node);
-    }
-  }
-
   return markdown;
 }
 
