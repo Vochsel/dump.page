@@ -26,6 +26,7 @@ import { LinkNode } from "./LinkNode";
 import { ChecklistNode } from "./ChecklistNode";
 import { FloatingEdge } from "./FloatingEdge";
 import { FloatingConnectionLine } from "./FloatingConnectionLine";
+import { KnifeTool } from "./KnifeTool";
 import { Toolbar } from "./Toolbar";
 import {
   ContextMenu,
@@ -121,6 +122,9 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   const [connectModeToggled, setConnectModeToggled] = useState(false);
   const [connectModeHeld, setConnectModeHeld] = useState(false);
   const isConnectMode = connectModeToggled || connectModeHeld;
+
+  // Knife mode state (hold K key)
+  const [knifeModeHeld, setKnifeModeHeld] = useState(false);
 
   // Local edge state
   const [localEdges, setLocalEdges] = useState<Edge[]>([]);
@@ -399,6 +403,21 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     [localEdges, deleteEdge, pushAction]
   );
 
+  // Knife tool: cut edges
+  const onCutEdges = useCallback(
+    (edgeIds: string[]) => {
+      for (const edgeId of edgeIds) {
+        const edge = localEdges.find((e) => e.id === edgeId);
+        if (edge) {
+          setLocalEdges((prev) => prev.filter((e) => e.id !== edgeId));
+          pushAction({ type: "deleteEdge", edgeId: edge.id, source: edge.source, target: edge.target });
+          deleteEdge({ edgeId: edge.id });
+        }
+      }
+    },
+    [localEdges, deleteEdge, pushAction]
+  );
+
   // Zoom to specific node if focusNodeId is provided (e.g. from cmd+k search)
   const hasFocusedNode = useRef(false);
   useEffect(() => {
@@ -652,7 +671,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [canEdit, undo, redo]);
 
-  // Connect mode: hold C key
+  // Connect mode: hold C key, Knife mode: hold K key
   useEffect(() => {
     if (!canEdit) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -666,10 +685,16 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
       if (e.key === "c" || e.key === "C") {
         setConnectModeHeld(true);
       }
+      if (e.key === "k" || e.key === "K") {
+        setKnifeModeHeld(true);
+      }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === "c" || e.key === "C") {
         setConnectModeHeld(false);
+      }
+      if (e.key === "k" || e.key === "K") {
+        setKnifeModeHeld(false);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -1037,7 +1062,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
       panOnScroll={controlsVariant === "default"}
       zoomOnScroll={controlsVariant !== "default"}
       proOptions={{ hideAttribution: true }}
-      className={isConnectMode ? "cursor-crosshair" : ""}
+      className={isConnectMode ? "cursor-crosshair" : knifeModeHeld ? "cursor-crosshair" : ""}
       style={{ backgroundColor: bgColor, overscrollBehaviorX: "none" }}
     >
       {renderBackground()}
@@ -1063,6 +1088,13 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
           onAddLink={() => addLinkNodeAtCursor(true)}
           connectModeActive={isConnectMode}
           onToggleConnectMode={() => setConnectModeToggled((prev) => !prev)}
+        />
+      )}
+      {canEdit && (
+        <KnifeTool
+          active={knifeModeHeld}
+          edges={localEdges}
+          onCutEdges={onCutEdges}
         />
       )}
     </ReactFlow>

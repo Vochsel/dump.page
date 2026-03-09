@@ -39,6 +39,11 @@ const TIPS: Tip[] = [
     title: "Quick search",
     body: "Press Cmd/Ctrl+K to quickly search for items in any board or navigate to recent boards.",
   },
+  {
+    id: "keyboard-shortcuts",
+    title: "Keyboard shortcuts",
+    body: "Hold C to enter connect mode and draw edges between nodes. Hold K to activate the knife tool and slice through edges to remove them. Press F to fit the view.",
+  },
 ];
 
 const STORAGE_KEY_DISMISSED = "dump-tips-dismissed";
