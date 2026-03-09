@@ -4,7 +4,7 @@ import { ReactNode, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { BoardOpsContext, BoardOps, BoardNode } from "./board-ops-context";
+import { BoardOpsContext, BoardOps, BoardNode, BoardEdge } from "./board-ops-context";
 
 interface ConvexBoardOpsProviderProps {
   boardId: Id<"boards">;
@@ -19,6 +19,10 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
   const updateNodePositionMutation = useMutation(api.nodes.updateNodePosition);
   const deleteNodeMutation = useMutation(api.nodes.deleteNode);
   const fetchMetadataMutation = useMutation(api.nodes.requestFetchLinkMetadata);
+
+  const convexEdges = useQuery(api.edges.getEdgesByBoard, { boardId, shareToken });
+  const createEdgeMutation = useMutation(api.edges.createEdge);
+  const deleteEdgeMutation = useMutation(api.edges.deleteEdge);
 
   const nodes: BoardNode[] | undefined = useMemo(() => {
     if (!convexNodes) return undefined;
@@ -35,6 +39,16 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
       metadata: n.metadata,
     }));
   }, [convexNodes]);
+
+  const edges: BoardEdge[] | undefined = useMemo(() => {
+    if (!convexEdges) return undefined;
+    return convexEdges.map((e) => ({
+      _id: e._id as string,
+      boardId: e.boardId as string,
+      source: e.source as string,
+      target: e.target as string,
+    }));
+  }, [convexEdges]);
 
   const ops: BoardOps = useMemo(
     () => ({
@@ -82,8 +96,23 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
           url: args.url,
         });
       },
+      edges,
+      createEdge: async (args) => {
+        const id = await createEdgeMutation({
+          boardId: args.boardId as Id<"boards">,
+          source: args.source as Id<"nodes">,
+          target: args.target as Id<"nodes">,
+        });
+        return id as string;
+      },
+      deleteEdge: async (args) => {
+        await deleteEdgeMutation({
+          edgeId: args.edgeId as Id<"edges">,
+        });
+        return null;
+      },
     }),
-    [nodes, boardId, createNodeMutation, updateNodeMutation, updateNodePositionMutation, deleteNodeMutation, fetchMetadataMutation]
+    [nodes, boardId, createNodeMutation, updateNodeMutation, updateNodePositionMutation, deleteNodeMutation, fetchMetadataMutation, edges, createEdgeMutation, deleteEdgeMutation]
   );
 
   return (

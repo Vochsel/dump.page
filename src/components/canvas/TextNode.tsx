@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { NodeProps } from "@xyflow/react";
+import { Handle, Position, NodeProps } from "@xyflow/react";
 import { Trash2, ChevronsDownUp, ChevronsUpDown, Maximize2 } from "lucide-react";
 import { TipTapEditor } from "./TipTapEditor";
 import { useBoardOps } from "@/context/board-ops-context";
@@ -18,10 +18,11 @@ type TextNodeData = {
   pushAction: (action: UndoAction) => void;
   deleteNodeWithUndo: (nodeId: string) => void;
   onPreview?: (nodeId: string) => void;
+  isConnectMode?: boolean;
 };
 
 export function TextNode({ data }: NodeProps) {
-  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo, onPreview } = data as unknown as TextNodeData;
+  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo, onPreview, isConnectMode } = data as unknown as TextNodeData;
   const [editing, setEditing] = useState(!content && canEdit);
   const { updateNode } = useBoardOps();
 
@@ -74,6 +75,7 @@ export function TextNode({ data }: NodeProps) {
   }, []);
 
   return (
+    <>
     <div className="bg-yellow-100 dark:bg-amber-950/60 rounded-sm shadow-md min-w-[180px] max-w-[360px] group border border-yellow-200/60 dark:border-amber-800/40">
       {/* Title bar — only visible when showTitle is true */}
       {showTitle && (
@@ -117,9 +119,9 @@ export function TextNode({ data }: NodeProps) {
               <Maximize2 className="h-3 w-3" />
             </button>
           )}
-          {canEdit && (
+          {(canEdit || isConnectMode) && (
             <button
-              className="nodrag flex-shrink-0 p-0.5 rounded hover:bg-yellow-300/40 transition-colors text-yellow-700/50 hover:text-yellow-800/70"
+              className={`nodrag flex-shrink-0 p-0.5 rounded hover:bg-yellow-300/40 transition-colors text-yellow-700/50 hover:text-yellow-800/70 ${isConnectMode ? "pointer-events-none" : ""}`}
               onClick={() => updateNode({ nodeId, collapsed: !collapsed })}
               title={collapsed ? "Expand note" : "Collapse note"}
             >
@@ -174,9 +176,9 @@ export function TextNode({ data }: NodeProps) {
           </div>
         )}
       </div>
-      {collapsed && canEdit && (
+      {collapsed && (canEdit || isConnectMode) && (
         <div
-          className="flex items-center justify-center border-t border-yellow-300/40 dark:border-amber-700/30 py-0.5 cursor-pointer hover:bg-yellow-200/30 dark:hover:bg-amber-800/20 transition-colors"
+          className={`flex items-center justify-center border-t border-yellow-300/40 dark:border-amber-700/30 py-0.5 cursor-pointer hover:bg-yellow-200/30 dark:hover:bg-amber-800/20 transition-colors ${isConnectMode ? "pointer-events-none" : ""}`}
           onClick={() => updateNode({ nodeId, collapsed: false })}
           title="Expand note"
         >
@@ -194,5 +196,8 @@ export function TextNode({ data }: NodeProps) {
         </div>
       )}
     </div>
+    <Handle type="source" position={Position.Top} className={`!absolute !top-0 !left-0 !w-full !h-full !opacity-0 !rounded-none !transform-none !border-0 !z-10 ${isConnectMode ? "!cursor-crosshair" : "!pointer-events-none"}`} />
+    <Handle type="target" position={Position.Top} className={`!absolute !top-0 !left-0 !w-full !h-full !opacity-0 !rounded-none !transform-none !border-0 !z-10 ${isConnectMode ? "" : "!pointer-events-none"}`} />
+    </>
   );
 }

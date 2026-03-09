@@ -150,6 +150,19 @@ export const deleteNode = mutation({
     await requireBoardWriteAccess(ctx, node.boardId);
 
     await ctx.db.delete(args.nodeId);
+
+    // Cascade-delete edges referencing this node
+    const edgesBySource = await ctx.db
+      .query("edges")
+      .withIndex("by_source", (q) => q.eq("source", args.nodeId))
+      .collect();
+    const edgesByTarget = await ctx.db
+      .query("edges")
+      .withIndex("by_target", (q) => q.eq("target", args.nodeId))
+      .collect();
+    for (const edge of [...edgesBySource, ...edgesByTarget]) {
+      await ctx.db.delete(edge._id);
+    }
   },
 });
 

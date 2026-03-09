@@ -12,6 +12,7 @@ import type * as admin from "../admin.js";
 import type * as boardMembers from "../boardMembers.js";
 import type * as boards from "../boards.js";
 import type * as crons from "../crons.js";
+import type * as edges from "../edges.js";
 import type * as featureRequests from "../featureRequests.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as mcp from "../mcp.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   boardMembers: typeof boardMembers;
   boards: typeof boards;
   crons: typeof crons;
+  edges: typeof edges;
   featureRequests: typeof featureRequests;
   "lib/auth": typeof lib_auth;
   mcp: typeof mcp;

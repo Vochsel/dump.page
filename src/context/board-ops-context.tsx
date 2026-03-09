@@ -11,6 +11,13 @@ export type Metadata = {
   image?: string;
 };
 
+export type BoardEdge = {
+  _id: string;
+  boardId: string;
+  source: string;
+  target: string;
+};
+
 export type BoardNode = {
   _id: string;
   boardId: string;
@@ -50,6 +57,9 @@ export interface BoardOps {
   }) => Promise<null>;
   deleteNode: (args: { nodeId: string }) => Promise<null>;
   fetchLinkMetadata: (args: { nodeId: string; url: string }) => Promise<void>;
+  edges: BoardEdge[] | undefined;
+  createEdge: (args: { boardId: string; source: string; target: string }) => Promise<string>;
+  deleteEdge: (args: { edgeId: string }) => Promise<null>;
 }
 
 export const BoardOpsContext = createContext<BoardOps | null>(null);

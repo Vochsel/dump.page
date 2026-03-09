@@ -1,9 +1,10 @@
 "use client";
 
 import { ReactNode, useState, useCallback, useEffect, useRef } from "react";
-import { BoardOpsContext, BoardOps, BoardNode } from "./board-ops-context";
+import { BoardOpsContext, BoardOps, BoardNode, BoardEdge } from "./board-ops-context";
 
 const STORAGE_KEY = "dump-local-board";
+const EDGES_STORAGE_KEY = "dump-local-board-edges";
 
 function loadNodes(): BoardNode[] {
   if (typeof window === "undefined") return [];
@@ -19,6 +20,25 @@ function loadNodes(): BoardNode[] {
 function saveNodes(nodes: BoardNode[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes));
+  } catch {
+    // localStorage full or unavailable
+  }
+}
+
+function loadEdges(): BoardEdge[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(EDGES_STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function saveEdges(edges: BoardEdge[]) {
+  try {
+    localStorage.setItem(EDGES_STORAGE_KEY, JSON.stringify(edges));
   } catch {
     // localStorage full or unavailable
   }
@@ -46,10 +66,16 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
 
+  const [edges, setEdges] = useState<BoardEdge[]>(() => loadEdges());
+
   // Persist on change
   useEffect(() => {
     saveNodes(nodes);
   }, [nodes]);
+
+  useEffect(() => {
+    saveEdges(edges);
+  }, [edges]);
 
   const createNode: BoardOps["createNode"] = useCallback(async (args) => {
     const id = crypto.randomUUID();
@@ -96,6 +122,25 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
 
   const deleteNode: BoardOps["deleteNode"] = useCallback(async (args) => {
     setNodes((prev) => prev.filter((n) => n._id !== args.nodeId));
+    // Cascade-delete edges referencing this node
+    setEdges((prev) => prev.filter((e) => e.source !== args.nodeId && e.target !== args.nodeId));
+    return null;
+  }, []);
+
+  const createEdge: BoardOps["createEdge"] = useCallback(async (args) => {
+    const id = crypto.randomUUID();
+    const edge: BoardEdge = {
+      _id: id,
+      boardId: "local",
+      source: args.source,
+      target: args.target,
+    };
+    setEdges((prev) => [...prev, edge]);
+    return id;
+  }, []);
+
+  const deleteEdge: BoardOps["deleteEdge"] = useCallback(async (args) => {
+    setEdges((prev) => prev.filter((e) => e._id !== args.edgeId));
     return null;
   }, []);
 
@@ -127,6 +172,9 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
     updateNodePosition,
     deleteNode,
     fetchLinkMetadata,
+    edges,
+    createEdge,
+    deleteEdge,
   };
 
   return (

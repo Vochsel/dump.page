@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { NodeProps } from "@xyflow/react";
+import { Handle, Position, NodeProps } from "@xyflow/react";
 import { Trash2, GripVertical, X, ChevronsDownUp, ChevronsUpDown, Maximize2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBoardOps } from "@/context/board-ops-context";
@@ -26,6 +26,7 @@ type ChecklistNodeData = {
   pushAction: (action: UndoAction) => void;
   deleteNodeWithUndo: (nodeId: string) => void;
   onPreview?: (nodeId: string) => void;
+  isConnectMode?: boolean;
 };
 
 function generateId() {
@@ -76,7 +77,7 @@ function parseItems(content: string): { items: ChecklistItem[]; needsIdMigration
 }
 
 export function ChecklistNode({ data }: NodeProps) {
-  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo, onPreview } = data as unknown as ChecklistNodeData;
+  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo, onPreview, isConnectMode } = data as unknown as ChecklistNodeData;
   const { updateNode } = useBoardOps();
 
   // Stable refs for context functions — prevents callback recreation on every node change
@@ -352,6 +353,7 @@ export function ChecklistNode({ data }: NodeProps) {
 
   if (collapsed) {
     return (
+      <>
       <div ref={containerRef} className={`bg-white dark:bg-gray-900 rounded-sm shadow-md ${widthClass} group border border-gray-200 dark:border-gray-700`}>
         {showTitle && title && (
           <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60 flex items-center gap-1">
@@ -363,9 +365,9 @@ export function ChecklistNode({ data }: NodeProps) {
             >
               <Maximize2 className="h-3 w-3" />
             </button>
-            {canEdit && (
+            {(canEdit || isConnectMode) && (
               <button
-                className="nodrag flex-shrink-0 p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors text-gray-500/50 hover:text-gray-600/70 dark:text-gray-400/50 dark:hover:text-gray-300/70"
+                className={`nodrag flex-shrink-0 p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors text-gray-500/50 hover:text-gray-600/70 dark:text-gray-400/50 dark:hover:text-gray-300/70 ${isConnectMode ? "pointer-events-none" : ""}`}
                 onClick={() => updateNode({ nodeId, collapsed: false })}
                 title="Expand checklist"
               >
@@ -397,10 +399,14 @@ export function ChecklistNode({ data }: NodeProps) {
           </div>
         )}
       </div>
+      <Handle type="source" position={Position.Top} className={`!absolute !top-0 !left-0 !w-full !h-full !opacity-0 !rounded-none !transform-none !border-0 !z-10 ${isConnectMode ? "!cursor-crosshair" : "!pointer-events-none"}`} />
+      <Handle type="target" position={Position.Top} className={`!absolute !top-0 !left-0 !w-full !h-full !opacity-0 !rounded-none !transform-none !border-0 !z-10 ${isConnectMode ? "" : "!pointer-events-none"}`} />
+      </>
     );
   }
 
   return (
+    <>
     <div ref={containerRef} className={`bg-white dark:bg-gray-900 rounded-sm shadow-md ${widthClass} group border border-gray-200 dark:border-gray-700`}>
       {/* Title bar — only visible when showTitle is true */}
       {showTitle && (
@@ -435,9 +441,9 @@ export function ChecklistNode({ data }: NodeProps) {
               </div>
             )}
           </div>
-          {canEdit && (
+          {(canEdit || isConnectMode) && (
             <button
-              className="nodrag flex-shrink-0 p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors text-gray-500/50 hover:text-gray-600/70 dark:text-gray-400/50 dark:hover:text-gray-300/70"
+              className={`nodrag flex-shrink-0 p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 transition-colors text-gray-500/50 hover:text-gray-600/70 dark:text-gray-400/50 dark:hover:text-gray-300/70 ${isConnectMode ? "pointer-events-none" : ""}`}
               onClick={() => updateNode({ nodeId, collapsed: !collapsed })}
               title={collapsed ? "Expand checklist" : "Collapse checklist"}
             >
@@ -459,11 +465,11 @@ export function ChecklistNode({ data }: NodeProps) {
                 : "border-t-2 border-transparent"
             } ${dragIdx === idx ? "opacity-40" : ""}`}
           >
-            {canEdit && (
+            {(canEdit || isConnectMode) && (
               <div
-                draggable
-                onDragStart={(e) => handleDragStart(e, idx)}
-                className="nodrag cursor-grab shrink-0 flex items-center h-5"
+                draggable={canEdit && !isConnectMode}
+                onDragStart={canEdit && !isConnectMode ? (e) => handleDragStart(e, idx) : undefined}
+                className={`nodrag shrink-0 flex items-center h-5 ${isConnectMode ? "pointer-events-none" : "cursor-grab"}`}
               >
                 <GripVertical className="h-3 w-3 text-gray-400/60" />
               </div>
@@ -586,5 +592,8 @@ export function ChecklistNode({ data }: NodeProps) {
         </div>
       )}
     </div>
+    <Handle type="source" position={Position.Top} className={`!absolute !top-0 !left-0 !w-full !h-full !opacity-0 !rounded-none !transform-none !border-0 !z-10 ${isConnectMode ? "!cursor-crosshair" : "!pointer-events-none"}`} />
+    <Handle type="target" position={Position.Top} className={`!absolute !top-0 !left-0 !w-full !h-full !opacity-0 !rounded-none !transform-none !border-0 !z-10 ${isConnectMode ? "" : "!pointer-events-none"}`} />
+    </>
   );
 }

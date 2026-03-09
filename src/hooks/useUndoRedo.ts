@@ -14,6 +14,8 @@ export type UndoAction =
   | { type: "delete"; deletedNodeId: string; snapshot: NodeSnapshot }
   | { type: "move"; nodeId: string; oldPosition: Position; newPosition: Position }
   | { type: "edit"; nodeId: string; oldContent: string; newContent: string; oldMetadata?: Metadata; newMetadata?: Metadata }
+  | { type: "createEdge"; edgeId: string; source: string; target: string }
+  | { type: "deleteEdge"; edgeId: string; source: string; target: string }
   | { type: "batch"; actions: UndoAction[] };
 
 const MAX_HISTORY = 50;
@@ -30,6 +32,9 @@ interface UseUndoRedoArgs {
   deleteNode: (args: { nodeId: string }) => Promise<null>;
   updateNode: (args: { nodeId: string; content?: string; metadata?: Metadata }) => Promise<null>;
   updateNodePosition: (args: { nodeId: string; position: Position }) => Promise<null>;
+  boardId: string;
+  createEdge: (args: { boardId: string; source: string; target: string }) => Promise<string>;
+  deleteEdge: (args: { edgeId: string }) => Promise<null>;
 }
 
 export function useUndoRedo({
@@ -38,6 +43,9 @@ export function useUndoRedo({
   deleteNode,
   updateNode,
   updateNodePosition,
+  boardId,
+  createEdge,
+  deleteEdge,
 }: UseUndoRedoArgs) {
   const [past, setPast] = useState<UndoAction[]>([]);
   const [future, setFuture] = useState<UndoAction[]>([]);
@@ -127,6 +135,14 @@ export function useUndoRedo({
           newMetadata: action.oldMetadata,
         };
       }
+      case "createEdge": {
+        await deleteEdge({ edgeId: action.edgeId });
+        return { type: "deleteEdge", edgeId: action.edgeId, source: action.source, target: action.target };
+      }
+      case "deleteEdge": {
+        const newEdgeId = await createEdge({ boardId, source: action.source, target: action.target });
+        return { type: "createEdge", edgeId: newEdgeId, source: action.source, target: action.target };
+      }
       case "batch": {
         const reverseActions: UndoAction[] = [];
         for (const sub of action.actions) {
@@ -136,7 +152,7 @@ export function useUndoRedo({
         return { type: "batch", actions: reverseActions.reverse() };
       }
     }
-  }, [convexNodes, createNode, deleteNode, updateNode, updateNodePosition]);
+  }, [convexNodes, createNode, deleteNode, updateNode, updateNodePosition, boardId, createEdge, deleteEdge]);
 
   const redo = useCallback(async () => {
     if (isExecutingRef.current || future.length === 0) return;

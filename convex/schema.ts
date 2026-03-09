@@ -115,6 +115,17 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_clientId", ["clientId"]),
 
+  edges: defineTable({
+    boardId: v.id("boards"),
+    source: v.id("nodes"),
+    target: v.id("nodes"),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_boardId", ["boardId"])
+    .index("by_source", ["source"])
+    .index("by_target", ["target"]),
+
   nodes: defineTable({
     boardId: v.id("boards"),
     type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist")),

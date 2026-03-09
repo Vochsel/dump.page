@@ -7,9 +7,15 @@ import {
   BackgroundVariant,
   MiniMap,
   SelectionMode,
+  ConnectionMode,
   Node,
+  Edge,
   NodeChange,
+  EdgeChange,
+  Connection,
   NodeTypes,
+  EdgeTypes,
+  MarkerType,
   useReactFlow,
   ReactFlowProvider,
 } from "@xyflow/react";
@@ -18,6 +24,8 @@ import "@xyflow/react/dist/style.css";
 import { TextNode } from "./TextNode";
 import { LinkNode } from "./LinkNode";
 import { ChecklistNode } from "./ChecklistNode";
+import { FloatingEdge } from "./FloatingEdge";
+import { FloatingConnectionLine } from "./FloatingConnectionLine";
 import { Toolbar } from "./Toolbar";
 import {
   ContextMenu,
@@ -64,6 +72,10 @@ const nodeTypes: NodeTypes = {
   checklist: ChecklistNode,
 };
 
+const edgeTypes: EdgeTypes = {
+  floating: FloatingEdge,
+};
+
 const URL_REGEX = /^https?:\/\/.+/i;
 const LOOSE_URL_REGEX = /^(https?:\/\/|www\.)\S+\.\S+/i;
 const URL_LIKE = /^(https?:\/\/|www\.)\S+|^\S+\.\S+/i;
@@ -89,7 +101,7 @@ interface CanvasInnerProps {
 }
 
 function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onViewModeChange, focusNodeId }: CanvasInnerProps) {
-  const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata } = useBoardOps();
+  const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata, edges: boardEdges, createEdge, deleteEdge } = useBoardOps();
   const { screenToFlowPosition, fitView, setViewport } = useReactFlow();
   const mousePosRef = useRef({ x: 0, y: 0 });
   const contextMenuPosRef = useRef({ x: 0, y: 0 });
@@ -104,6 +116,14 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
       if (stored) savedViewportRef.current = JSON.parse(stored);
     } catch { /* ignore */ }
   }
+
+  // Connect mode state
+  const [connectModeToggled, setConnectModeToggled] = useState(false);
+  const [connectModeHeld, setConnectModeHeld] = useState(false);
+  const isConnectMode = connectModeToggled || connectModeHeld;
+
+  // Local edge state
+  const [localEdges, setLocalEdges] = useState<Edge[]>([]);
 
   // Link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -177,6 +197,9 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     deleteNode,
     updateNode,
     updateNodePosition,
+    boardId,
+    createEdge,
+    deleteEdge,
   });
 
   // Shared helper: create a link or text node from raw text at a given position
@@ -280,17 +303,101 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
             showTitle: n.showTitle ?? (n.type === "checklist" ? true : undefined),
             collapsed: n.collapsed ?? false,
             nodeId: n._id,
-            canEdit,
+            canEdit: canEdit && !isConnectMode,
             metadata: n.metadata,
             metadataLoading: n.type === "link" && n.metadata === undefined,
             pushAction,
             deleteNodeWithUndo,
             onPreview: setPreviewNodeId,
+            isConnectMode,
           },
         };
       });
     });
-  }, [boardNodes, canEdit, pushAction, deleteNodeWithUndo, optimisticDeletes]);
+  }, [boardNodes, canEdit, isConnectMode, pushAction, deleteNodeWithUndo, optimisticDeletes]);
+
+  // Edge style constants
+  const edgeStyle = { strokeWidth: 2 };
+  const edgeMarkerStart = { type: MarkerType.ArrowClosed, width: 12, height: 12 };
+
+  // Sync boardEdges → localEdges (preserve selection state and optimistic edges)
+  useEffect(() => {
+    if (!boardEdges) return;
+    setLocalEdges((prev) => {
+      const prevMap = new Map(prev.map((e) => [e.id, e]));
+      const serverEdges: Edge[] = boardEdges.map((e) => ({
+        id: e._id,
+        source: e.source,
+        target: e.target,
+        type: "floating",
+        style: edgeStyle,
+        markerStart: edgeMarkerStart,
+        selected: prevMap.get(e._id)?.selected,
+      }));
+      // Keep optimistic edges (temporary IDs not yet on server)
+      const serverIds = new Set(boardEdges.map((e) => e._id));
+      const optimistic = prev.filter((e) => e.data?.optimistic && !serverIds.has(e.id));
+      return [...serverEdges, ...optimistic];
+    });
+  }, [boardEdges]);
+
+  // Edge handlers
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) return;
+      if (connection.source === connection.target) return;
+      // Check for duplicate locally
+      if (localEdges.some((e) => e.source === connection.source && e.target === connection.target)) return;
+      // Optimistic: add edge immediately with temp ID
+      const tempId = `temp-${crypto.randomUUID()}`;
+      setLocalEdges((prev) => [
+        ...prev,
+        {
+          id: tempId,
+          source: connection.source!,
+          target: connection.target!,
+          type: "floating",
+          style: edgeStyle,
+          markerStart: edgeMarkerStart,
+          data: { optimistic: true },
+        },
+      ]);
+      createEdge({
+        boardId,
+        source: connection.source,
+        target: connection.target,
+      }).then((edgeId) => {
+        // Replace temp edge with real ID
+        setLocalEdges((prev) => prev.map((e) => e.id === tempId ? { ...e, id: edgeId, data: undefined } : e));
+        pushAction({ type: "createEdge", edgeId, source: connection.source!, target: connection.target! });
+      }).catch(() => {
+        // Remove optimistic edge on failure
+        setLocalEdges((prev) => prev.filter((e) => e.id !== tempId));
+      });
+    },
+    [boardId, createEdge, pushAction, localEdges]
+  );
+
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      for (const change of changes) {
+        if (change.type === "remove") {
+          const edge = localEdges.find((e) => e.id === change.id);
+          if (edge) {
+            // Optimistic: remove immediately
+            setLocalEdges((prev) => prev.filter((e) => e.id !== change.id));
+            pushAction({ type: "deleteEdge", edgeId: edge.id, source: edge.source, target: edge.target });
+            deleteEdge({ edgeId: edge.id });
+          }
+        } else if (change.type === "select") {
+          setLocalEdges((prev) =>
+            prev.map((e) => e.id === change.id ? { ...e, selected: change.selected } : e)
+          );
+        }
+      }
+    },
+    [localEdges, deleteEdge, pushAction]
+  );
 
   // Zoom to specific node if focusNodeId is provided (e.g. from cmd+k search)
   const hasFocusedNode = useRef(false);
@@ -544,6 +651,58 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [canEdit, undo, redo]);
+
+  // Connect mode: hold C key
+  useEffect(() => {
+    if (!canEdit) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) return;
+      if (e.metaKey || e.ctrlKey) return;
+      if (e.key === "c" || e.key === "C") {
+        setConnectModeHeld(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "c" || e.key === "C") {
+        setConnectModeHeld(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keyup", handleKeyUp);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [canEdit]);
+
+  // Delete/Backspace on selected edges
+  useEffect(() => {
+    if (!canEdit) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        const selectedEdges = localEdges.filter((edge) => edge.selected);
+        if (selectedEdges.length > 0) {
+          for (const edge of selectedEdges) {
+            pushAction({ type: "deleteEdge", edgeId: edge.id, source: edge.source, target: edge.target });
+            deleteEdge({ edgeId: edge.id });
+          }
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [canEdit, localEdges, deleteEdge, pushAction]);
 
   // Context menu handlers
   const addTextNodeAtCursor = useCallback(() => {
@@ -841,11 +1000,16 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   const flowContent = (
     <ReactFlow
       nodes={localNodes}
-      edges={[]}
+      edges={localEdges}
       onNodesChange={onNodesChange}
+      onEdgesChange={canEdit ? onEdgesChange : undefined}
+      onConnect={canEdit ? onConnect : undefined}
       nodeTypes={nodeTypes}
-      nodesDraggable={canEdit}
-      nodesConnectable={false}
+      edgeTypes={edgeTypes}
+      connectionLineComponent={FloatingConnectionLine}
+      connectionMode={ConnectionMode.Loose}
+      nodesDraggable={canEdit && !isConnectMode}
+      nodesConnectable={canEdit && isConnectMode}
       snapToGrid={snapToGrid}
       snapGrid={[20, 20]}
       onNodeContextMenu={canEdit ? onNodeContextMenu : undefined}
@@ -873,6 +1037,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
       panOnScroll={controlsVariant === "default"}
       zoomOnScroll={controlsVariant !== "default"}
       proOptions={{ hideAttribution: true }}
+      className={isConnectMode ? "cursor-crosshair" : ""}
       style={{ backgroundColor: bgColor, overscrollBehaviorX: "none" }}
     >
       {renderBackground()}
@@ -896,6 +1061,8 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
           onRedo={redo}
           onNodeCreated={(nodeId) => { pushAction({ type: "create", nodeId }); sfx.add(); }}
           onAddLink={() => addLinkNodeAtCursor(true)}
+          connectModeActive={isConnectMode}
+          onToggleConnectMode={() => setConnectModeToggled((prev) => !prev)}
         />
       )}
     </ReactFlow>

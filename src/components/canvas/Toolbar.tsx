@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, Minus, CheckSquare, Undo2, Redo2 } from "lucide-react";
+import { Type, Link, Plus, Minus, CheckSquare, Undo2, Redo2, Spline } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -17,9 +17,11 @@ interface ToolbarProps {
   onRedo: () => void;
   onNodeCreated: (nodeId: string) => void;
   onAddLink: () => void;
+  connectModeActive?: boolean;
+  onToggleConnectMode?: () => void;
 }
 
-export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated, onAddLink }: ToolbarProps) {
+export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated, onAddLink, connectModeActive, onToggleConnectMode }: ToolbarProps) {
   const { createNode, boardId } = useBoardOps();
   const { screenToFlowPosition, fitView, zoomIn, zoomOut, zoomTo } = useReactFlow();
   const { zoom } = useViewport();
@@ -74,6 +76,18 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated, onAdd
         <Link className="h-4 w-4" />
         Link
       </Button>
+      <div className="w-px h-6 bg-border" />
+      {onToggleConnectMode && (
+        <Button
+          variant={connectModeActive ? "secondary" : "ghost"}
+          size="icon"
+          className={`h-8 w-8 ${connectModeActive ? "bg-accent text-accent-foreground" : ""}`}
+          onClick={onToggleConnectMode}
+          title="Connect mode (hold C)"
+        >
+          <Spline className="h-4 w-4" />
+        </Button>
+      )}
       <div className="w-px h-6 bg-border" />
       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => zoomOut({ duration: 200 })} title="Zoom out">
         <Minus className="h-4 w-4" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { NodeProps } from "@xyflow/react";
+import { Handle, Position, NodeProps } from "@xyflow/react";
 import { ExternalLink, Trash2, Rss } from "lucide-react";
 
 
@@ -16,6 +16,7 @@ type LinkNodeData = {
     image?: string;
   };
   deleteNodeWithUndo: (nodeId: string) => void;
+  isConnectMode?: boolean;
 };
 
 function getFaviconUrl(url: string): string {
@@ -241,7 +242,7 @@ function EmbedNode({
 }
 
 export function LinkNode({ data }: NodeProps) {
-  const { content, nodeId, canEdit, metadata, metadataLoading, deleteNodeWithUndo } =
+  const { content, nodeId, canEdit, metadata, metadataLoading, deleteNodeWithUndo, isConnectMode } =
     data as unknown as LinkNodeData;
 
   let hostname = "";
@@ -400,5 +401,11 @@ export function LinkNode({ data }: NodeProps) {
     </div>
   );
 
-  return nodeContent;
+  return (
+    <>
+      {nodeContent}
+      <Handle type="source" position={Position.Top} className={`!absolute !top-0 !left-0 !w-full !h-full !opacity-0 !rounded-none !transform-none !border-0 !z-10 ${isConnectMode ? "!cursor-crosshair" : "!pointer-events-none"}`} />
+      <Handle type="target" position={Position.Top} className={`!absolute !top-0 !left-0 !w-full !h-full !opacity-0 !rounded-none !transform-none !border-0 !z-10 ${isConnectMode ? "" : "!pointer-events-none"}`} />
+    </>
+  );
 }
