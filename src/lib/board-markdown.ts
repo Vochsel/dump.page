@@ -236,19 +236,23 @@ function buildConnectedChains(
   const adjacency = new Map<string, string[]>();
   const connectedIds = new Set<string>();
 
+  // The visual arrow (markerStart) points at the source node, meaning the
+  // user drags FROM source TO target but the arrow shows target → source.
+  // So the intended reading order follows target → source.
   for (const edge of edges) {
     if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) continue;
     connectedIds.add(edge.source);
     connectedIds.add(edge.target);
-    if (!adjacency.has(edge.source)) adjacency.set(edge.source, []);
-    adjacency.get(edge.source)!.push(edge.target);
+    if (!adjacency.has(edge.target)) adjacency.set(edge.target, []);
+    adjacency.get(edge.target)!.push(edge.source);
   }
 
-  // Find root nodes (no incoming edges) to start DFS from
+  // Roots: nodes with no incoming edges in the reversed graph
+  // (i.e. nodes that are never a "source" in the original edges)
   const hasIncoming = new Set<string>();
   for (const edge of edges) {
     if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
-      hasIncoming.add(edge.target);
+      hasIncoming.add(edge.source);
     }
   }
 

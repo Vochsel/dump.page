@@ -91,7 +91,11 @@ describe("formatBoardDataAsMarkdown", () => {
     expect(md).toContain("- [ ] Item");
   });
 
-  it("renders connected nodes in edge order", () => {
+  it("renders connected nodes in visual arrow direction (target → source)", () => {
+    // Arrow is on markerStart (points at source). User drags from C to B
+    // and B to A to create a visual chain A → B → C. The stored edges are
+    // source:C target:B and source:B target:A. Reversed adjacency: B→C, A→B.
+    // DFS from A yields: A, B, C (First, Second, Third).
     const md = formatBoardDataAsMarkdown(
       { name: "Connected" },
       [
@@ -100,8 +104,8 @@ describe("formatBoardDataAsMarkdown", () => {
         { id: "c", type: "text", content: "Third", position: { x: 0, y: 400 } },
       ],
       [
-        { source: "a", target: "b" },
-        { source: "b", target: "c" },
+        { source: "c", target: "b" },
+        { source: "b", target: "a" },
       ]
     );
     const idxFirst = md.indexOf("First");
