@@ -31,14 +31,14 @@ const dynaPuff = DynaPuff({
 });
 
 export const metadata: Metadata = {
-  title: "Dump — The context dump for humans and AI",
+  title: "Dump — The prompt dump for humans and AI",
   description:
     "Shared whiteboards of links and text, accessible to all agents and chatbots.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.dump.page"
   ),
   openGraph: {
-    title: "Dump — The context dump for humans and AI",
+    title: "Dump — The prompt dump for humans and AI",
     description:
       "Shared whiteboards of links and text, accessible to all agents and chatbots.",
     siteName: "Dump",
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Dump — The context dump for humans and AI",
+    title: "Dump — The prompt dump for humans and AI",
     description:
       "Shared whiteboards of links and text, accessible to all agents and chatbots.",
     images: ["/opengraph-image.png"],
