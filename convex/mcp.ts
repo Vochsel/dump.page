@@ -116,6 +116,14 @@ export const getBoardBySlug = query({
       .withIndex("by_boardId", (q) => q.eq("boardId", board!._id))
       .collect();
 
+    const edges = await ctx.db
+      .query("edges")
+      .withIndex("by_boardId", (q) => q.eq("boardId", board!._id))
+      .collect();
+
+    const activeNodes = nodes.filter((n) => !n.archived);
+    const activeNodeIds = new Set(activeNodes.map((n) => n._id));
+
     return {
       board: {
         id: board._id,
@@ -128,16 +136,21 @@ export const getBoardBySlug = query({
         updatedAt: board.updatedAt,
         createdAt: board.createdAt,
       },
-      nodes: nodes
-        .filter((n) => !n.archived)
-        .map((n) => ({
+      nodes: activeNodes.map((n) => ({
           id: n._id,
           type: n.type,
           content: n.content,
           title: n.title,
+          position: n.position,
           metadata: n.metadata,
           createdAt: n.createdAt,
           updatedAt: n.updatedAt,
+        })),
+      edges: edges
+        .filter((e) => activeNodeIds.has(e.source) && activeNodeIds.has(e.target))
+        .map((e) => ({
+          source: e.source as string,
+          target: e.target as string,
         })),
     };
   },

@@ -105,7 +105,7 @@ function createServer(): McpServer {
         };
       }
 
-      const markdown = formatBoardDataAsMarkdown(board.board, board.nodes);
+      const markdown = formatBoardDataAsMarkdown(board.board, board.nodes, board.edges);
 
       return {
         content: [{ type: "text" as const, text: markdown }],

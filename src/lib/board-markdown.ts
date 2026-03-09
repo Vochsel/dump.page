@@ -170,18 +170,197 @@ export async function getItemMarkdown(
   }
 }
 
+type MarkdownNode = {
+  id?: string;
+  type: string;
+  content: string;
+  title?: string;
+  position?: { x: number; y: number };
+  metadata?: { title?: string; description?: string } | null;
+  _rssAppend?: string;
+};
+
+type MarkdownEdge = {
+  source: string;
+  target: string;
+};
+
+/** Render a single node to markdown */
+function renderNode(node: MarkdownNode): string {
+  if (node.type === "text") {
+    let md = "";
+    if (node.title) md += `### ${node.title}\n\n`;
+    md += `${contentToMarkdown(node.content)}\n\n`;
+    return md;
+  }
+  if (node.type === "checklist") {
+    let md = "";
+    if (node.title) md += `### ${node.title}\n\n`;
+    try {
+      const items = JSON.parse(node.content);
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          md += `- [${item.checked ? "x" : " "}] ${item.text}\n`;
+        }
+        md += `\n`;
+      }
+    } catch {
+      md += `${node.content}\n\n`;
+    }
+    return md;
+  }
+  if (node.type === "link") {
+    const title = node.metadata?.title || node.content;
+    let md = `- [${title}](${node.content})`;
+    if (node.metadata?.description) {
+      md += ` - ${node.metadata.description}`;
+    }
+    md += `\n`;
+    if (node._rssAppend) {
+      md += `${node._rssAppend}\n`;
+    }
+    return md;
+  }
+  return `${node.content}\n\n`;
+}
+
+/**
+ * Build connected chains from edges using DFS.
+ * Returns arrays of node IDs in traversal order.
+ * Handles cycles by skipping already-visited nodes.
+ */
+function buildConnectedChains(
+  nodeIds: Set<string>,
+  edges: MarkdownEdge[]
+): { chains: string[][]; orphanIds: Set<string> } {
+  const adjacency = new Map<string, string[]>();
+  const connectedIds = new Set<string>();
+
+  for (const edge of edges) {
+    if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) continue;
+    connectedIds.add(edge.source);
+    connectedIds.add(edge.target);
+    if (!adjacency.has(edge.source)) adjacency.set(edge.source, []);
+    adjacency.get(edge.source)!.push(edge.target);
+  }
+
+  // Find root nodes (no incoming edges) to start DFS from
+  const hasIncoming = new Set<string>();
+  for (const edge of edges) {
+    if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
+      hasIncoming.add(edge.target);
+    }
+  }
+
+  const roots = [...connectedIds].filter((id) => !hasIncoming.has(id));
+  // If all nodes have incoming edges (cycle), pick any as root
+  if (roots.length === 0 && connectedIds.size > 0) {
+    roots.push([...connectedIds][0]);
+  }
+
+  const visited = new Set<string>();
+  const chains: string[][] = [];
+
+  function dfs(nodeId: string, chain: string[]) {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+    chain.push(nodeId);
+    const neighbors = adjacency.get(nodeId) || [];
+    for (const next of neighbors) {
+      dfs(next, chain);
+    }
+  }
+
+  for (const root of roots) {
+    if (visited.has(root)) continue;
+    const chain: string[] = [];
+    dfs(root, chain);
+    if (chain.length > 0) chains.push(chain);
+  }
+
+  // Pick up any connected nodes missed (part of isolated cycles not reachable from roots)
+  for (const id of connectedIds) {
+    if (visited.has(id)) continue;
+    const chain: string[] = [];
+    dfs(id, chain);
+    if (chain.length > 0) chains.push(chain);
+  }
+
+  const orphanIds = new Set([...nodeIds].filter((id) => !connectedIds.has(id)));
+  return { chains, orphanIds };
+}
+
+/**
+ * Cluster nodes by spatial proximity using single-linkage clustering.
+ * Nodes within `eps` pixels of each other (Euclidean) are grouped together.
+ */
+function clusterByProximity(
+  nodes: MarkdownNode[],
+  eps = 400
+): MarkdownNode[][] {
+  if (nodes.length === 0) return [];
+
+  // Nodes without position go into a single fallback cluster
+  const withPos = nodes.filter((n) => n.position);
+  const withoutPos = nodes.filter((n) => !n.position);
+
+  if (withPos.length === 0) return withoutPos.length > 0 ? [withoutPos] : [];
+
+  // Union-Find for clustering
+  const parent = new Map<number, number>();
+  function find(i: number): number {
+    if (parent.get(i) !== i) parent.set(i, find(parent.get(i)!));
+    return parent.get(i)!;
+  }
+  function union(a: number, b: number) {
+    parent.set(find(a), find(b));
+  }
+  for (let i = 0; i < withPos.length; i++) parent.set(i, i);
+
+  for (let i = 0; i < withPos.length; i++) {
+    for (let j = i + 1; j < withPos.length; j++) {
+      const dx = withPos[i].position!.x - withPos[j].position!.x;
+      const dy = withPos[i].position!.y - withPos[j].position!.y;
+      if (Math.sqrt(dx * dx + dy * dy) < eps) {
+        union(i, j);
+      }
+    }
+  }
+
+  const groups = new Map<number, MarkdownNode[]>();
+  for (let i = 0; i < withPos.length; i++) {
+    const root = find(i);
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root)!.push(withPos[i]);
+  }
+
+  // Sort nodes within each cluster top-to-bottom, left-to-right
+  const clusters = [...groups.values()].map((group) =>
+    group.sort((a, b) => {
+      const dy = a.position!.y - b.position!.y;
+      return Math.abs(dy) > 20 ? dy : a.position!.x - b.position!.x;
+    })
+  );
+
+  // Sort clusters by average Y position (top-to-bottom)
+  clusters.sort((a, b) => {
+    const avgYA = a.reduce((s, n) => s + n.position!.y, 0) / a.length;
+    const avgYB = b.reduce((s, n) => s + n.position!.y, 0) / b.length;
+    return avgYA - avgYB;
+  });
+
+  if (withoutPos.length > 0) clusters.push(withoutPos);
+  return clusters;
+}
+
 // Format pre-fetched board data as markdown (no auth check, caller must verify access)
 export function formatBoardDataAsMarkdown(
   board: {
     name: string;
     settings?: { contextType?: string; systemPrompt?: string } | null;
   },
-  nodes: Array<{
-    type: string;
-    content: string;
-    title?: string;
-    metadata?: { title?: string; description?: string } | null;
-  }>
+  nodes: Array<MarkdownNode>,
+  edges?: Array<MarkdownEdge>
 ): string {
   let markdown = `# ${board.name}\n\n`;
 
@@ -196,6 +375,87 @@ export function formatBoardDataAsMarkdown(
     markdown += `${board.settings.systemPrompt}\n\n`;
   }
 
+  if (nodes.length === 0) {
+    markdown += `*This board is empty.*\n`;
+    markdown += MCP_FOOTER;
+    return markdown;
+  }
+
+  // Build node lookup by ID
+  const nodeById = new Map<string, MarkdownNode>();
+  const nodeIds = new Set<string>();
+  for (const node of nodes) {
+    if (node.id) {
+      nodeById.set(node.id, node);
+      nodeIds.add(node.id);
+    }
+  }
+
+  const validEdges = (edges || []).filter(
+    (e) => nodeIds.has(e.source) && nodeIds.has(e.target)
+  );
+
+  // If no edges or no IDs, fall back to clustered/type-grouped rendering
+  if (validEdges.length === 0 || nodeIds.size === 0) {
+    // Use proximity clustering if positions available
+    const hasPositions = nodes.some((n) => n.position);
+    if (hasPositions) {
+      const clusters = clusterByProximity(nodes);
+      for (const cluster of clusters) {
+        for (const node of cluster) {
+          markdown += renderNode(node);
+        }
+      }
+    } else {
+      // Legacy: group by type
+      markdown += renderNodesByType(nodes);
+    }
+    markdown += MCP_FOOTER;
+    return markdown;
+  }
+
+  // Split into connected chains and orphans
+  const { chains, orphanIds } = buildConnectedChains(nodeIds, validEdges);
+
+  // Render connected chains, sorted by average Y of their nodes
+  const sortedChains = chains
+    .map((chain) => ({
+      chain,
+      avgY: chain.reduce((s, id) => s + (nodeById.get(id)?.position?.y ?? 0), 0) / chain.length,
+    }))
+    .sort((a, b) => a.avgY - b.avgY);
+
+  for (const { chain } of sortedChains) {
+    for (const nodeId of chain) {
+      const node = nodeById.get(nodeId);
+      if (node) markdown += renderNode(node);
+    }
+  }
+
+  // Render orphan nodes clustered by proximity
+  const orphanNodes = nodes.filter((n) => n.id && orphanIds.has(n.id));
+  if (orphanNodes.length > 0) {
+    const clusters = clusterByProximity(orphanNodes);
+    for (const cluster of clusters) {
+      for (const node of cluster) {
+        markdown += renderNode(node);
+      }
+    }
+  }
+
+  // Also render any nodes without IDs (shouldn't happen, but safety)
+  const noIdNodes = nodes.filter((n) => !n.id);
+  if (noIdNodes.length > 0) {
+    markdown += renderNodesByType(noIdNodes);
+  }
+
+  markdown += MCP_FOOTER;
+  return markdown;
+}
+
+/** Legacy type-grouped rendering for nodes without positions */
+function renderNodesByType(nodes: MarkdownNode[]): string {
+  let markdown = "";
   const textNodes = nodes.filter((n) => n.type === "text");
   const linkNodes = nodes.filter((n) => n.type === "link");
   const checklistNodes = nodes.filter((n) => n.type === "checklist");
@@ -203,50 +463,23 @@ export function formatBoardDataAsMarkdown(
   if (textNodes.length > 0) {
     markdown += `## Notes\n\n`;
     for (const node of textNodes) {
-      if (node.title) {
-        markdown += `### ${node.title}\n\n`;
-      }
-      markdown += `${contentToMarkdown(node.content)}\n\n`;
+      markdown += renderNode(node);
     }
   }
 
   if (checklistNodes.length > 0) {
     markdown += `## Checklists\n\n`;
     for (const node of checklistNodes) {
-      if (node.title) {
-        markdown += `### ${node.title}\n\n`;
-      }
-      try {
-        const items = JSON.parse(node.content);
-        if (Array.isArray(items)) {
-          for (const item of items) {
-            markdown += `- [${item.checked ? "x" : " "}] ${item.text}\n`;
-          }
-          markdown += `\n`;
-        }
-      } catch {
-        markdown += `${node.content}\n\n`;
-      }
+      markdown += renderNode(node);
     }
   }
 
   if (linkNodes.length > 0) {
     markdown += `## Links\n\n`;
     for (const node of linkNodes) {
-      const title = node.metadata?.title || node.content;
-      markdown += `- [${title}](${node.content})`;
-      if (node.metadata?.description) {
-        markdown += ` - ${node.metadata.description}`;
-      }
-      markdown += `\n`;
+      markdown += renderNode(node);
     }
   }
-
-  if (nodes.length === 0) {
-    markdown += `*This board is empty.*\n`;
-  }
-
-  markdown += MCP_FOOTER;
 
   return markdown;
 }
@@ -268,60 +501,12 @@ export async function getBoardMarkdown(
       };
     }
 
-    const { board, nodes: allNodes } = result;
+    const { board, nodes: allNodes, edges: rawEdges } = result;
     const nodes = allNodes.filter((n: { archived?: boolean }) => !n.archived);
 
-    let markdown = `# ${board.name}\n\n`;
-
-    // Context type preamble
-    const contextType = board.settings?.contextType;
-    if (contextType === "skill") {
-      markdown += `> **Context Type: Skill** — This board provides contextual information to be used as a skill. Refer to it frequently for updated context.\n\n`;
-    } else if (contextType === "agent") {
-      markdown += `> **Context Type: Agent** — This board defines an agent persona. The goals, personality, and instructions below should take over your current context.\n\n`;
-    }
-
-    // Custom system prompt
-    if (board.settings?.systemPrompt) {
-      markdown += `${board.settings.systemPrompt}\n\n`;
-    }
-
-    const textNodes = nodes.filter((n) => n.type === "text");
+    // Enrich link nodes with RSS feed items before rendering
     const linkNodes = nodes.filter((n) => n.type === "link");
-    const checklistNodes = nodes.filter((n) => n.type === "checklist");
-
-    if (textNodes.length > 0) {
-      markdown += `## Notes\n\n`;
-      for (const node of textNodes) {
-        if (node.title) {
-          markdown += `### ${node.title}\n\n`;
-        }
-        markdown += `${contentToMarkdown(node.content)}\n\n`;
-      }
-    }
-
-    if (checklistNodes.length > 0) {
-      markdown += `## Checklists\n\n`;
-      for (const node of checklistNodes) {
-        if (node.title) {
-          markdown += `### ${node.title}\n\n`;
-        }
-        try {
-          const items = JSON.parse(node.content);
-          if (Array.isArray(items)) {
-            for (const item of items) {
-              markdown += `- [${item.checked ? "x" : " "}] ${item.text}\n`;
-            }
-            markdown += `\n`;
-          }
-        } catch {
-          markdown += `${node.content}\n\n`;
-        }
-      }
-    }
-
     if (linkNodes.length > 0) {
-      // Fetch RSS feeds in parallel for link nodes that look like feeds
       const rssResults = await Promise.all(
         linkNodes.map((node) =>
           looksLikeRssFeed(node.content)
@@ -329,31 +514,33 @@ export async function getBoardMarkdown(
             : Promise.resolve([] as RssItem[])
         )
       );
-
-      markdown += `## Links\n\n`;
       for (let i = 0; i < linkNodes.length; i++) {
-        const node = linkNodes[i];
         const rssItems = rssResults[i];
-        const title = node.metadata?.title || node.content;
-        markdown += `- [${title}](${node.content})`;
-        if (node.metadata?.description) {
-          markdown += ` - ${node.metadata.description}`;
-        }
-        markdown += `\n`;
-
         if (rssItems.length > 0) {
-          for (const item of rssItems) {
-            markdown += `  - [${item.title}](${item.link})\n`;
-          }
+          // Append RSS items as sub-content so renderNode picks them up
+          const rssText = rssItems.map((item) => `  - [${item.title}](${item.link})`).join("\n");
+          (linkNodes[i] as { _rssAppend?: string })._rssAppend = rssText;
         }
       }
     }
 
-    if (nodes.length === 0) {
-      markdown += `*This board is empty.*\n`;
-    }
+    // Map to MarkdownNode with IDs and positions
+    const markdownNodes: MarkdownNode[] = nodes.map((n) => ({
+      id: n._id,
+      type: n.type,
+      content: n.content,
+      title: n.title,
+      position: n.position,
+      metadata: n.metadata,
+      _rssAppend: (n as { _rssAppend?: string })._rssAppend,
+    }));
 
-    markdown += MCP_FOOTER;
+    const edges: MarkdownEdge[] = (rawEdges || []).map((e) => ({
+      source: e.source as string,
+      target: e.target as string,
+    }));
+
+    const markdown = formatBoardDataAsMarkdown(board, markdownNodes, edges);
 
     return { markdown, status: 200 };
   } catch {

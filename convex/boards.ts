@@ -619,7 +619,12 @@ export const getBoardForMarkdown = query({
       .withIndex("by_boardId", (q) => q.eq("boardId", board!._id))
       .collect();
 
-    return { board, nodes };
+    const edges = await ctx.db
+      .query("edges")
+      .withIndex("by_boardId", (q) => q.eq("boardId", board!._id))
+      .collect();
+
+    return { board, nodes, edges };
   },
 });
 
