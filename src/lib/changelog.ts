@@ -11,6 +11,29 @@ export type ChangelogVersion = {
 
 export const changelog: ChangelogVersion[] = [
   {
+    version: "1.7.0",
+    date: "2026-03-09",
+    entries: [
+      { type: "feature", description: "MCP get_item tool — retrieve a specific item from a board by its ID via MCP" },
+      { type: "feature", description: "MCP toggle_checklist_item tool — check or uncheck a specific checklist item via MCP" },
+      { type: "feature", description: "Shadcn checkbox UI — checklist checkboxes now use a polished shadcn component with smooth check animation" },
+      { type: "feature", description: "Hyperlinks in notes — tiptap editor now supports clickable, underlined links in both edit and preview modes" },
+      { type: "feature", description: "GFM table support — paste or create tables in sticky notes with proper border styling" },
+      { type: "feature", description: "Linkified checklist URLs — URLs in checklist items are rendered as clickable links in read-only mode" },
+      { type: "feature", description: "Copy with title — copying note or checklist content now includes the title as a # markdown heading" },
+      { type: "feature", description: "Cmd+K zoom to item — selecting an item from the command palette now zooms and highlights it on the board" },
+      { type: "feature", description: "Smart MCP detection — private board chat button skips the warning dialog when the user has MCP connected" },
+      { type: "feature", description: "Checklist item undo — deleting a checklist item is now part of the undo/redo stack (Cmd+Z)" },
+      { type: "feature", description: "Optimistic undo/redo — edit undos are now instant, no longer waiting for server roundtrip" },
+      { type: "feature", description: "Changelog button — version number on boards is now a clickable pill button linking to /changelog" },
+      { type: "fix", description: "Double paste fix — pasting text while editing a note no longer also creates a new node on the canvas" },
+      { type: "fix", description: "Responsive bottom controls — mute, theme, and preferences buttons stack vertically on narrow screens" },
+      { type: "fix", description: "Template chooser — no template is pre-selected when creating a new board" },
+      { type: "fix", description: "Unified share URLs — all copy-link actions now use a consistent URL format" },
+      { type: "fix", description: "Auth redirects — logged-in users redirect from homepage to dashboard, and vice versa" },
+    ],
+  },
+  {
     version: "1.6.0",
     date: "2026-03-07",
     entries: [

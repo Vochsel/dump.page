@@ -11,7 +11,10 @@ export function Footer() {
       <a href="https://github.com/Vochsel/dump.page" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-600 dark:hover:text-stone-300 transition-colors">
         GitHub
       </a>
-      {" "}&middot; v{BUILD_VERSION}
+      {" "}&middot;{" "}
+      <a href="/changelog" className="underline hover:text-stone-600 dark:hover:text-stone-300 transition-colors">
+        v{BUILD_VERSION}
+      </a>
     </footer>
   );
 }

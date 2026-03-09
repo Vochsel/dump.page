@@ -11,7 +11,7 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { useAuth } from "@/context/auth-context";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown, Sun, Moon, Volume2, VolumeOff, Pencil } from "lucide-react";
+import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown, Sun, Moon, Volume2, VolumeOff, Pencil, Newspaper } from "lucide-react";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { ChatButton } from "@/components/board/ChatButton";
 import { Button } from "@/components/ui/button";
@@ -371,9 +371,14 @@ export default function BoardPage({
           )}
         </div>
       )}
-      <div className="absolute bottom-2 right-3 z-10 text-[10px] text-gray-400/60 dark:text-gray-500/60 font-mono select-none pointer-events-none">
+      <Link
+        href="/changelog"
+        className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xs font-mono"
+        title="Changelog"
+      >
+        <Newspaper className="h-3.5 w-3.5" />
         v{BUILD_VERSION}
-      </div>
+      </Link>
     </div>
   );
 }
