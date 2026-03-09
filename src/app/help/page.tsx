@@ -178,6 +178,9 @@ export default function HelpPage() {
               { keys: "Cmd/Ctrl + Z", desc: "Undo" },
               { keys: "Cmd/Ctrl + Shift + Z", desc: "Redo" },
               { keys: "F", desc: "Fit view to selected nodes (or all nodes)" },
+              { keys: "Hold C", desc: "Enter connect mode — drag between nodes to create edges" },
+              { keys: "Hold K", desc: "Activate knife tool — move across edges to cut them" },
+              { keys: "Delete / Backspace", desc: "Delete selected edges" },
               { keys: "Right-click", desc: "Context menu to add items or manage nodes" },
             ].map((shortcut) => (
               <div key={shortcut.keys} className="flex items-center justify-between px-4 py-2.5">
