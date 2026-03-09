@@ -287,10 +287,6 @@ export const createNote = mutation({
       throw new Error("Write scope required");
     }
 
-    // Enforce MCP_WRITE_ENABLED env var
-    if (process.env.MCP_WRITE_ENABLED !== "true") {
-      throw new Error("MCP write operations are disabled");
-    }
 
     const board = await ctx.db
       .query("boards")
@@ -367,10 +363,6 @@ export const addItems = mutation({
       throw new Error("Write scope required");
     }
 
-    // Enforce MCP_WRITE_ENABLED env var
-    if (process.env.MCP_WRITE_ENABLED !== "true") {
-      throw new Error("MCP write operations are disabled");
-    }
 
     const board = await ctx.db
       .query("boards")
@@ -445,10 +437,6 @@ export const updateNote = mutation({
       throw new Error("Write scope required");
     }
 
-    // Enforce MCP_WRITE_ENABLED env var
-    if (process.env.MCP_WRITE_ENABLED !== "true") {
-      throw new Error("MCP write operations are disabled");
-    }
 
     const node = await ctx.db.get(args.nodeId);
     if (!node) throw new Error("Note not found");

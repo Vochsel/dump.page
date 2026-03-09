@@ -11,7 +11,7 @@ const convex = new ConvexHttpClient(
   process.env.NEXT_PUBLIC_CONVEX_URL as string
 );
 
-const MCP_WRITE_ENABLED = process.env.MCP_WRITE_ENABLED === "true";
+const MCP_WRITE_ENABLED = true;
 
 function getAccessToken(authInfo: { extra?: Record<string, unknown> } | undefined): string | undefined {
   return authInfo?.extra?.accessToken as string | undefined;

@@ -8,14 +8,25 @@ function getAdminApp(): App {
     return getApps()[0];
   }
 
+  const projectId =
+    process.env.FIREBASE_PROJECT_ID ||
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
   const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (serviceAccount) {
-    app = initializeApp({
-      credential: cert(JSON.parse(serviceAccount)),
-    });
+    try {
+      const parsed = JSON.parse(serviceAccount);
+      app = initializeApp({
+        credential: cert(parsed),
+        projectId: projectId || parsed.project_id,
+      });
+    } catch {
+      // FIREBASE_SERVICE_ACCOUNT is not valid JSON — fall through
+      app = initializeApp({ projectId });
+    }
   } else {
     // Falls back to GOOGLE_APPLICATION_CREDENTIALS env var
-    app = initializeApp();
+    app = initializeApp({ projectId });
   }
 
   return app;
