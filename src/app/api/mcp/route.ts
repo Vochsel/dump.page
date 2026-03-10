@@ -311,14 +311,18 @@ function createServer(): McpServer {
         }),
       },
       async ({ board_slug, content, title, type }, { authInfo }) => {
+        console.log(`[MCP Tool] create_note called: board_slug=${board_slug}, type=${type}, title=${title}, contentLen=${content?.length}`);
+        console.log(`[MCP Tool] create_note authInfo: scopes=${authInfo?.scopes}, extra keys=${authInfo?.extra ? Object.keys(authInfo.extra).join(",") : "none"}`);
         const accessToken = getAccessToken(authInfo);
         if (!accessToken) {
+          console.warn("[MCP Tool] create_note: no access token in authInfo");
           return {
             content: [{ type: "text" as const, text: "Error: Not authenticated." }],
           };
         }
 
         try {
+          console.log(`[MCP Tool] create_note: calling convex mutation...`);
           const result = await convex.mutation(api.mcp.createNote, {
             accessToken,
             boardSlug: board_slug,
@@ -326,6 +330,7 @@ function createServer(): McpServer {
             title,
             type: type as "text" | "link" | "checklist" | undefined,
           });
+          console.log(`[MCP Tool] create_note: success, id=${result.id}`);
 
           return {
             content: [
@@ -336,6 +341,7 @@ function createServer(): McpServer {
             ],
           };
         } catch (e) {
+          console.error(`[MCP Tool] create_note error:`, e);
           return {
             content: [
               {
@@ -375,8 +381,11 @@ function createServer(): McpServer {
         }),
       },
       async ({ board_slug, items }, { authInfo }) => {
+        console.log(`[MCP Tool] add_items called: board_slug=${board_slug}, itemCount=${items?.length}`);
+        console.log(`[MCP Tool] add_items authInfo: scopes=${authInfo?.scopes}, extra keys=${authInfo?.extra ? Object.keys(authInfo.extra).join(",") : "none"}`);
         const accessToken = getAccessToken(authInfo);
         if (!accessToken) {
+          console.warn("[MCP Tool] add_items: no access token in authInfo");
           return {
             content: [
               { type: "text" as const, text: "Error: Not authenticated." },
@@ -385,11 +394,13 @@ function createServer(): McpServer {
         }
 
         try {
+          console.log(`[MCP Tool] add_items: calling convex mutation with ${items.length} items...`);
           const result = await convex.mutation(api.mcp.addItems, {
             accessToken,
             boardSlug: board_slug,
             items,
           });
+          console.log(`[MCP Tool] add_items: success, count=${result.count}, ids=${result.ids.join(",")}`);
 
           return {
             content: [
@@ -400,6 +411,7 @@ function createServer(): McpServer {
             ],
           };
         } catch (e) {
+          console.error(`[MCP Tool] add_items error:`, e);
           return {
             content: [
               {
@@ -426,20 +438,25 @@ function createServer(): McpServer {
         }),
       },
       async ({ note_id, content, title }, { authInfo }) => {
+        console.log(`[MCP Tool] update_note called: note_id=${note_id}, hasContent=${content !== undefined}, hasTitle=${title !== undefined}`);
+        console.log(`[MCP Tool] update_note authInfo: scopes=${authInfo?.scopes}, extra keys=${authInfo?.extra ? Object.keys(authInfo.extra).join(",") : "none"}`);
         const accessToken = getAccessToken(authInfo);
         if (!accessToken) {
+          console.warn("[MCP Tool] update_note: no access token in authInfo");
           return {
             content: [{ type: "text" as const, text: "Error: Not authenticated." }],
           };
         }
 
         try {
+          console.log(`[MCP Tool] update_note: calling convex mutation...`);
           await convex.mutation(api.mcp.updateNote, {
             accessToken,
             nodeId: note_id as Id<"nodes">,
             content,
             title,
           });
+          console.log(`[MCP Tool] update_note: success`);
 
           return {
             content: [
@@ -447,6 +464,7 @@ function createServer(): McpServer {
             ],
           };
         } catch (e) {
+          console.error(`[MCP Tool] update_note error:`, e);
           return {
             content: [
               {
@@ -475,20 +493,25 @@ function createServer(): McpServer {
         }),
       },
       async ({ board_slug, item_id, checklist_index }, { authInfo }) => {
+        console.log(`[MCP Tool] toggle_checklist_item called: board_slug=${board_slug}, item_id=${item_id}, index=${checklist_index}`);
+        console.log(`[MCP Tool] toggle_checklist_item authInfo: scopes=${authInfo?.scopes}, extra keys=${authInfo?.extra ? Object.keys(authInfo.extra).join(",") : "none"}`);
         const accessToken = getAccessToken(authInfo);
         if (!accessToken) {
+          console.warn("[MCP Tool] toggle_checklist_item: no access token in authInfo");
           return {
             content: [{ type: "text" as const, text: "Error: Not authenticated." }],
           };
         }
 
         try {
+          console.log(`[MCP Tool] toggle_checklist_item: calling convex mutation...`);
           const result = await convex.mutation(api.mcp.toggleChecklistItem, {
             accessToken,
             boardSlug: board_slug,
             itemId: item_id,
             checklistIndex: checklist_index,
           });
+          console.log(`[MCP Tool] toggle_checklist_item: success, checked=${result.checked}`);
 
           const statusEmoji = result.checked ? "[x]" : "[ ]";
           const toggledItem = result.items.find(
@@ -505,6 +528,7 @@ function createServer(): McpServer {
             content: [{ type: "text" as const, text: response }],
           };
         } catch (e) {
+          console.error(`[MCP Tool] toggle_checklist_item error:`, e);
           return {
             content: [
               {
@@ -571,20 +595,25 @@ function authErrorResponse(message: string) {
 }
 
 async function handler(req: Request): Promise<Response> {
-  console.log(`[MCP] ${req.method} ${new URL(req.url).pathname}`);
+  const url = new URL(req.url);
+  console.log(`[MCP] ${req.method} ${url.pathname}`);
 
   // Validate auth
   const tokenInfo = await validateAuth(req);
   if (!tokenInfo) {
+    console.warn("[MCP] Auth failed: no valid token");
     return authErrorResponse("No authorization provided");
   }
+
+  const scopes = tokenInfo.scope.split(/[\s,]+/);
+  console.log(`[MCP] Auth OK: user=${tokenInfo.user.email}, scopes=[${scopes.join(",")}], userId=${tokenInfo.userId}`);
 
   const t = await createTransport();
 
   const authInfo = {
     token: "",
     clientId: "dump-mcp",
-    scopes: tokenInfo.scope.split(/[\s,]+/),
+    scopes,
     extra: {
       accessToken: tokenInfo.accessToken,
       userId: tokenInfo.userId,
