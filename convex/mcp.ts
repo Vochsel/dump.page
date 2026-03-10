@@ -323,7 +323,10 @@ export const createNote = mutation({
       .collect();
     const activeNodes = nodes.filter((n) => !n.archived);
     const maxY = activeNodes.reduce(
-      (max, n) => Math.max(max, n.position.y + n.dimensions.height),
+      (max, n) => {
+        const height = n.dimensions?.height ?? 120;
+        return Math.max(max, (n.position?.y ?? 0) + height);
+      },
       0
     );
 
@@ -397,7 +400,10 @@ export const addItems = mutation({
       .collect();
     const activeNodes = nodes.filter((n) => !n.archived);
     let maxY = activeNodes.reduce(
-      (max, n) => Math.max(max, n.position.y + n.dimensions.height),
+      (max, n) => {
+        const height = n.dimensions?.height ?? 120;
+        return Math.max(max, (n.position?.y ?? 0) + height);
+      },
       0
     );
 

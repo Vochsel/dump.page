@@ -571,36 +571,48 @@ function authErrorResponse(message: string) {
 }
 
 async function handler(req: Request): Promise<Response> {
-  console.log(`[MCP] ${req.method} ${new URL(req.url).pathname}`);
-
-  // Validate auth
-  const tokenInfo = await validateAuth(req);
-  if (!tokenInfo) {
-    return authErrorResponse("No authorization provided");
-  }
-
-  const t = await createTransport();
-
-  const authInfo = {
-    token: "",
-    clientId: "dump-mcp",
-    scopes: tokenInfo.scope.split(/[\s,]+/),
-    extra: {
-      accessToken: tokenInfo.accessToken,
-      userId: tokenInfo.userId,
-      userName: tokenInfo.user.name,
-      userEmail: tokenInfo.user.email,
-    },
-  };
-
   try {
+    console.log(`[MCP] ${req.method} ${new URL(req.url).pathname}`);
+
+    // Validate auth
+    const tokenInfo = await validateAuth(req);
+    if (!tokenInfo) {
+      return authErrorResponse("No authorization provided");
+    }
+
+    const t = await createTransport();
+
+    const authInfo = {
+      token: "",
+      clientId: "dump-mcp",
+      scopes: tokenInfo.scope.split(/[\s,]+/),
+      extra: {
+        accessToken: tokenInfo.accessToken,
+        userId: tokenInfo.userId,
+        userName: tokenInfo.user.name,
+        userEmail: tokenInfo.user.email,
+      },
+    };
+
     const response = await t.handleRequest(req, { authInfo });
+    if (!response) {
+      console.error("[MCP] handleRequest returned no response");
+      return new Response(
+        JSON.stringify({ jsonrpc: "2.0", error: { code: -32603, message: "Internal error" }, id: null }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
     console.log(`[MCP] Response: ${response.status}`);
     return response;
   } catch (err) {
-    console.error("[MCP] handleRequest error:", err);
-    return new Response("Internal server error", { status: 500 });
+    console.error("[MCP] handler error:", err);
+    return new Response(
+      JSON.stringify({ jsonrpc: "2.0", error: { code: -32603, message: "Internal error" }, id: null }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }
 
 export { handler as GET, handler as POST, handler as DELETE };
+
+export const maxDuration = 60;
