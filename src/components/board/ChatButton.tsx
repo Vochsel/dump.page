@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
@@ -18,37 +18,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ChevronDown, Copy, Link2, AlertTriangle } from "lucide-react";
+import { ChevronDown, Copy, Link2, AlertTriangle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { getBoardUrl } from "@/lib/board-url";
+import { CHAT_PROVIDERS, type ChatProviderId, CHAT_PROVIDER_STORAGE_KEY, PRO_MODE_STORAGE_KEY } from "@/lib/chat-providers";
 
-const PROVIDERS = [
-  {
-    id: "claude",
-    name: "Claude",
-    favicon: "https://claude.ai/favicon.ico",
-    buildUrl: (prompt: string) =>
-      `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
-  },
-  {
-    id: "chatgpt",
-    name: "ChatGPT",
-    favicon: "https://chatgpt.com/favicon.ico",
-    buildUrl: (prompt: string) =>
-      `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`,
-  },
-  {
-    id: "grok",
-    name: "Grok",
-    favicon: "https://grok.com/images/favicon.svg",
-    buildUrl: (prompt: string) =>
-      `https://grok.com/?q=${encodeURIComponent(prompt)}`,
-  },
-] as const;
-
-type ProviderId = (typeof PROVIDERS)[number]["id"];
-
-const STORAGE_KEY = "dump-chat-provider";
 const SCRAPE_WARNED_KEY = "dump-scrape-warned";
 
 interface ChatButtonProps {
@@ -59,39 +33,67 @@ interface ChatButtonProps {
 }
 
 export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButtonProps) {
-  const [provider, setProvider] = useState<ProviderId>("claude");
+  const [provider, setProvider] = useState<ChatProviderId>("claude");
   const [showPrivateDialog, setShowPrivateDialog] = useState(false);
   const [showScrapeWarning, setShowScrapeWarning] = useState(false);
-  const [pendingProvider, setPendingProvider] = useState<ProviderId | null>(null);
+  const [pendingProvider, setPendingProvider] = useState<ChatProviderId | null>(null);
   const [copying, setCopying] = useState(false);
   const updateBoard = useMutation(api.boards.updateBoard);
   const hasMcp = useQuery(api.mcpAuth.hasActiveMcpToken);
 
+  // Pro mode prompt dialog
+  const [showPromptDialog, setShowPromptDialog] = useState(false);
+  const [promptBaseValue, setPromptBaseValue] = useState("");
+  const [promptUserValue, setPromptUserValue] = useState("");
+  const [promptProvider, setPromptProvider] = useState<ChatProviderId>("claude");
+  const promptRef = useRef<HTMLTextAreaElement>(null);
+
   const boardUrl = getBoardUrl(slug, { visibility, shareToken });
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) as ProviderId | null;
-    if (saved && PROVIDERS.some((p) => p.id === saved)) {
+    const saved = localStorage.getItem(CHAT_PROVIDER_STORAGE_KEY) as ChatProviderId | null;
+    if (saved && CHAT_PROVIDERS.some((p) => p.id === saved)) {
       setProvider(saved);
     }
   }, []);
 
-  const selectProvider = useCallback((id: ProviderId) => {
+  const selectProvider = useCallback((id: ChatProviderId) => {
     setProvider(id);
-    localStorage.setItem(STORAGE_KEY, id);
+    localStorage.setItem(CHAT_PROVIDER_STORAGE_KEY, id);
   }, []);
 
   const openProviderWithPrompt = useCallback(
-    (prompt: string, id?: ProviderId) => {
+    (prompt: string, id?: ChatProviderId) => {
       const chosen = id ?? provider;
-      const p = PROVIDERS.find((p) => p.id === chosen)!;
+      const p = CHAT_PROVIDERS.find((p) => p.id === chosen)!;
       window.open(p.buildUrl(prompt), "_blank");
     },
     [provider]
   );
 
+  const maybeShowPromptDialog = useCallback(
+    (prompt: string, id?: ChatProviderId) => {
+      const proMode = localStorage.getItem(PRO_MODE_STORAGE_KEY) === "true";
+      if (proMode) {
+        setPromptBaseValue(prompt);
+        setPromptUserValue("");
+        setPromptProvider(id ?? provider);
+        setShowPromptDialog(true);
+        return;
+      }
+      openProviderWithPrompt(prompt, id);
+    },
+    [provider, openProviderWithPrompt]
+  );
+
+  const handlePromptSubmit = useCallback(() => {
+    const fullPrompt = promptBaseValue + promptUserValue;
+    openProviderWithPrompt(fullPrompt, promptProvider);
+    setShowPromptDialog(false);
+  }, [promptBaseValue, promptUserValue, promptProvider, openProviderWithPrompt]);
+
   const proceedToChat = useCallback(
-    (chosen: ProviderId) => {
+    (chosen: ChatProviderId) => {
       if (visibility === "private" && !hasMcp) {
         setPendingProvider(chosen);
         setShowPrivateDialog(true);
@@ -99,13 +101,13 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
       }
       const llmsUrl = boardUrl.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
       const prompt = `scrape ${llmsUrl} as context to answer:\n`;
-      openProviderWithPrompt(prompt, chosen);
+      maybeShowPromptDialog(prompt, chosen);
     },
-    [visibility, boardUrl, openProviderWithPrompt, hasMcp]
+    [visibility, boardUrl, maybeShowPromptDialog, hasMcp]
   );
 
   const openChat = useCallback(
-    (id?: ProviderId) => {
+    (id?: ChatProviderId) => {
       const chosen = id ?? provider;
       if (!localStorage.getItem(SCRAPE_WARNED_KEY)) {
         setPendingProvider(chosen);
@@ -133,7 +135,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
       const md = await res.text();
       const chosen = pendingProvider ?? provider;
       const prompt = `Use this board for context:\n\n${md}\n`;
-      openProviderWithPrompt(prompt, chosen);
+      maybeShowPromptDialog(prompt, chosen);
       setShowPrivateDialog(false);
       toast.success("Board context included in prompt");
     } catch {
@@ -141,7 +143,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
     } finally {
       setCopying(false);
     }
-  }, [slug, pendingProvider, provider, openProviderWithPrompt]);
+  }, [slug, pendingProvider, provider, maybeShowPromptDialog]);
 
   const handleShareAndOpen = useCallback(async () => {
     try {
@@ -151,16 +153,17 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
       const newBoardUrl = getBoardUrl(slug, { visibility: "shared", shareToken: token });
       const llmsUrl = newBoardUrl.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
       const prompt = `scrape ${llmsUrl} as context to answer:\n`;
-      openProviderWithPrompt(prompt, chosen);
+      maybeShowPromptDialog(prompt, chosen);
       setShowPrivateDialog(false);
       toast.success("Board shared with magic link");
     } catch {
       toast.error("Failed to share board");
     }
-  }, [boardId, updateBoard, pendingProvider, provider, slug, openProviderWithPrompt]);
+  }, [boardId, updateBoard, pendingProvider, provider, slug, maybeShowPromptDialog]);
 
-  const current = PROVIDERS.find((p) => p.id === provider)!;
-  const chosenProvider = PROVIDERS.find((p) => p.id === (pendingProvider ?? provider))!;
+  const current = CHAT_PROVIDERS.find((p) => p.id === provider)!;
+  const chosenProvider = CHAT_PROVIDERS.find((p) => p.id === (pendingProvider ?? provider))!;
+  const promptProviderObj = CHAT_PROVIDERS.find((p) => p.id === promptProvider)!;
 
   return (
     <>
@@ -186,7 +189,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {PROVIDERS.map((p) => (
+            {CHAT_PROVIDERS.map((p) => (
               <DropdownMenuItem
                 key={p.id}
                 onClick={() => {
@@ -207,6 +210,40 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Pro mode: prompt dialog */}
+      <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <img src={promptProviderObj.favicon} alt={promptProviderObj.name} className="h-4 w-4" />
+              Send to {promptProviderObj.name}
+            </DialogTitle>
+          </DialogHeader>
+          <textarea
+            ref={promptRef}
+            value={promptUserValue}
+            onChange={(e) => setPromptUserValue(e.target.value)}
+            className="w-full min-h-[100px] rounded-md border bg-transparent px-3 py-2 text-sm resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="e.g. Summarize the key takeaways from this board"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                handlePromptSubmit();
+              }
+            }}
+            autoFocus
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {navigator.platform?.includes("Mac") ? "Cmd" : "Ctrl"}+Enter to send
+            </span>
+            <Button size="sm" onClick={handlePromptSubmit} className="gap-1.5">
+              <Send className="h-3.5 w-3.5" />
+              Send
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showScrapeWarning} onOpenChange={setShowScrapeWarning}>
         <DialogContent className="sm:max-w-md">

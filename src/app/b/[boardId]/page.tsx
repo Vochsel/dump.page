@@ -27,6 +27,7 @@ import { BUILD_VERSION } from "@/lib/constants";
 import { ListView } from "@/components/board/ListView";
 import { DocumentView } from "@/components/board/DocumentView";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { PRO_MODE_STORAGE_KEY } from "@/lib/chat-providers";
 import { sfx } from "@/lib/sfx";
 import {
   Popover,
@@ -112,6 +113,7 @@ export default function BoardPage({
   const { resolved: theme, setMode: setThemeMode } = useTheme();
 
   const [viewMode, setViewMode] = useLocalStorage<"board" | "list" | "document">("dump-view-mode", "board");
+  const [proMode] = useLocalStorage(PRO_MODE_STORAGE_KEY, false);
   const [isMuted, setIsMuted] = useState(() => sfx.isMuted());
   const [docEditMode, setDocEditMode] = useState(false);
 
@@ -303,8 +305,8 @@ export default function BoardPage({
           </div>
         </div>
       </header>
-      {/* View switcher for non-board views */}
-      {viewMode !== "board" && (
+      {/* View switcher for non-board views (pro mode) */}
+      {proMode && viewMode !== "board" && (
         <div className="absolute bottom-16 md:bottom-4 left-4 z-10 flex flex-col md:flex-row items-start md:items-center gap-1.5">
           <button
             onClick={() => {

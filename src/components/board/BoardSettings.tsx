@@ -7,6 +7,8 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { formatBoardDataAsMarkdown } from "@/lib/board-markdown";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { PRO_MODE_STORAGE_KEY } from "@/lib/chat-providers";
 import {
   Popover,
   PopoverContent,
@@ -91,6 +93,7 @@ interface BoardShareProps {
 export function BoardShare({ board, isOwner, isMember }: BoardShareProps) {
   const [copied, setCopied] = useState(false);
   const [copiedRss, setCopiedRss] = useState(false);
+  const [proMode] = useLocalStorage(PRO_MODE_STORAGE_KEY, false);
   const [mdOpen, setMdOpen] = useState(false);
   const [copiedMd, setCopiedMd] = useState(false);
   const [memberEmail, setMemberEmail] = useState("");
@@ -233,7 +236,7 @@ export function BoardShare({ board, isOwner, isMember }: BoardShareProps) {
             </div>
           )}
 
-          {rssUrl && (
+          {proMode && rssUrl && (
             <div>
               <label className="text-sm font-medium mb-2 block">
                 RSS Feed
@@ -405,6 +408,7 @@ export function BoardSettingsPopover({
   const { resolved: theme } = useTheme();
   const [promptOpen, setPromptOpen] = useState(false);
   const [promptValue, setPromptValue] = useState(settings.systemPrompt ?? "");
+  const [proMode] = useLocalStorage(PRO_MODE_STORAGE_KEY, false);
 
   if (!canEdit) return null;
 
@@ -426,55 +430,59 @@ export function BoardSettingsPopover({
         </PopoverTrigger>
         <PopoverContent className="w-72" align="end">
           <div className="space-y-4">
-            {/* Context type */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Context Type
-                </label>
-                <Link href="/help/context-type" target="_blank">
-                  <HelpCircle className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground transition-colors" />
-                </Link>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {CONTEXT_TYPES.map((ct) => (
-                  <button
-                    key={ct.value}
-                    onClick={() => update({ contextType: ct.value })}
-                    title={ct.description}
-                    className={`text-xs py-1.5 px-2 rounded-md border transition-colors flex items-center gap-1 justify-center ${
-                      currentContextType === ct.value
-                        ? "border-primary bg-primary/10 font-medium"
-                        : "border-border hover:bg-muted"
-                    }`}
+            {proMode && (
+              <>
+                {/* Context type */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Context Type
+                    </label>
+                    <Link href="/help/context-type" target="_blank">
+                      <HelpCircle className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground transition-colors" />
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {CONTEXT_TYPES.map((ct) => (
+                      <button
+                        key={ct.value}
+                        onClick={() => update({ contextType: ct.value })}
+                        title={ct.description}
+                        className={`text-xs py-1.5 px-2 rounded-md border transition-colors flex items-center gap-1 justify-center ${
+                          currentContextType === ct.value
+                            ? "border-primary bg-primary/10 font-medium"
+                            : "border-border hover:bg-muted"
+                        }`}
+                      >
+                        <ct.icon className="h-3 w-3" />
+                        {ct.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* System prompt */}
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
+                    System Prompt
+                  </label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs gap-1.5"
+                    onClick={() => {
+                      setPromptValue(settings.systemPrompt ?? "");
+                      setPromptOpen(true);
+                    }}
                   >
-                    <ct.icon className="h-3 w-3" />
-                    {ct.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                    <FileText className="h-3 w-3" />
+                    {settings.systemPrompt ? "Edit prompt" : "Add prompt"}
+                  </Button>
+                </div>
 
-            {/* System prompt */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block uppercase tracking-wide">
-                System Prompt
-              </label>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-xs gap-1.5"
-                onClick={() => {
-                  setPromptValue(settings.systemPrompt ?? "");
-                  setPromptOpen(true);
-                }}
-              >
-                <FileText className="h-3 w-3" />
-                {settings.systemPrompt ? "Edit prompt" : "Add prompt"}
-              </Button>
-            </div>
-
-            <Separator />
+                <Separator />
+              </>
+            )}
 
             {/* Background pattern */}
             <div>

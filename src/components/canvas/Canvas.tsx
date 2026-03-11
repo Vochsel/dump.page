@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown, Loader2, ClipboardPaste } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown, Loader2, ClipboardPaste, Send, Zap } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -58,6 +58,7 @@ import { useTheme } from "@/context/theme-context";
 import { darkenHex, lightenHex } from "@/lib/utils";
 import { getBoardUrl } from "@/lib/board-url";
 import { useUndoRedo, UndoAction } from "@/hooks/useUndoRedo";
+import { CHAT_PROVIDERS, type ChatProviderId, CHAT_PROVIDER_STORAGE_KEY, PRO_MODE_STORAGE_KEY } from "@/lib/chat-providers";
 import { useBoardOps } from "@/context/board-ops-context";
 import { useBoardScreenshot } from "@/hooks/useBoardScreenshot";
 import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
@@ -148,6 +149,8 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   const [snapToGrid, setSnapToGrid] = useLocalStorage("dump-snap-to-grid", false);
   const [controlsVariant, setControlsVariant] = useLocalStorage<"default" | "map">("dump-controls-variant", "default");
   const [showMinimap, setShowMinimap] = useLocalStorage("dump-show-minimap", false);
+  const [proMode, setProMode] = useLocalStorage(PRO_MODE_STORAGE_KEY, false);
+  const [proWelcomeOpen, setProWelcomeOpen] = useState(false);
 
   // Board screenshot capture
   const { captureAndUpload } = useBoardScreenshot(canEdit ? boardId as Id<"boards"> | undefined : undefined);
@@ -982,6 +985,78 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     setNodeMenu(null);
   }, [nodeMenu, boardNodes, updateNode]);
 
+  const handleNodeSendToAI = useCallback(() => {
+    if (!nodeMenu || !boardSlug) return;
+    const providerId = (localStorage.getItem(CHAT_PROVIDER_STORAGE_KEY) ?? "claude") as ChatProviderId;
+    const providerObj = CHAT_PROVIDERS.find((p) => p.id === providerId) ?? CHAT_PROVIDERS[0];
+    const boardLink = getBoardUrl(boardSlug, {
+      visibility: shareToken ? "shared" : "public",
+      shareToken,
+    });
+    const llmsUrl = boardLink.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
+    const itemUrl = getBoardUrl(boardSlug, {
+      visibility: shareToken ? "shared" : "public",
+      shareToken,
+      itemId: nodeMenu.nodeId,
+    });
+    const prompt = `scrape ${llmsUrl} as context, specifically, load full context from ${itemUrl}\n`;
+    window.open(providerObj.buildUrl(prompt), "_blank");
+    setNodeMenu(null);
+  }, [nodeMenu, boardSlug, shareToken]);
+
+  const handleNodeConvertToChecklist = useCallback(() => {
+    if (!nodeMenu) return;
+    const node = localNodes.find((n) => n.id === nodeMenu.nodeId);
+    if (!node || node.type !== "text") return;
+    const data = node.data as { content?: string; title?: string };
+    const html = data.content || "";
+    const text = html
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/li>/gi, "\n")
+      .replace(/<\/div>/gi, "\n")
+      .replace(/<[^>]*>/g, "");
+    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+    const items = lines.map((line) => ({
+      id: Math.random().toString(36).slice(2, 9),
+      text: line,
+      checked: false,
+    }));
+    const source = boardNodes?.find((n) => n._id === nodeMenu.nodeId);
+    const nodeTitle = data.title || source?.title;
+    const deleteAction = {
+      type: "delete" as const,
+      deletedNodeId: nodeMenu.nodeId,
+      snapshot: {
+        boardId,
+        type: "text" as const,
+        content: data.content || "",
+        position: { x: node.position.x, y: node.position.y },
+        metadata: source?.metadata,
+      },
+    };
+    createNode({
+      boardId,
+      type: "checklist",
+      content: JSON.stringify(items),
+      position: { x: node.position.x, y: node.position.y },
+    }).then((newNodeId) => {
+      if (nodeTitle) {
+        updateNode({ nodeId: newNodeId, title: nodeTitle });
+      }
+      pushAction({
+        type: "batch",
+        actions: [
+          { type: "create", nodeId: newNodeId },
+          deleteAction,
+        ],
+      });
+      sfx.add();
+      deleteNode({ nodeId: nodeMenu.nodeId });
+    });
+    setNodeMenu(null);
+  }, [nodeMenu, localNodes, boardNodes, boardId, createNode, deleteNode, pushAction]);
+
   const handleRenameSubmit = useCallback(() => {
     if (!renameNodeId) return;
     const newTitle = renameValue.trim();
@@ -1147,6 +1222,19 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
             <span>Minimap</span>
             <Switch checked={showMinimap} onCheckedChange={setShowMinimap} />
           </label>
+          <label className="flex items-center justify-between gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent/50 cursor-pointer">
+            <span className="flex items-center gap-1.5">
+              <Zap className="h-3 w-3" />
+              Pro mode
+            </span>
+            <Switch checked={proMode} onCheckedChange={(checked) => {
+              setProMode(checked);
+              if (checked && !localStorage.getItem("dump-pro-welcomed")) {
+                localStorage.setItem("dump-pro-welcomed", "1");
+                setProWelcomeOpen(true);
+              }
+            }} />
+          </label>
           <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
           <p className="px-2 pt-1 pb-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Controls</p>
           <div className="flex gap-1 px-1">
@@ -1183,7 +1271,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
           )}
         </PopoverContent>
       </Popover>
-      {viewMode && onViewModeChange && (
+      {proMode && viewMode && onViewModeChange && (
         <Popover>
           <PopoverTrigger asChild>
             <button
@@ -1458,6 +1546,19 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
                 Copy link to this
               </button>
             )}
+            {proMode && boardSlug && (() => {
+              const providerId = (localStorage.getItem(CHAT_PROVIDER_STORAGE_KEY) ?? "claude") as ChatProviderId;
+              const providerObj = CHAT_PROVIDERS.find((p) => p.id === providerId) ?? CHAT_PROVIDERS[0];
+              return (
+                <button
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  onClick={handleNodeSendToAI}
+                >
+                  <img src={providerObj.favicon} alt={providerObj.name} className="h-3.5 w-3.5" />
+                  Send to {providerObj.name}
+                </button>
+              );
+            })()}
             <button
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               onClick={handleNodeDuplicate}
@@ -1504,6 +1605,15 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
                     >
                       <ChevronsUpDown className="h-3.5 w-3.5" />
                       {source?.collapsed ? "Expand" : "Collapse"}
+                    </button>
+                  )}
+                  {proMode && nodeType === "text" && (
+                    <button
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      onClick={handleNodeConvertToChecklist}
+                    >
+                      <ListChecks className="h-3.5 w-3.5" />
+                      Convert to checklist
                     </button>
                   )}
                 </>
@@ -1636,6 +1746,42 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
               </>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pro mode welcome dialog */}
+      <Dialog open={proWelcomeOpen} onOpenChange={setProWelcomeOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              Pro Mode Enabled
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-1">
+            {[
+              { icon: Send, label: "Send to AI", desc: "Right-click any item to send it to your AI chat" },
+              { icon: ListChecks, label: "Convert to checklist", desc: "Right-click a text note to turn it into a checklist" },
+              { icon: LayoutGrid, label: "View switcher", desc: "Switch between Board, List, and Document views" },
+              { icon: Type, label: "Prompt dialog", desc: "AI chat button opens a prompt editor first" },
+            ].map((f) => (
+              <div key={f.label} className="flex items-start gap-2.5">
+                <f.icon className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                <div>
+                  <span className="text-sm font-medium">{f.label}</span>
+                  <p className="text-xs text-muted-foreground">{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-1">
+            <a href="/help/pro-mode" target="_blank" className="text-xs text-muted-foreground hover:text-foreground underline transition-colors">
+              Learn more
+            </a>
+            <Button size="sm" onClick={() => setProWelcomeOpen(false)}>
+              Got it
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

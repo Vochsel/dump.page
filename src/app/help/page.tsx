@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SmallLoginButton } from "@/components/auth/SmallLoginButton";
 import { Footer } from "@/components/Footer";
@@ -204,6 +204,29 @@ export default function HelpPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Pro mode */}
+        <section className="mb-12">
+          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
+            Pro Mode
+          </h2>
+          <Link href="/help/pro-mode">
+            <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 p-4 hover:border-amber-300 dark:hover:border-amber-700 transition-colors group">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-md bg-amber-100 dark:bg-amber-950/40">
+                  <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium text-stone-800 dark:text-stone-200 text-sm">Power-user features</h3>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                    Send items to AI, prompt dialog, convert notes to checklists, view switcher, RSS feed, context types, and more.
+                  </p>
+                </div>
+                <ExternalLink className="h-4 w-4 text-stone-300 dark:text-stone-600 group-hover:text-amber-500 transition-colors" />
+              </div>
+            </div>
+          </Link>
         </section>
 
         <Footer />
