@@ -73,6 +73,7 @@ export type FloatingEdgeData = {
   optimistic?: boolean;
   isConnectMode?: boolean;
   onLabelChange?: (edgeId: string, label: string | undefined) => void;
+  focusLabel?: boolean;
 };
 
 function EdgeLabelInput({
@@ -150,12 +151,12 @@ export function FloatingEdge({ id, source, target, style, data, ...rest }: EdgeP
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
   const [hovered, setHovered] = useState(false);
-  const [editing, setEditing] = useState(false);
 
   const edgeData = data as FloatingEdgeData | undefined;
   const label = edgeData?.label;
   const isConnectMode = edgeData?.isConnectMode ?? false;
   const onLabelChange = edgeData?.onLabelChange;
+  const focusLabel = edgeData?.focusLabel ?? false;
 
   if (!sourceNode || !targetNode) return null;
 
@@ -174,7 +175,7 @@ export function FloatingEdge({ id, source, target, style, data, ...rest }: EdgeP
   const midX = (sx + tx) / 2;
   const midY = (sy + ty) / 2;
 
-  const showInput = isConnectMode || editing;
+  const showInput = isConnectMode || focusLabel;
 
   return (
     <>
@@ -186,11 +187,6 @@ export function FloatingEdge({ id, source, target, style, data, ...rest }: EdgeP
         className="react-flow__edge-interaction"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        onDoubleClick={(e) => {
-          if (!onLabelChange) return;
-          e.stopPropagation();
-          setEditing(true);
-        }}
       />
       <BaseEdge
         id={id}
@@ -209,11 +205,8 @@ export function FloatingEdge({ id, source, target, style, data, ...rest }: EdgeP
           <EdgeLabelInput
             edgeId={id}
             label={label || ""}
-            onLabelChange={(eid, newLabel) => {
-              onLabelChange(eid, newLabel);
-              setEditing(false);
-            }}
-            autoFocus={editing}
+            onLabelChange={onLabelChange}
+            autoFocus={focusLabel}
           />
         </foreignObject>
       ) : label ? (

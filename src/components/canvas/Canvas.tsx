@@ -124,6 +124,9 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   const [connectModeHeld, setConnectModeHeld] = useState(false);
   const isConnectMode = connectModeToggled || connectModeHeld;
 
+  // Track which edge should have its label input focused (from double-click)
+  const [focusLabelEdgeId, setFocusLabelEdgeId] = useState<string | null>(null);
+
   // Knife mode state (hold K key)
   const [knifeModeHeld, setKnifeModeHeld] = useState(false);
 
@@ -148,6 +151,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         )
       );
       updateEdge({ edgeId, label });
+      setFocusLabelEdgeId(null);
     },
     [updateEdge]
   );
@@ -376,26 +380,27 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         style: edgeStyle,
         markerStart: edgeMarkerStart,
         selected: prevMap.get(e._id)?.selected,
-        data: { label: e.label, isConnectMode, onLabelChange: canEdit ? onEdgeLabelChange : undefined },
+        data: { label: e.label, isConnectMode, onLabelChange: canEdit ? onEdgeLabelChange : undefined, focusLabel: e._id === focusLabelEdgeId },
       }));
       // Keep optimistic edges (temporary IDs not yet on server)
       const serverIds = new Set(boardEdges.map((e) => e._id));
       const optimistic = prev.filter((e) => e.data?.optimistic && !serverIds.has(e.id));
       return [...serverEdges, ...optimistic];
     });
-  }, [boardEdges, canEdit, onEdgeLabelChange]); // eslint-disable-line react-hooks/exhaustive-deps -- isConnectMode patched separately below
+  }, [boardEdges, canEdit, onEdgeLabelChange, focusLabelEdgeId]); // eslint-disable-line react-hooks/exhaustive-deps -- isConnectMode patched separately below
 
-  // Patch isConnectMode on existing edges without rebuilding from server
+  // Patch isConnectMode and focusLabel on existing edges without rebuilding from server
   // (avoids overwriting optimistic label changes)
   useEffect(() => {
     setLocalEdges((prev) =>
       prev.map((e) => {
         const d = e.data as Record<string, unknown> | undefined;
-        if (d?.isConnectMode === isConnectMode) return e;
-        return { ...e, data: { ...e.data, isConnectMode } };
+        const newFocusLabel = e.id === focusLabelEdgeId;
+        if (d?.isConnectMode === isConnectMode && d?.focusLabel === newFocusLabel) return e;
+        return { ...e, data: { ...e.data, isConnectMode, focusLabel: newFocusLabel } };
       })
     );
-  }, [isConnectMode]);
+  }, [isConnectMode, focusLabelEdgeId]);
 
   // Edge handlers
   const onConnect = useCallback(
@@ -1022,6 +1027,16 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
 
   const closeNodeMenu = useCallback(() => setNodeMenu(null), []);
 
+  const onEdgeDoubleClick = useCallback(
+    (_event: React.MouseEvent, edge: Edge) => {
+      if (!canEdit) return;
+      if (!isConnectMode) {
+        setConnectModeToggled(true);
+      }
+      setFocusLabelEdgeId(edge.id);
+    },
+    [canEdit, isConnectMode]
+  );
 
   const handleNodeCopy = useCallback(() => {
     if (!nodeMenu) return;
@@ -1285,7 +1300,8 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
       snapToGrid={snapToGrid}
       snapGrid={[20, 20]}
       onNodeContextMenu={canEdit ? onNodeContextMenu : undefined}
-      onPaneClick={() => { closeNodeMenu(); }}
+      onEdgeDoubleClick={canEdit ? onEdgeDoubleClick : undefined}
+      onPaneClick={() => { closeNodeMenu(); setFocusLabelEdgeId(null); }}
       selectionMode={SelectionMode.Partial}
       fitView={!savedViewportRef.current}
       fitViewOptions={{ padding: 0.5 }}
