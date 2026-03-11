@@ -1773,6 +1773,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
                 </div>
               </div>
             ))}
+            <p className="text-sm text-muted-foreground italic">and more!</p>
           </div>
           <div className="flex items-center justify-between pt-1">
             <a href="/help/pro-mode" target="_blank" className="text-xs text-muted-foreground hover:text-foreground underline transition-colors">
