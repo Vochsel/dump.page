@@ -22,6 +22,7 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
 
   const convexEdges = useQuery(api.edges.getEdgesByBoard, { boardId, shareToken });
   const createEdgeMutation = useMutation(api.edges.createEdge);
+  const updateEdgeMutation = useMutation(api.edges.updateEdge);
   const deleteEdgeMutation = useMutation(api.edges.deleteEdge);
 
   const nodes: BoardNode[] | undefined = useMemo(() => {
@@ -47,6 +48,7 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
       boardId: e.boardId as string,
       source: e.source as string,
       target: e.target as string,
+      label: e.label,
     }));
   }, [convexEdges]);
 
@@ -105,6 +107,13 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
         });
         return id as string;
       },
+      updateEdge: async (args) => {
+        await updateEdgeMutation({
+          edgeId: args.edgeId as Id<"edges">,
+          label: args.label,
+        });
+        return null;
+      },
       deleteEdge: async (args) => {
         await deleteEdgeMutation({
           edgeId: args.edgeId as Id<"edges">,
@@ -112,7 +121,7 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
         return null;
       },
     }),
-    [nodes, boardId, createNodeMutation, updateNodeMutation, updateNodePositionMutation, deleteNodeMutation, fetchMetadataMutation, edges, createEdgeMutation, deleteEdgeMutation]
+    [nodes, boardId, createNodeMutation, updateNodeMutation, updateNodePositionMutation, deleteNodeMutation, fetchMetadataMutation, edges, createEdgeMutation, updateEdgeMutation, deleteEdgeMutation]
   );
 
   return (

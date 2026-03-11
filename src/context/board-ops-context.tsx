@@ -16,6 +16,7 @@ export type BoardEdge = {
   boardId: string;
   source: string;
   target: string;
+  label?: string;
 };
 
 export type BoardNode = {
@@ -59,6 +60,7 @@ export interface BoardOps {
   fetchLinkMetadata: (args: { nodeId: string; url: string }) => Promise<void>;
   edges: BoardEdge[] | undefined;
   createEdge: (args: { boardId: string; source: string; target: string }) => Promise<string>;
+  updateEdge: (args: { edgeId: string; label?: string }) => Promise<null>;
   deleteEdge: (args: { edgeId: string }) => Promise<null>;
 }
 

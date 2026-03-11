@@ -296,7 +296,7 @@ export function BoardShare({ board, isOwner, isMember }: BoardShareProps) {
                 );
               })}
             </div>
-            {isOwner && (
+            {isMember && (
               <>
                 <form
                   onSubmit={(e) => {

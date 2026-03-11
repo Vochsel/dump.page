@@ -587,6 +587,61 @@ export const toggleChecklistItem = mutation({
   },
 });
 
+export const createBoard = mutation({
+  args: {
+    accessToken: v.string(),
+    name: v.string(),
+    icon: v.optional(v.string()),
+    visibility: v.optional(
+      v.union(v.literal("private"), v.literal("shared"), v.literal("public"))
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { userId, scope } = await requireMcpToken(ctx, args.accessToken);
+
+    // Enforce write scope
+    if (!scope.split(/[\s,]+/).includes("write")) {
+      throw new Error("Write scope required");
+    }
+
+    const icon = args.icon ?? "📋";
+    const visibility = args.visibility ?? "private";
+
+    // Generate an 8-char random alphanumeric slug
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let slug = "";
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    for (const b of bytes) slug += chars[b % chars.length];
+
+    const now = Date.now();
+    const shareToken =
+      visibility === "shared"
+        ? crypto.randomUUID().replace(/-/g, "").slice(0, 16)
+        : undefined;
+
+    const boardId = await ctx.db.insert("boards", {
+      name: args.name,
+      slug,
+      icon,
+      ownerId: userId,
+      visibility,
+      shareToken,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("boardMembers", {
+      boardId,
+      userId,
+      role: "owner",
+      joinedAt: now,
+    });
+
+    return { id: boardId, slug, name: args.name };
+  },
+});
+
 export const updateNote = mutation({
   args: {
     accessToken: v.string(),

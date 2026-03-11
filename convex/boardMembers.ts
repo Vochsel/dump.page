@@ -19,7 +19,16 @@ export const addMember = mutation({
     if (!currentUser) throw new Error("User not found");
 
     const board = await ctx.db.get(args.boardId);
-    if (!board || board.ownerId !== currentUser._id)
+    if (!board) throw new Error("Board not found");
+
+    // Allow owners and editors to add members
+    const callerMembership = await ctx.db
+      .query("boardMembers")
+      .withIndex("by_boardId_userId", (q) =>
+        q.eq("boardId", args.boardId).eq("userId", currentUser._id)
+      )
+      .unique();
+    if (!callerMembership || !["owner", "editor"].includes(callerMembership.role))
       throw new Error("Not authorized");
 
     const targetUser = await ctx.db

@@ -62,11 +62,28 @@ if (typeof window !== "undefined") {
   console.log("Dump console commands:\n  dumpReset()  — clear local board & reload\n  dumpExport() — print board JSON to console");
 }
 
+const WELCOME_STORAGE_KEY = "dump-new-welcome-seen";
+
 export default function NewBoardPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [persisting, setPersisting] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const seen = localStorage.getItem(WELCOME_STORAGE_KEY);
+      if (!seen) {
+        setWelcomeDialogOpen(true);
+      }
+    }
+  }, []);
+
+  const dismissWelcome = useCallback(() => {
+    setWelcomeDialogOpen(false);
+    localStorage.setItem(WELCOME_STORAGE_KEY, "true");
+  }, []);
   const persistLocalBoard = useMutation(api.boards.persistLocalBoard);
 
   const handleShare = useCallback(async () => {
@@ -169,6 +186,40 @@ export default function NewBoardPage() {
           </DialogHeader>
           <div className="flex justify-center py-4">
             <LoginButton />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={welcomeDialogOpen} onOpenChange={(open) => { if (!open) dismissWelcome(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Welcome to Dump!</DialogTitle>
+            <DialogDescription asChild>
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p>Hi! This is your first dump.</p>
+                <p>Paste in links, drag-and-drop, or add prompt notes to build your board.</p>
+                <p>Then sign in to save changes and share with your LLM of choice.</p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-2">
+            <Button onClick={dismissWelcome}>Got it</Button>
+            <div className="flex items-center justify-center gap-4 text-sm">
+              <a
+                href="https://www.youtube.com/watch?v=H8KMPggJnAw&feature=youtu.be"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Watch demo
+              </a>
+              <Link
+                href="/help"
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Learn more
+              </Link>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

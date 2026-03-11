@@ -99,11 +99,16 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
         setShowPrivateDialog(true);
         return;
       }
-      const llmsUrl = boardUrl.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
-      const prompt = `scrape ${llmsUrl} as context to answer:\n`;
+      let prompt: string;
+      if (hasMcp) {
+        prompt = `Use your Dump MCP connection to read board "${slug}" and use it as context to answer:\n`;
+      } else {
+        const llmsUrl = boardUrl.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
+        prompt = `scrape ${llmsUrl} as context to answer:\n`;
+      }
       maybeShowPromptDialog(prompt, chosen);
     },
-    [visibility, boardUrl, maybeShowPromptDialog, hasMcp]
+    [visibility, boardUrl, slug, maybeShowPromptDialog, hasMcp]
   );
 
   const openChat = useCallback(

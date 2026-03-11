@@ -119,6 +119,7 @@ export default defineSchema({
     boardId: v.id("boards"),
     source: v.id("nodes"),
     target: v.id("nodes"),
+    label: v.optional(v.string()),
     createdBy: v.id("users"),
     createdAt: v.number(),
   })

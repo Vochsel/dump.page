@@ -103,8 +103,8 @@ interface CanvasInnerProps {
 }
 
 function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onViewModeChange, focusNodeId }: CanvasInnerProps) {
-  const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata, edges: boardEdges, createEdge, deleteEdge } = useBoardOps();
-  const { screenToFlowPosition, fitView, setViewport } = useReactFlow();
+  const { nodes: boardNodes, boardId, createNode, updateNode, updateNodePosition, deleteNode, fetchLinkMetadata: fetchMetadata, edges: boardEdges, createEdge, updateEdge, deleteEdge } = useBoardOps();
+  const { screenToFlowPosition, fitView, setViewport, getIntersectingNodes } = useReactFlow();
   const mousePosRef = useRef({ x: 0, y: 0 });
   const contextMenuPosRef = useRef({ x: 0, y: 0 });
 
@@ -139,6 +139,20 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   // Clipboard state for context menu
   const [clipboardText, setClipboardText] = useState<string | null>(null);
 
+  // Edge label change handler (used by FloatingEdge inline input)
+  const onEdgeLabelChange = useCallback(
+    (edgeId: string, label: string | undefined) => {
+      setLocalEdges((prev) =>
+        prev.map((e) =>
+          e.id === edgeId ? { ...e, data: { ...e.data, label } } : e
+        )
+      );
+      updateEdge({ edgeId, label });
+    },
+    [updateEdge]
+  );
+
+
   // Theme
   const { resolved: theme, setMode: setThemeMode, mode: themeMode } = useTheme();
 
@@ -147,7 +161,8 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
 
   // Client preferences
   const [snapToGrid, setSnapToGrid] = useLocalStorage("dump-snap-to-grid", false);
-  const [controlsVariant, setControlsVariant] = useLocalStorage<"default" | "map">("dump-controls-variant", "default");
+  const isWindows = typeof navigator !== "undefined" && /Win/.test(navigator.platform);
+  const [controlsVariant, setControlsVariant] = useLocalStorage<"default" | "map">("dump-controls-variant", isWindows ? "map" : "default");
   const [showMinimap, setShowMinimap] = useLocalStorage("dump-show-minimap", false);
   const [proMode, setProMode] = useLocalStorage(PRO_MODE_STORAGE_KEY, false);
   const [proWelcomeOpen, setProWelcomeOpen] = useState(false);
@@ -197,6 +212,9 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   // Preview dialog for collapsed items
   const [previewNodeId, setPreviewNodeId] = useState<string | null>(null);
 
+  // Checklist merge-on-drag: track which node is the merge target during drag
+  const [mergeTargetId, setMergeTargetId] = useState<string | null>(null);
+
   // Undo/Redo
   const { pushAction, undo, redo, canUndo, canRedo } = useUndoRedo({
     convexNodes: boardNodes,
@@ -210,7 +228,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   });
 
   // Shared helper: create a link or text node from raw text at a given position
-  const createNodeFromText = useCallback((text: string, position: { x: number; y: number }) => {
+  const createNodeFromText = useCallback((text: string, position: { x: number; y: number }, html?: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
@@ -229,10 +247,16 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         fetchMetadata({ nodeId, url });
       });
     } else {
+      // Use clipboard HTML if available, otherwise convert plain text newlines to paragraphs
+      const content = html
+        ? html
+        : trimmed.split(/\n\n+/).map((para) =>
+            `<p>${para.split(/\n/).join("<br>")}</p>`
+          ).join("");
       createNode({
         boardId,
         type: "text",
-        content: trimmed,
+        content,
         position: { x: position.x - 120, y: position.y - 40 },
       }).then((nodeId) => {
         pushAction({ type: "create", nodeId });
@@ -323,6 +347,18 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     });
   }, [boardNodes, canEdit, isConnectMode, pushAction, deleteNodeWithUndo, optimisticDeletes]);
 
+  // Patch isMergeTarget flag on checklist nodes when merge target changes
+  useEffect(() => {
+    setLocalNodes((prev) =>
+      prev.map((n) => {
+        if (n.type !== "checklist") return n;
+        const shouldBeMergeTarget = n.id === mergeTargetId;
+        if ((n.data as Record<string, unknown>).isMergeTarget === shouldBeMergeTarget) return n;
+        return { ...n, data: { ...n.data, isMergeTarget: shouldBeMergeTarget } };
+      })
+    );
+  }, [mergeTargetId]);
+
   // Edge style constants
   const edgeStyle = { strokeWidth: 2 };
   const edgeMarkerStart = { type: MarkerType.ArrowClosed, width: 12, height: 12 };
@@ -340,13 +376,26 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         style: edgeStyle,
         markerStart: edgeMarkerStart,
         selected: prevMap.get(e._id)?.selected,
+        data: { label: e.label, isConnectMode, onLabelChange: canEdit ? onEdgeLabelChange : undefined },
       }));
       // Keep optimistic edges (temporary IDs not yet on server)
       const serverIds = new Set(boardEdges.map((e) => e._id));
       const optimistic = prev.filter((e) => e.data?.optimistic && !serverIds.has(e.id));
       return [...serverEdges, ...optimistic];
     });
-  }, [boardEdges]);
+  }, [boardEdges, canEdit, onEdgeLabelChange]); // eslint-disable-line react-hooks/exhaustive-deps -- isConnectMode patched separately below
+
+  // Patch isConnectMode on existing edges without rebuilding from server
+  // (avoids overwriting optimistic label changes)
+  useEffect(() => {
+    setLocalEdges((prev) =>
+      prev.map((e) => {
+        const d = e.data as Record<string, unknown> | undefined;
+        if (d?.isConnectMode === isConnectMode) return e;
+        return { ...e, data: { ...e.data, isConnectMode } };
+      })
+    );
+  }, [isConnectMode]);
 
   // Edge handlers
   const onConnect = useCallback(
@@ -375,7 +424,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         target: connection.target,
       }).then((edgeId) => {
         // Replace temp edge with real ID
-        setLocalEdges((prev) => prev.map((e) => e.id === tempId ? { ...e, id: edgeId, data: undefined } : e));
+        setLocalEdges((prev) => prev.map((e) => e.id === tempId ? { ...e, id: edgeId, data: { ...e.data, optimistic: undefined } } : e));
         pushAction({ type: "createEdge", edgeId, source: connection.source!, target: connection.target! });
       }).catch(() => {
         // Remove optimistic edge on failure
@@ -490,6 +539,115 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     [canEdit, updateNodePosition, boardNodes, pushAction]
   );
 
+  // Checklist merge-on-drag: detect overlap during node drag
+  const onNodeDrag = useCallback(
+    (_event: React.MouseEvent, draggedNode: Node) => {
+      if (!canEdit || draggedNode.type !== "checklist") {
+        setMergeTargetId(null);
+        return;
+      }
+      const intersecting = getIntersectingNodes(draggedNode, true);
+      const target = intersecting.find(
+        (n) => n.type === "checklist" && n.id !== draggedNode.id
+      );
+      setMergeTargetId(target ? target.id : null);
+    },
+    [canEdit, getIntersectingNodes]
+  );
+
+  // Checklist merge-on-drag: merge items on drop
+  const onNodeDragStop = useCallback(
+    (_event: React.MouseEvent, draggedNode: Node) => {
+      if (!canEdit || draggedNode.type !== "checklist" || !mergeTargetId) {
+        setMergeTargetId(null);
+        return;
+      }
+
+      const targetBoardNode = boardNodesRef.current?.find(
+        (n) => n._id === mergeTargetId
+      );
+      const draggedBoardNode = boardNodesRef.current?.find(
+        (n) => n._id === draggedNode.id
+      );
+
+      if (!targetBoardNode || !draggedBoardNode) {
+        setMergeTargetId(null);
+        return;
+      }
+
+      // Parse both checklists' items
+      let targetItems: { id: string; text: string; checked: boolean }[] = [];
+      let draggedItems: { id: string; text: string; checked: boolean }[] = [];
+      try {
+        const parsed = JSON.parse(targetBoardNode.content);
+        if (Array.isArray(parsed)) targetItems = parsed;
+      } catch { /* ignore */ }
+      try {
+        const parsed = JSON.parse(draggedBoardNode.content);
+        if (Array.isArray(parsed)) draggedItems = parsed;
+      } catch { /* ignore */ }
+
+      // Filter out empty items from dragged list before merging
+      const nonEmptyDragged = draggedItems.filter((item) => item.text.trim() !== "");
+      if (nonEmptyDragged.length === 0) {
+        // Nothing to merge — just delete the empty dragged node
+        deleteNodeWithUndo(draggedNode.id);
+        setMergeTargetId(null);
+        return;
+      }
+
+      // Re-generate IDs for dragged items to avoid collisions
+      const renamedItems = nonEmptyDragged.map((item) => ({
+        ...item,
+        id: Math.random().toString(36).slice(2, 9),
+      }));
+
+      const mergedItems = [...targetItems, ...renamedItems];
+      const newContent = JSON.stringify(mergedItems);
+      const oldContent = targetBoardNode.content;
+
+      // Update the target node with merged items
+      updateNode({ nodeId: mergeTargetId, content: newContent });
+
+      // Build a batch undo action so undo recreates the dragged node
+      // and reverts the target in one step
+      const editAction: UndoAction = {
+        type: "edit",
+        nodeId: mergeTargetId,
+        oldContent,
+        newContent,
+      };
+      const deleteAction: UndoAction = {
+        type: "delete",
+        deletedNodeId: draggedNode.id,
+        snapshot: {
+          boardId: draggedBoardNode.boardId,
+          type: draggedBoardNode.type,
+          content: draggedBoardNode.content,
+          position: draggedBoardNode.position,
+          metadata: draggedBoardNode.metadata,
+        },
+      };
+      pushAction({ type: "batch", actions: [editAction, deleteAction] });
+
+      // Optimistically remove the dragged node (skip separate undo push)
+      sfx.delete();
+      setOptimisticDeletes((prev) => new Set(prev).add(draggedNode.id));
+      setLocalNodes((prev) => prev.filter((n) => n.id !== draggedNode.id));
+      deleteNode({ nodeId: draggedNode.id }).finally(() => {
+        setOptimisticDeletes((prev) => {
+          const next = new Set(prev);
+          next.delete(draggedNode.id);
+          return next;
+        });
+      });
+
+      setMergeTargetId(null);
+      toast.success("Checklists merged");
+    },
+    [canEdit, mergeTargetId, updateNode, pushAction, deleteNode]
+  );
+
   // Drag-and-drop state
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounterRef = useRef(0);
@@ -505,7 +663,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
 
     const handlePaste = (e: ClipboardEvent) => {
       // Don't intercept paste when editing a text input/textarea/contenteditable
-      // or when focus is inside a React Flow node (e.g. text node preview)
+      // or when focus is inside ProseMirror (TipTap editor)
       // Check both e.target and activeElement — paste event target can differ
       // from the actually focused element in some browsers
       const target = e.target as HTMLElement;
@@ -516,8 +674,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
           el.tagName === "TEXTAREA" ||
           el.isContentEditable ||
           el.closest("[contenteditable]") ||
-          el.closest(".ProseMirror") ||
-          el.closest(".react-flow__node")
+          el.closest(".ProseMirror")
         );
       if (isEditing(target) || isEditing(active)) {
         return;
@@ -527,7 +684,8 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
       if (!text) return;
 
       e.preventDefault();
-      createNodeFromText(text, screenToFlowPosition(mousePosRef.current));
+      const html = e.clipboardData?.getData("text/html")?.trim() || undefined;
+      createNodeFromText(text, screenToFlowPosition(mousePosRef.current), html);
     };
 
     document.addEventListener("paste", handlePaste);
@@ -708,7 +866,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     };
   }, [canEdit]);
 
-  // Delete/Backspace on selected edges
+  // Delete/Backspace on selected edges and nodes
   useEffect(() => {
     if (!canEdit) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -726,11 +884,17 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
             deleteEdge({ edgeId: edge.id });
           }
         }
+        const selectedNodes = localNodes.filter((n) => n.selected);
+        if (selectedNodes.length > 0) {
+          for (const n of selectedNodes) {
+            deleteNodeWithUndo(n.id);
+          }
+        }
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [canEdit, localEdges, deleteEdge, pushAction]);
+  }, [canEdit, localEdges, localNodes, deleteEdge, deleteNodeWithUndo, pushAction]);
 
   // Context menu handlers
   const addTextNodeAtCursor = useCallback(() => {
@@ -857,6 +1021,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   );
 
   const closeNodeMenu = useCallback(() => setNodeMenu(null), []);
+
 
   const handleNodeCopy = useCallback(() => {
     if (!nodeMenu) return;
@@ -1115,10 +1280,12 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
       connectionMode={ConnectionMode.Loose}
       nodesDraggable={canEdit && !isConnectMode}
       nodesConnectable={canEdit && isConnectMode}
+      onNodeDrag={canEdit ? onNodeDrag : undefined}
+      onNodeDragStop={canEdit ? onNodeDragStop : undefined}
       snapToGrid={snapToGrid}
       snapGrid={[20, 20]}
       onNodeContextMenu={canEdit ? onNodeContextMenu : undefined}
-      onPaneClick={closeNodeMenu}
+      onPaneClick={() => { closeNodeMenu(); }}
       selectionMode={SelectionMode.Partial}
       fitView={!savedViewportRef.current}
       fitViewOptions={{ padding: 0.5 }}
@@ -1137,6 +1304,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
           localStorage.setItem(viewportKey, JSON.stringify({ x: viewport.x, y: viewport.y, zoom: viewport.zoom }));
         } catch { /* ignore */ }
       }}
+      deleteKeyCode={null}
       minZoom={0.1}
       maxZoom={2}
       panOnScroll={controlsVariant === "default"}
@@ -1586,19 +1754,21 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
             )}
             {(() => {
               const nodeType = localNodes.find((n) => n.id === nodeMenu.nodeId)?.type;
-              if (nodeType !== "text" && nodeType !== "checklist") return null;
+              if (nodeType !== "text" && nodeType !== "checklist" && nodeType !== "link") return null;
               const source = boardNodes?.find((n) => n._id === nodeMenu.nodeId);
               return (
                 <>
                   <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
-                  <button
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    onClick={handleNodeToggleTitle}
-                  >
-                    <PanelTop className="h-3.5 w-3.5" />
-                    {source?.showTitle ? "Hide title bar" : "Show title bar"}
-                  </button>
                   {(nodeType === "text" || nodeType === "checklist") && (
+                    <button
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      onClick={handleNodeToggleTitle}
+                    >
+                      <PanelTop className="h-3.5 w-3.5" />
+                      {source?.showTitle ? "Hide title bar" : "Show title bar"}
+                    </button>
+                  )}
+                  {(nodeType === "text" || nodeType === "checklist" || nodeType === "link") && (
                     <button
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       onClick={handleNodeToggleCollapse}

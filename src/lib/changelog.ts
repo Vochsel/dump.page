@@ -11,6 +11,32 @@ export type ChangelogVersion = {
 
 export const changelog: ChangelogVersion[] = [
   {
+    version: "1.8.0",
+    date: "2026-03-11",
+    entries: [
+      { type: "feature", description: "Pro mode — power-user features gated behind a preference toggle with welcome dialog" },
+      { type: "feature", description: "Edge labels — double-click edges to add labels, inline editing in connect mode, solid bg labels outside connect mode" },
+      { type: "feature", description: "Edge connections — bidirectional connecting edges between nodes with C key toggle" },
+      { type: "feature", description: "Knife tool — hold K key to cut edges by drawing across them" },
+      { type: "feature", description: "Checklist merge-on-drag — drag a checklist onto another to merge items, with full batch undo support" },
+      { type: "feature", description: "Link node improvements — collapsible link cards, root domain favicon stripping, dump.page internal link metadata" },
+      { type: "feature", description: "Rich paste — pasting text preserves paragraph breaks and HTML formatting from clipboard" },
+      { type: "feature", description: "Spellcheck — enabled in both TipTap editor and checklist inputs" },
+      { type: "feature", description: "Dashboard improvements — visibility badges on board cards, Help & Changelog nav buttons, MCP CTA banner" },
+      { type: "feature", description: "MCP board creation — create boards via MCP with name, icon, and visibility options" },
+      { type: "feature", description: "Editors can invite members — board editors can now add new members, not just owners" },
+      { type: "feature", description: "Welcome dialog on /new — first-time visitors see an intro dialog with demo link and help page" },
+      { type: "feature", description: "Markdown output ordering — board export orders items by edge connections and spatial proximity" },
+      { type: "feature", description: "Multi-node delete — select multiple nodes and press Delete/Backspace to remove them all" },
+      { type: "fix", description: "Tab key in notes — Tab now indents/outdents lists and blockquotes instead of inserting a tab character" },
+      { type: "fix", description: "Editor flicker — static HTML fallback during TipTap initialization prevents content flash" },
+      { type: "fix", description: "Dark mode text consistency — editor and display modes now use matching text colors" },
+      { type: "fix", description: "Scrollbar width shift — overflow hidden on editor wrapper prevents text reflow between edit and view modes" },
+      { type: "fix", description: "Note cursor — sticky notes show text cursor instead of grab cursor" },
+      { type: "fix", description: "MCP chat prompt — smart MCP-aware prompt when connected, llms.txt fallback otherwise" },
+    ],
+  },
+  {
     version: "1.7.0",
     date: "2026-03-09",
     entries: [

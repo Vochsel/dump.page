@@ -1,13 +1,15 @@
 "use client";
 
 import { Handle, Position, NodeProps } from "@xyflow/react";
-import { ExternalLink, Trash2, Rss } from "lucide-react";
+import { ExternalLink, Trash2, Rss, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { useBoardOps } from "@/context/board-ops-context";
 
 
 type LinkNodeData = {
   content: string;
   nodeId: string;
   canEdit: boolean;
+  collapsed?: boolean;
   metadataLoading: boolean;
   metadata?: {
     title?: string;
@@ -16,13 +18,27 @@ type LinkNodeData = {
     image?: string;
   };
   deleteNodeWithUndo: (nodeId: string) => void;
+  onPreview?: (nodeId: string) => void;
   isConnectMode?: boolean;
 };
+
+function getRootDomain(hostname: string): string {
+  const parts = hostname.replace(/^www\./, "").split(".");
+  if (parts.length > 2) {
+    const sld = parts[parts.length - 2];
+    if (["co", "com", "org", "net", "gov", "edu", "ac"].includes(sld)) {
+      return parts.slice(-3).join(".");
+    }
+    return parts.slice(-2).join(".");
+  }
+  return parts.join(".");
+}
 
 function getFaviconUrl(url: string): string {
   try {
     const { hostname } = new URL(url);
-    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
+    const root = getRootDomain(hostname);
+    return `https://www.google.com/s2/favicons?domain=${root}&sz=32`;
   } catch {
     return "";
   }
@@ -242,8 +258,9 @@ function EmbedNode({
 }
 
 export function LinkNode({ data }: NodeProps) {
-  const { content, nodeId, canEdit, metadata, metadataLoading, deleteNodeWithUndo, isConnectMode } =
+  const { content, nodeId, canEdit, collapsed, metadata, metadataLoading, deleteNodeWithUndo, onPreview, isConnectMode } =
     data as unknown as LinkNodeData;
+  const { updateNode } = useBoardOps();
 
   let hostname = "";
   try {
@@ -324,8 +341,8 @@ export function LinkNode({ data }: NodeProps) {
         rel="noopener noreferrer"
         className="block hover:bg-muted/50 transition-colors rounded-lg overflow-hidden"
       >
-        {/* OG Image */}
-        {!metadataLoading && metadata?.image && (
+        {/* OG Image — hidden when collapsed */}
+        {!collapsed && !metadataLoading && metadata?.image && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={metadata.image}
@@ -355,9 +372,23 @@ export function LinkNode({ data }: NodeProps) {
           <ExternalLink
             className={`h-4 w-4 text-muted-foreground flex-shrink-0 ${faviconUrl ? "hidden" : ""}`}
           />
-          <span className="text-xs text-muted-foreground truncate">
+          <span className="text-xs text-muted-foreground truncate flex-1">
             {hostname}
           </span>
+          {/* Collapse/expand toggle */}
+          {(canEdit || isConnectMode) && (
+            <button
+              className={`nodrag flex-shrink-0 p-0.5 rounded hover:bg-muted/60 transition-colors text-muted-foreground/50 hover:text-muted-foreground/80 ${isConnectMode ? "pointer-events-none" : ""}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                updateNode({ nodeId, collapsed: !collapsed });
+              }}
+              title={collapsed ? "Expand link" : "Collapse link"}
+            >
+              {collapsed ? <ChevronsUpDown className="h-3 w-3" /> : <ChevronsDownUp className="h-3 w-3" />}
+            </button>
+          )}
         </div>
 
         {/* Loading shimmer */}

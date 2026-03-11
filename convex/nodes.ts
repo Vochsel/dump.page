@@ -1,6 +1,7 @@
-import { mutation, query, internalAction, internalMutation } from "./_generated/server";
+import { mutation, query, internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 import { checkBoardReadAccess, requireBoardMember, requireBoardWriteAccess, isUrlSafe } from "./lib/auth";
 
 export const getNodesByBoard = query({
@@ -212,10 +213,52 @@ export const requestFetchLinkMetadata = mutation({
   },
 });
 
+/** Parse a dump.page board URL and return the slug, or null if not a dump.page board link. */
+function parseDumpPageSlug(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname !== "dump.page" && u.hostname !== "www.dump.page") return null;
+    const match = u.pathname.match(/^\/b\/([^/?#]+)/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+// Internal query: look up a board name by slug (no auth — server-side only)
+export const getBoardNameBySlug = internalQuery({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    let board = await ctx.db
+      .query("boards")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique();
+    if (!board) {
+      try {
+        board = await ctx.db.get(args.slug as Id<"boards">);
+      } catch {
+        // Not a valid ID
+      }
+    }
+    if (!board) return null;
+    const icon = board.icon && !board.icon.startsWith("lucide:") ? `${board.icon} ` : "";
+    return { name: `${icon}${board.name}` };
+  },
+});
+
 // Internal action: fetch URL, parse OG/meta tags, update node
 export const fetchLinkMetadata = internalAction({
   args: { nodeId: v.id("nodes"), url: v.string() },
   handler: async (ctx, args) => {
+    // For dump.page board URLs, look up the board name directly from the DB.
+    // This works for private, shared, and public boards since it's an internal query.
+    const dumpSlug = parseDumpPageSlug(args.url);
+    let dumpBoardName: string | undefined;
+    if (dumpSlug) {
+      const result = await ctx.runQuery(internal.nodes.getBoardNameBySlug, { slug: dumpSlug });
+      if (result) dumpBoardName = result.name;
+    }
+
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
@@ -235,7 +278,10 @@ export const fetchLinkMetadata = internalAction({
       if (res.url && !isUrlSafe(res.url)) {
         await ctx.runMutation(internal.nodes.patchNodeMetadata, {
           nodeId: args.nodeId,
-          metadata: {},
+          metadata: {
+            title: dumpBoardName || undefined,
+            description: dumpBoardName ? "dump.page" : undefined,
+          },
         });
         return;
       }
@@ -243,7 +289,10 @@ export const fetchLinkMetadata = internalAction({
       if (!res.ok) {
         await ctx.runMutation(internal.nodes.patchNodeMetadata, {
           nodeId: args.nodeId,
-          metadata: {},
+          metadata: {
+            title: dumpBoardName || undefined,
+            description: dumpBoardName ? "dump.page" : undefined,
+          },
         });
         return;
       }
@@ -253,7 +302,10 @@ export const fetchLinkMetadata = internalAction({
       if (!reader) {
         await ctx.runMutation(internal.nodes.patchNodeMetadata, {
           nodeId: args.nodeId,
-          metadata: {},
+          metadata: {
+            title: dumpBoardName || undefined,
+            description: dumpBoardName ? "dump.page" : undefined,
+          },
         });
         return;
       }
@@ -278,7 +330,7 @@ export const fetchLinkMetadata = internalAction({
         }, new Uint8Array())
       );
 
-      const title = extractMeta(html, "og:title") ||
+      let title = extractMeta(html, "og:title") ||
         extractMeta(html, "twitter:title") ||
         extractTagContent(html, "title");
 
@@ -311,20 +363,30 @@ export const fetchLinkMetadata = internalAction({
         }
       }
 
+      // For dump.page links, prefer the internal DB name over OG title
+      if (dumpBoardName) {
+        title = dumpBoardName;
+      }
+
       await ctx.runMutation(internal.nodes.patchNodeMetadata, {
         nodeId: args.nodeId,
         metadata: {
           title: title || undefined,
-          description: description ? description.slice(0, 200) : undefined,
+          description: (dumpBoardName ? "dump.page" : undefined) ||
+            (description ? description.slice(0, 200) : undefined),
           favicon: favicon || undefined,
           image: image || undefined,
         },
       });
     } catch {
-      // Always mark as fetched so shimmer stops
+      // Always mark as fetched so shimmer stops.
+      // For dump.page links, still use the DB-resolved name if available.
       await ctx.runMutation(internal.nodes.patchNodeMetadata, {
         nodeId: args.nodeId,
-        metadata: {},
+        metadata: {
+          title: dumpBoardName || undefined,
+          description: dumpBoardName ? "dump.page" : undefined,
+        },
       });
     }
   },

@@ -56,6 +56,21 @@ export const createEdge = mutation({
   },
 });
 
+export const updateEdge = mutation({
+  args: {
+    edgeId: v.id("edges"),
+    label: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const edge = await ctx.db.get(args.edgeId);
+    if (!edge) throw new Error("Edge not found");
+    await requireBoardWriteAccess(ctx, edge.boardId);
+    await ctx.db.patch(args.edgeId, {
+      label: args.label,
+    });
+  },
+});
+
 export const deleteEdge = mutation({
   args: { edgeId: v.id("edges") },
   handler: async (ctx, args) => {

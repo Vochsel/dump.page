@@ -27,6 +27,7 @@ type ChecklistNodeData = {
   deleteNodeWithUndo: (nodeId: string) => void;
   onPreview?: (nodeId: string) => void;
   isConnectMode?: boolean;
+  isMergeTarget?: boolean;
 };
 
 function generateId() {
@@ -77,7 +78,7 @@ function parseItems(content: string): { items: ChecklistItem[]; needsIdMigration
 }
 
 export function ChecklistNode({ data }: NodeProps) {
-  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo, onPreview, isConnectMode } = data as unknown as ChecklistNodeData;
+  const { content, title, showTitle, collapsed, nodeId, canEdit, pushAction, deleteNodeWithUndo, onPreview, isConnectMode, isMergeTarget } = data as unknown as ChecklistNodeData;
   const { updateNode } = useBoardOps();
 
   // Stable refs for context functions — prevents callback recreation on every node change
@@ -354,7 +355,12 @@ export function ChecklistNode({ data }: NodeProps) {
   if (collapsed) {
     return (
       <>
-      <div ref={containerRef} className={`bg-white dark:bg-gray-900 rounded-sm shadow-md ${widthClass} group border border-gray-200 dark:border-gray-700`}>
+      <div ref={containerRef} className={`bg-white dark:bg-gray-900 rounded-sm shadow-md ${widthClass} group border ${isMergeTarget ? "border-blue-500 dark:border-blue-400 border-2 ring-2 ring-blue-500/30 dark:ring-blue-400/30" : "border-gray-200 dark:border-gray-700"} relative`}>
+        {isMergeTarget && (
+          <div className="absolute inset-0 bg-blue-500/10 dark:bg-blue-400/10 rounded-sm pointer-events-none z-10 flex items-center justify-center">
+            <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-white/80 dark:bg-gray-900/80 px-2 py-0.5 rounded">Drop to merge</span>
+          </div>
+        )}
         {showTitle && title && (
           <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60 flex items-center gap-1">
             <div className="flex-1 min-w-0 text-xs font-semibold truncate text-gray-700 dark:text-gray-200">{title}</div>
@@ -407,7 +413,12 @@ export function ChecklistNode({ data }: NodeProps) {
 
   return (
     <>
-    <div ref={containerRef} className={`bg-white dark:bg-gray-900 rounded-sm shadow-md ${widthClass} group border border-gray-200 dark:border-gray-700`}>
+    <div ref={containerRef} className={`bg-white dark:bg-gray-900 rounded-sm shadow-md ${widthClass} group border ${isMergeTarget ? "border-blue-500 dark:border-blue-400 border-2 ring-2 ring-blue-500/30 dark:ring-blue-400/30" : "border-gray-200 dark:border-gray-700"} relative`}>
+      {isMergeTarget && (
+        <div className="absolute inset-0 bg-blue-500/10 dark:bg-blue-400/10 rounded-sm pointer-events-none z-10 flex items-center justify-center">
+          <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-white/80 dark:bg-gray-900/80 px-2 py-0.5 rounded">Drop to merge</span>
+        </div>
+      )}
       {/* Title bar — only visible when showTitle is true */}
       {showTitle && (
         <div className="bg-gray-100/80 dark:bg-gray-800/60 px-3 py-1.5 rounded-t-sm border-b border-gray-200/80 dark:border-gray-700/60 flex items-center gap-1">
@@ -557,6 +568,7 @@ export function ChecklistNode({ data }: NodeProps) {
                     }
                   }
                 }}
+                spellCheck
                 className={`nodrag nowheel flex-1 bg-transparent border-none outline-none text-sm px-1 py-0 text-gray-900 dark:text-gray-100 placeholder:text-gray-400/50 resize-none overflow-hidden min-w-0 ${
                   item.checked ? "line-through opacity-50" : ""
                 }`}

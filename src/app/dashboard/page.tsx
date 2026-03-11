@@ -9,7 +9,7 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { BoardIcon } from "@/components/board/BoardIcon";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Users, Plus, Link as LinkIcon, FileText, ExternalLink, CheckSquare, Sun, Moon, Monitor, Settings } from "lucide-react";
+import { Users, Plus, Link as LinkIcon, FileText, ExternalLink, CheckSquare, Sun, Moon, Monitor, Settings, HelpCircle, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -37,12 +37,26 @@ function BoardGrid({ boards }: { boards: any[] }) {
             >
               {board.thumbnailUrl ? (
                 <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={board.thumbnailUrl}
-                    alt={`${board.name} preview`}
-                    className="w-full h-40 object-cover"
-                  />
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={board.thumbnailUrl}
+                      alt={`${board.name} preview`}
+                      className="w-full h-40 object-cover"
+                    />
+                    <Badge
+                      variant={
+                        board.visibility === "public"
+                          ? "default"
+                          : board.visibility === "shared"
+                            ? "secondary"
+                            : "outline"
+                      }
+                      className="absolute top-2 right-2 text-[10px] capitalize px-1.5 py-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      {board.visibility}
+                    </Badge>
+                  </div>
                   <div className="px-4 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <BoardIcon icon={board.icon} className="text-base flex-shrink-0" size={18} />
@@ -167,6 +181,7 @@ function BoardGrid({ boards }: { boards: any[] }) {
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const boards = useQuery(api.boards.getMyBoardsWithRecentNodes);
+  const hasMcp = useQuery(api.mcpAuth.hasActiveMcpToken);
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
   const router = useRouter();
 
@@ -205,9 +220,18 @@ export default function DashboardPage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/changelog" className="text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors">
-              Changelog
-            </Link>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/help">
+                <HelpCircle className="h-3.5 w-3.5 mr-1.5" />
+                Help
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/changelog">
+                <FileText className="h-3.5 w-3.5 mr-1.5" />
+                Changelog
+              </Link>
+            </Button>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -254,6 +278,18 @@ export default function DashboardPage() {
             Your boards and recent activity
           </p>
         </div>
+
+        {/* MCP CTA */}
+        {hasMcp === false && (
+          <Link
+            href="/mcp"
+            className="mb-8 flex items-center gap-3 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+          >
+            <Zap className="h-4 w-4 flex-shrink-0" />
+            <span>Connect your AI assistant via MCP for the best experience</span>
+            <ExternalLink className="h-3.5 w-3.5 ml-auto flex-shrink-0 opacity-60" />
+          </Link>
+        )}
 
         {/* Board grid */}
         {boards === undefined ? (

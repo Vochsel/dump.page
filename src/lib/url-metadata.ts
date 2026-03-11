@@ -124,6 +124,8 @@ const staticSites: Record<string, InferredMeta> = {
   "loom.com": { title: "Loom" },
   "www.loom.com": { title: "Loom" },
   "zoom.us": { title: "Zoom" },
+  "dump.page": { title: "Dump" },
+  "www.dump.page": { title: "Dump" },
 };
 
 const patterns: PatternRule[] = [
@@ -512,6 +514,14 @@ const patterns: PatternRule[] = [
       if (url.pathname.startsWith("/spreadsheets/")) return { title: "Google Sheet", description: "Google Sheets" };
       return { title: "Google Slides", description: "Google Slides" };
     },
+  },
+
+  // dump.page board
+  {
+    match: (url) =>
+      (url.hostname === "dump.page" || url.hostname === "www.dump.page") &&
+      url.pathname.startsWith("/b/"),
+    infer: () => ({ title: "Dump Board", description: "dump.page" }),
   },
 ];
 

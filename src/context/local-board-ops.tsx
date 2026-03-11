@@ -139,6 +139,19 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
     return id;
   }, []);
 
+  const updateEdge: BoardOps["updateEdge"] = useCallback(async (args) => {
+    setEdges((prev) =>
+      prev.map((e) => {
+        if (e._id !== args.edgeId) return e;
+        return {
+          ...e,
+          ...(args.label !== undefined ? { label: args.label } : {}),
+        };
+      })
+    );
+    return null;
+  }, []);
+
   const deleteEdge: BoardOps["deleteEdge"] = useCallback(async (args) => {
     setEdges((prev) => prev.filter((e) => e._id !== args.edgeId));
     return null;
@@ -174,6 +187,7 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
     fetchLinkMetadata,
     edges,
     createEdge,
+    updateEdge,
     deleteEdge,
   };
 

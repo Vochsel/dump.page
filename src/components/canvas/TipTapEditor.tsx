@@ -43,6 +43,8 @@ export function TipTapEditor({ content, onSave, onCancel }: TipTapEditorProps) {
       attributes: {
         class:
           "tiptap-editor outline-none text-sm text-yellow-900 dark:text-yellow-100 min-h-[24px]",
+        spellcheck: "true",
+        autocorrect: "on",
       },
     },
     onBlur({ editor }) {
@@ -56,11 +58,21 @@ export function TipTapEditor({ content, onSave, onCancel }: TipTapEditorProps) {
     }
   }, [editor]);
 
-  if (!editor) return null;
+  // Show static content while editor initializes to prevent flicker
+  if (!editor) {
+    return (
+      <div className="nodrag nowheel">
+        <div
+          className="tiptap-editor outline-none text-sm text-yellow-900 dark:text-yellow-100 min-h-[24px]"
+          dangerouslySetInnerHTML={content ? { __html: content } : undefined}
+        />
+      </div>
+    );
+  }
 
   return (
     <div
-      className="nodrag nowheel"
+      className="nodrag nowheel overflow-hidden"
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === "Escape") {
@@ -72,14 +84,20 @@ export function TipTapEditor({ content, onSave, onCancel }: TipTapEditorProps) {
           e.stopPropagation();
           if (!editor) return;
           if (e.shiftKey) {
-            editor.chain().focus().liftListItem("listItem").run() ||
+            // Outdent: try list item lift first, then unwrap blockquote
+            const lifted =
+              editor.chain().focus().liftListItem("listItem").run() ||
               editor.chain().focus().liftListItem("taskItem").run();
+            if (!lifted) {
+              editor.chain().focus().lift("blockquote").run();
+            }
           } else {
+            // Indent: try list item sink first, then wrap in blockquote
             const sank =
               editor.chain().focus().sinkListItem("listItem").run() ||
               editor.chain().focus().sinkListItem("taskItem").run();
             if (!sank) {
-              editor.chain().focus().insertContent("\t").run();
+              editor.chain().focus().setBlockquote().run();
             }
           }
         }
