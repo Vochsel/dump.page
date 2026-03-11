@@ -1766,9 +1766,9 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
               { icon: Type, label: "Prompt dialog", desc: "AI chat button opens a prompt editor first" },
             ].map((f) => (
               <div key={f.label} className="flex items-start gap-2.5">
-                <f.icon className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                <f.icon className="h-3.5 w-3.5 mt-[3px] text-muted-foreground shrink-0" />
                 <div>
-                  <span className="text-sm font-medium">{f.label}</span>
+                  <span className="text-sm font-medium leading-tight">{f.label}</span>
                   <p className="text-xs text-muted-foreground">{f.desc}</p>
                 </div>
               </div>
