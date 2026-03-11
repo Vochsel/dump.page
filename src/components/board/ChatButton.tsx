@@ -98,9 +98,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
         return;
       }
       const llmsUrl = boardUrl.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
-      const prompt = chosen === "claude"
-        ? `scrape ${boardUrl} and ${llmsUrl} as context to answer:\n`
-        : `scrape ${boardUrl} as context to answer:\n`;
+      const prompt = `scrape ${llmsUrl} as context to answer:\n`;
       openProviderWithPrompt(prompt, chosen);
     },
     [visibility, boardUrl, openProviderWithPrompt, hasMcp]
@@ -152,9 +150,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
       const token = result?.shareToken;
       const newBoardUrl = getBoardUrl(slug, { visibility: "shared", shareToken: token });
       const llmsUrl = newBoardUrl.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
-      const prompt = chosen === "claude"
-        ? `scrape ${newBoardUrl} and ${llmsUrl} as context to answer:\n`
-        : `scrape ${newBoardUrl} as context to answer:\n`;
+      const prompt = `scrape ${llmsUrl} as context to answer:\n`;
       openProviderWithPrompt(prompt, chosen);
       setShowPrivateDialog(false);
       toast.success("Board shared with magic link");
