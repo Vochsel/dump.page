@@ -265,7 +265,8 @@ function createServer(): McpServer {
           const items = JSON.parse(item.content);
           if (Array.isArray(items)) {
             for (const entry of items) {
-              markdown += `- [${entry.checked ? "x" : " "}] ${entry.text}\n`;
+              const idSuffix = entry.id ? ` (id: ${entry.id})` : "";
+              markdown += `- [${entry.checked ? "x" : " "}] ${entry.text}${idSuffix}\n`;
             }
           } else {
             markdown += `${item.content}\n`;
@@ -483,52 +484,52 @@ function createServer(): McpServer {
       {
         title: "Toggle Checklist Item",
         description:
-          "Toggle a specific checklist item's checked state. Specify the board slug, the checklist node ID, and the zero-based index of the item to toggle.",
+          "Toggle a specific checklist item's checked state. Use checklist_item_id (preferred) to target by the item's unique ID, or checklist_index as a fallback.",
         inputSchema: z.object({
           board_slug: z.string().describe("Slug of the board containing the checklist"),
           item_id: z.string().describe("The ID of the checklist node"),
+          checklist_item_id: z
+            .string()
+            .optional()
+            .describe("The unique ID of the checklist item to toggle (preferred)"),
           checklist_index: z
             .number()
-            .describe("Zero-based index of the checklist item to toggle"),
+            .optional()
+            .describe("Zero-based index of the checklist item to toggle (fallback)"),
         }),
       },
-      async ({ board_slug, item_id, checklist_index }, { authInfo }) => {
-        console.log(`[MCP Tool] toggle_checklist_item called: board_slug=${board_slug}, item_id=${item_id}, index=${checklist_index}`);
-        console.log(`[MCP Tool] toggle_checklist_item authInfo: scopes=${authInfo?.scopes}, extra keys=${authInfo?.extra ? Object.keys(authInfo.extra).join(",") : "none"}`);
+      async ({ board_slug, item_id, checklist_item_id, checklist_index }, { authInfo }) => {
         const accessToken = getAccessToken(authInfo);
         if (!accessToken) {
-          console.warn("[MCP Tool] toggle_checklist_item: no access token in authInfo");
           return {
             content: [{ type: "text" as const, text: "Error: Not authenticated." }],
           };
         }
 
         try {
-          console.log(`[MCP Tool] toggle_checklist_item: calling convex mutation...`);
           const result = await convex.mutation(api.mcp.toggleChecklistItem, {
             accessToken,
             boardSlug: board_slug,
             itemId: item_id,
+            checklistItemId: checklist_item_id,
             checklistIndex: checklist_index,
           });
-          console.log(`[MCP Tool] toggle_checklist_item: success, checked=${result.checked}`);
 
           const statusEmoji = result.checked ? "[x]" : "[ ]";
           const toggledItem = result.items.find(
-            (i: { index: number }) => i.index === result.checklistIndex
+            (i: { id?: string }) => i.id === result.checklistItemId
           );
           const itemText = toggledItem ? toggledItem.text : "item";
 
-          let response = `Toggled checklist item ${result.checklistIndex}: ${statusEmoji} ${itemText}\n\nFull checklist:\n`;
+          let response = `Toggled: ${statusEmoji} ${itemText}\n\nFull checklist:\n`;
           for (const item of result.items) {
-            response += `- [${item.checked ? "x" : " "}] ${item.text}\n`;
+            response += `- [${item.checked ? "x" : " "}] ${item.text} (id: ${item.id ?? "none"})\n`;
           }
 
           return {
             content: [{ type: "text" as const, text: response }],
           };
         } catch (e) {
-          console.error(`[MCP Tool] toggle_checklist_item error:`, e);
           return {
             content: [
               {

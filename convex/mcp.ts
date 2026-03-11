@@ -4,6 +4,25 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { requireMcpToken, isUrlSafe } from "./lib/auth";
 
+function normalizeChecklistContent(content: string): string {
+  try {
+    const parsed = JSON.parse(content);
+    if (!Array.isArray(parsed)) return content;
+    // If items are plain strings, convert to { id, text, checked } objects
+    if (parsed.length > 0 && typeof parsed[0] === "string") {
+      const items = parsed.map((text: string, i: number) => ({
+        id: `mcp-${Date.now()}-${i}`,
+        text,
+        checked: false,
+      }));
+      return JSON.stringify(items);
+    }
+    return content;
+  } catch {
+    return content;
+  }
+}
+
 // MCP-specific queries that accept accessToken (validated in Convex)
 
 export const listBoards = query({
@@ -328,11 +347,12 @@ export const createNote = mutation({
     );
 
     const nodeType = args.type || "text";
+    const content = nodeType === "checklist" ? normalizeChecklistContent(args.content) : args.content;
     const now = Date.now();
     const nodeId = await ctx.db.insert("nodes", {
       boardId: board._id,
       type: nodeType,
-      content: args.content,
+      content,
       title: args.title,
       showTitle: args.title ? true : undefined,
       position: { x: 100, y: maxY + 40 },
@@ -405,10 +425,11 @@ export const addItems = mutation({
     const ids: string[] = [];
 
     for (const item of args.items) {
+      const content = item.type === "checklist" ? normalizeChecklistContent(item.content) : item.content;
       const nodeId = await ctx.db.insert("nodes", {
         boardId: board._id,
         type: item.type,
-        content: item.content,
+        content,
         title: item.title,
         showTitle: item.title ? true : undefined,
         position: { x: 100, y: maxY + 40 },
@@ -487,7 +508,8 @@ export const toggleChecklistItem = mutation({
     accessToken: v.string(),
     boardSlug: v.string(),
     itemId: v.string(),
-    checklistIndex: v.number(),
+    checklistItemId: v.optional(v.string()),
+    checklistIndex: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { userId, scope } = await requireMcpToken(ctx, args.accessToken);
@@ -516,7 +538,7 @@ export const toggleChecklistItem = mutation({
     if (!node || node.boardId !== board._id) throw new Error("Item not found");
     if (node.type !== "checklist") throw new Error("Item is not a checklist");
 
-    let items: Array<{ text: string; checked: boolean }>;
+    let items: Array<{ id?: string; text: string; checked: boolean }>;
     try {
       items = JSON.parse(node.content);
       if (!Array.isArray(items)) throw new Error("Invalid checklist content");
@@ -524,13 +546,25 @@ export const toggleChecklistItem = mutation({
       throw new Error("Invalid checklist content");
     }
 
-    if (args.checklistIndex < 0 || args.checklistIndex >= items.length) {
-      throw new Error(
-        `Index ${args.checklistIndex} out of range (0-${items.length - 1})`
-      );
+    // Find target item by ID (preferred) or index (fallback)
+    let targetIndex: number;
+    if (args.checklistItemId) {
+      targetIndex = items.findIndex((item) => item.id === args.checklistItemId);
+      if (targetIndex === -1) {
+        throw new Error(`Checklist item with id "${args.checklistItemId}" not found`);
+      }
+    } else if (args.checklistIndex !== undefined) {
+      targetIndex = args.checklistIndex;
+      if (targetIndex < 0 || targetIndex >= items.length) {
+        throw new Error(
+          `Index ${targetIndex} out of range (0-${items.length - 1})`
+        );
+      }
+    } else {
+      throw new Error("Either checklistItemId or checklistIndex is required");
     }
 
-    items[args.checklistIndex].checked = !items[args.checklistIndex].checked;
+    items[targetIndex].checked = !items[targetIndex].checked;
 
     const now = Date.now();
     await ctx.db.patch(args.itemId as Id<"nodes">, {
@@ -541,10 +575,11 @@ export const toggleChecklistItem = mutation({
 
     return {
       id: node._id,
-      checklistIndex: args.checklistIndex,
-      checked: items[args.checklistIndex].checked,
+      checklistItemId: items[targetIndex].id,
+      checked: items[targetIndex].checked,
       items: items.map((item, i) => ({
         index: i,
+        id: item.id,
         text: item.text,
         checked: item.checked,
       })),
