@@ -119,14 +119,48 @@ export default function McpPage() {
           The Dump MCP server lets AI assistants read your boards, search your notes, and create new content — all through a secure OAuth connection.
         </p>
 
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 p-4 mb-6">
+          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">Available tools</h3>
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wide mb-1.5">Read</p>
+              <ul className="space-y-1 text-sm text-stone-500 dark:text-stone-400">
+                <li><strong className="text-stone-700 dark:text-stone-300">list_boards</strong> — List all your boards with names, slugs, and item counts</li>
+                <li><strong className="text-stone-700 dark:text-stone-300">get_board</strong> — Read the full content of a board as markdown</li>
+                <li><strong className="text-stone-700 dark:text-stone-300">search_boards</strong> — Search boards by name</li>
+                <li><strong className="text-stone-700 dark:text-stone-300">search_items</strong> — Search notes, links, and checklists across boards</li>
+                <li><strong className="text-stone-700 dark:text-stone-300">get_item</strong> — Get a specific item by its ID</li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wide mb-1.5">Write</p>
+              <ul className="space-y-1 text-sm text-stone-500 dark:text-stone-400">
+                <li><strong className="text-stone-700 dark:text-stone-300">create_note</strong> — Create a new note, link, or checklist on a board</li>
+                <li><strong className="text-stone-700 dark:text-stone-300">add_items</strong> — Quickly add multiple items to a board in one call</li>
+                <li><strong className="text-stone-700 dark:text-stone-300">update_note</strong> — Update an existing note&apos;s content or title</li>
+                <li><strong className="text-stone-700 dark:text-stone-300">toggle_checklist_item</strong> — Toggle a checklist item&apos;s checked state</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 p-4 mb-10">
-          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">Available tools</h3>
-          <ul className="space-y-1 text-sm text-stone-500 dark:text-stone-400">
-            <li><strong className="text-stone-700 dark:text-stone-300">list_boards</strong> — List all your boards</li>
-            <li><strong className="text-stone-700 dark:text-stone-300">get_board</strong> — Read the full content of a board</li>
-            <li><strong className="text-stone-700 dark:text-stone-300">search_boards</strong> — Search boards by name</li>
-            <li><strong className="text-stone-700 dark:text-stone-300">search_items</strong> — Search notes, links, and checklists across boards</li>
-          </ul>
+          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">Usage examples</h3>
+          <p className="text-xs text-stone-400 dark:text-stone-500 mb-3">Try these prompts with your AI assistant after connecting Dump:</p>
+          <div className="space-y-2">
+            {[
+              { prompt: "List all my Dump boards and tell me which one has the most items.", description: "Uses list_boards to show an overview of all your boards." },
+              { prompt: "Search my boards for anything related to 'project roadmap' and summarize what you find.", description: "Uses search_items across all boards and synthesizes the results." },
+              { prompt: "Read my 'Weekly Tasks' board and create a summary of what's done vs. still open.", description: "Uses get_board to read content, then analyzes checklist completion." },
+              { prompt: "Add a checklist called 'Launch Prep' to my board with slug 'a1b2c3' with items: update docs, run tests, notify team.", description: "Uses create_note with type 'checklist' to create a new checklist." },
+              { prompt: "Check off 'update docs' on my Launch Prep checklist.", description: "Uses get_board to find the item, then toggle_checklist_item to check it." },
+            ].map((example, i) => (
+              <div key={i} className="bg-stone-50 dark:bg-gray-800/50 rounded-lg p-3">
+                <p className="text-sm text-stone-700 dark:text-stone-200 font-medium">&ldquo;{example.prompt}&rdquo;</p>
+                <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">{example.description}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-6">

@@ -31,6 +31,7 @@ function createServer(): McpServer {
       description:
         "List all boards the authenticated user has access to. Returns board names, slugs, icons, visibility, and item counts.",
       inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
     },
     async (_args, { authInfo }) => {
       const accessToken = getAccessToken(authInfo);
@@ -80,6 +81,7 @@ function createServer(): McpServer {
       inputSchema: z.object({
         slug: z.string().describe("Board slug (e.g. 'a1b2c3d4')"),
       }),
+      annotations: { readOnlyHint: true },
     },
     async ({ slug }, { authInfo }) => {
       const accessToken = getAccessToken(authInfo);
@@ -123,6 +125,7 @@ function createServer(): McpServer {
       inputSchema: z.object({
         query: z.string().describe("Search query to match against board names"),
       }),
+      annotations: { readOnlyHint: true },
     },
     async ({ query }, { authInfo }) => {
       const accessToken = getAccessToken(authInfo);
@@ -176,6 +179,7 @@ function createServer(): McpServer {
           .optional()
           .describe("Optional: limit search to a specific board slug"),
       }),
+      annotations: { readOnlyHint: true },
     },
     async ({ query, board_slug }, { authInfo }) => {
       const accessToken = getAccessToken(authInfo);
@@ -227,6 +231,7 @@ function createServer(): McpServer {
         board_slug: z.string().describe("Board slug (e.g. 'a1b2c3d4')"),
         item_id: z.string().describe("The ID of the item to retrieve"),
       }),
+      annotations: { readOnlyHint: true },
     },
     async ({ board_slug, item_id }, { authInfo }) => {
       const accessToken = getAccessToken(authInfo);
@@ -310,20 +315,17 @@ function createServer(): McpServer {
             .optional()
             .describe("Type of note (default: text)"),
         }),
+        annotations: { destructiveHint: false },
       },
       async ({ board_slug, content, title, type }, { authInfo }) => {
-        console.log(`[MCP Tool] create_note called: board_slug=${board_slug}, type=${type}, title=${title}, contentLen=${content?.length}`);
-        console.log(`[MCP Tool] create_note authInfo: scopes=${authInfo?.scopes}, extra keys=${authInfo?.extra ? Object.keys(authInfo.extra).join(",") : "none"}`);
         const accessToken = getAccessToken(authInfo);
         if (!accessToken) {
-          console.warn("[MCP Tool] create_note: no access token in authInfo");
           return {
             content: [{ type: "text" as const, text: "Error: Not authenticated." }],
           };
         }
 
         try {
-          console.log(`[MCP Tool] create_note: calling convex mutation...`);
           const result = await convex.mutation(api.mcp.createNote, {
             accessToken,
             boardSlug: board_slug,
@@ -331,7 +333,6 @@ function createServer(): McpServer {
             title,
             type: type as "text" | "link" | "checklist" | undefined,
           });
-          console.log(`[MCP Tool] create_note: success, id=${result.id}`);
 
           return {
             content: [
@@ -342,7 +343,6 @@ function createServer(): McpServer {
             ],
           };
         } catch (e) {
-          console.error(`[MCP Tool] create_note error:`, e);
           return {
             content: [
               {
@@ -380,13 +380,11 @@ function createServer(): McpServer {
             )
             .describe("Array of items to add"),
         }),
+        annotations: { destructiveHint: false },
       },
       async ({ board_slug, items }, { authInfo }) => {
-        console.log(`[MCP Tool] add_items called: board_slug=${board_slug}, itemCount=${items?.length}`);
-        console.log(`[MCP Tool] add_items authInfo: scopes=${authInfo?.scopes}, extra keys=${authInfo?.extra ? Object.keys(authInfo.extra).join(",") : "none"}`);
         const accessToken = getAccessToken(authInfo);
         if (!accessToken) {
-          console.warn("[MCP Tool] add_items: no access token in authInfo");
           return {
             content: [
               { type: "text" as const, text: "Error: Not authenticated." },
@@ -395,13 +393,11 @@ function createServer(): McpServer {
         }
 
         try {
-          console.log(`[MCP Tool] add_items: calling convex mutation with ${items.length} items...`);
           const result = await convex.mutation(api.mcp.addItems, {
             accessToken,
             boardSlug: board_slug,
             items,
           });
-          console.log(`[MCP Tool] add_items: success, count=${result.count}, ids=${result.ids.join(",")}`);
 
           return {
             content: [
@@ -412,7 +408,6 @@ function createServer(): McpServer {
             ],
           };
         } catch (e) {
-          console.error(`[MCP Tool] add_items error:`, e);
           return {
             content: [
               {
@@ -437,27 +432,23 @@ function createServer(): McpServer {
           content: z.string().optional().describe("New content for the note"),
           title: z.string().optional().describe("New title for the note"),
         }),
+        annotations: { destructiveHint: false },
       },
       async ({ note_id, content, title }, { authInfo }) => {
-        console.log(`[MCP Tool] update_note called: note_id=${note_id}, hasContent=${content !== undefined}, hasTitle=${title !== undefined}`);
-        console.log(`[MCP Tool] update_note authInfo: scopes=${authInfo?.scopes}, extra keys=${authInfo?.extra ? Object.keys(authInfo.extra).join(",") : "none"}`);
         const accessToken = getAccessToken(authInfo);
         if (!accessToken) {
-          console.warn("[MCP Tool] update_note: no access token in authInfo");
           return {
             content: [{ type: "text" as const, text: "Error: Not authenticated." }],
           };
         }
 
         try {
-          console.log(`[MCP Tool] update_note: calling convex mutation...`);
           await convex.mutation(api.mcp.updateNote, {
             accessToken,
             nodeId: note_id as Id<"nodes">,
             content,
             title,
           });
-          console.log(`[MCP Tool] update_note: success`);
 
           return {
             content: [
@@ -465,7 +456,6 @@ function createServer(): McpServer {
             ],
           };
         } catch (e) {
-          console.error(`[MCP Tool] update_note error:`, e);
           return {
             content: [
               {
@@ -497,6 +487,7 @@ function createServer(): McpServer {
             .optional()
             .describe("Zero-based index of the checklist item to toggle (fallback)"),
         }),
+        annotations: { destructiveHint: false },
       },
       async ({ board_slug, item_id, checklist_item_id, checklist_index }, { authInfo }) => {
         const accessToken = getAccessToken(authInfo);
@@ -596,18 +587,18 @@ function authErrorResponse(message: string) {
 }
 
 async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
-  console.log(`[MCP] ${req.method} ${url.pathname}`);
+  // Handle HEAD requests gracefully (required after OAuth redirects)
+  if (req.method === "HEAD") {
+    return new Response(null, { status: 200 });
+  }
 
   // Validate auth
   const tokenInfo = await validateAuth(req);
   if (!tokenInfo) {
-    console.warn("[MCP] Auth failed: no valid token");
     return authErrorResponse("No authorization provided");
   }
 
   const scopes = tokenInfo.scope.split(/[\s,]+/);
-  console.log(`[MCP] Auth OK: user=${tokenInfo.user.email}, scopes=[${scopes.join(",")}], userId=${tokenInfo.userId}`);
 
   const t = await createTransport();
 
@@ -624,13 +615,11 @@ async function handler(req: Request): Promise<Response> {
   };
 
   try {
-    const response = await t.handleRequest(req, { authInfo });
-    console.log(`[MCP] Response: ${response.status}`);
-    return response;
+    return await t.handleRequest(req, { authInfo });
   } catch (err) {
     console.error("[MCP] handleRequest error:", err);
     return new Response("Internal server error", { status: 500 });
   }
 }
 
-export { handler as GET, handler as POST, handler as DELETE };
+export { handler as GET, handler as POST, handler as DELETE, handler as HEAD };
