@@ -162,7 +162,7 @@ export function FloatingEdge({ id, source, target, style, data, ...rest }: EdgeP
 
   const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(sourceNode, targetNode);
 
-  const [path] = getBezierPath({
+  const [path, labelX, labelY] = getBezierPath({
     sourceX: sx,
     sourceY: sy,
     sourcePosition: sourcePos,
@@ -170,10 +170,6 @@ export function FloatingEdge({ id, source, target, style, data, ...rest }: EdgeP
     targetX: tx,
     targetY: ty,
   });
-
-  // Midpoint for label placement
-  const midX = (sx + tx) / 2;
-  const midY = (sy + ty) / 2;
 
   const showInput = isConnectMode || focusLabel;
 
@@ -196,8 +192,8 @@ export function FloatingEdge({ id, source, target, style, data, ...rest }: EdgeP
       />
       {showInput && onLabelChange ? (
         <foreignObject
-          x={midX - 50}
-          y={midY - 10}
+          x={labelX - 50}
+          y={labelY - 10}
           width={100}
           height={20}
           className="overflow-visible"
@@ -211,8 +207,8 @@ export function FloatingEdge({ id, source, target, style, data, ...rest }: EdgeP
         </foreignObject>
       ) : label ? (
         <foreignObject
-          x={midX - 60}
-          y={midY - 12}
+          x={labelX - 60}
+          y={labelY - 12}
           width={120}
           height={24}
           className="pointer-events-none overflow-visible"
