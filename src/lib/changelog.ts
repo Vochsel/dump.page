@@ -6,6 +6,7 @@ export type ChangelogEntry = {
 export type ChangelogVersion = {
   version: string;
   date: string;
+  summary: string;
   entries: ChangelogEntry[];
 };
 
@@ -13,6 +14,7 @@ export const changelog: ChangelogVersion[] = [
   {
     version: "1.8.0",
     date: "2026-03-11",
+    summary: "Connect nodes with labeled edges, merge checklists by dragging, and unlock Pro mode for power-user features. Media files now render inline, and paste preserves formatting.",
     entries: [
       { type: "feature", description: "Pro mode — power-user features gated behind a preference toggle with welcome dialog" },
       { type: "feature", description: "Edge labels — double-click edges to add labels, inline editing in connect mode, solid bg labels outside connect mode" },
@@ -39,6 +41,7 @@ export const changelog: ChangelogVersion[] = [
   {
     version: "1.7.0",
     date: "2026-03-09",
+    summary: "Richer notes with hyperlinks, tables, and polished checkboxes. Cmd+K now zooms to items, and MCP gets new tools for reading and toggling checklist items.",
     entries: [
       { type: "feature", description: "MCP get_item tool — retrieve a specific item from a board by its ID via MCP" },
       { type: "feature", description: "MCP toggle_checklist_item tool — check or uncheck a specific checklist item via MCP" },
@@ -62,6 +65,7 @@ export const changelog: ChangelogVersion[] = [
   {
     version: "1.6.0",
     date: "2026-03-07",
+    summary: "Redesigned list and document views with draggable cards. Add links by searching instead of pasting URLs, and celebrate completed checklists with confetti.",
     entries: [
       { type: "feature", description: "Link search — type a search term instead of a URL when adding a link, and the top result is added automatically" },
       { type: "feature", description: "Confetti — a burst of confetti triggers when all items in a checklist are checked off" },
@@ -77,6 +81,7 @@ export const changelog: ChangelogVersion[] = [
   {
     version: "1.5.0",
     date: "2026-03-07",
+    summary: "Connect your boards to AI assistants with the new MCP server. Search across all boards with Cmd+K, and switch between board, list, and document views.",
     entries: [
       { type: "feature", description: "MCP server — connect Dump to Claude, ChatGPT, Claude Code, and Codex via OAuth-based MCP integration" },
       { type: "feature", description: "Command palette — press Cmd+K to search across all boards and items, with recent boards shown by default" },
@@ -94,6 +99,7 @@ export const changelog: ChangelogVersion[] = [
   {
     version: "1.4.0",
     date: "2026-03-07",
+    summary: "Customize how AI reads your boards with context types and system prompts. Start new boards from templates, and merge notes into checklists.",
     entries: [
       { type: "feature", description: "Board context types — set boards as Default, Skill, or Agent to control how LLMs interpret the context" },
       { type: "feature", description: "Custom system prompts — add an editable system prompt to any board, included in LLM markdown output" },
@@ -107,6 +113,7 @@ export const changelog: ChangelogVersion[] = [
   {
     version: "1.3.0",
     date: "2026-03-07",
+    summary: "Zoom controls, minimap, and editable link URLs. Choose between Design and Map control modes in preferences.",
     entries: [
       { type: "feature", description: "Zoom controls — +/- buttons and percentage popover with zoom-to-fit, 50%, 100%, 150%, 200%" },
       { type: "feature", description: "Minimap toggle — optional minimap in preferences, off by default" },
@@ -123,6 +130,7 @@ export const changelog: ChangelogVersion[] = [
   {
     version: "1.2.0",
     date: "2026-03-07",
+    summary: "Archive and restore items, see boards shared with you, and toggle snap-to-grid. Dark mode now extends to board background colors.",
     entries: [
       { type: "feature", description: "Archive items — right-click to archive, view and restore from preferences" },
       { type: "feature", description: "Shared with me — dashboard separates your boards from boards shared with you" },
@@ -137,6 +145,7 @@ export const changelog: ChangelogVersion[] = [
   {
     version: "1.1.0",
     date: "2026-03-07",
+    summary: "Title bars and collapsible notes, shareable item links, and a dedicated help page. The changelog page itself ships in this release.",
     entries: [
       { type: "feature", description: "Optional title bars on sticky notes and checklists — hidden by default, toggle via right-click" },
       { type: "feature", description: "Collapsible sticky notes — collapse to show only 2 lines of text" },
@@ -155,6 +164,7 @@ export const changelog: ChangelogVersion[] = [
   {
     version: "1.0.0",
     date: "2026-02-15",
+    summary: "The first release of Dump. Create boards with sticky notes, links, and checklists. Embed YouTube, Spotify, and Maps. Share with anyone or chat with your favorite LLM.",
     entries: [
       { type: "feature", description: "Rich media embeds — YouTube, Spotify, SoundCloud, Google Maps, Twitter/X" },
       { type: "feature", description: "Board creation without requiring an account" },

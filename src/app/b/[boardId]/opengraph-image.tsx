@@ -1,7 +1,6 @@
 import { ImageResponse } from "next/og";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
-import { Id } from "../../../../convex/_generated/dataModel";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -33,8 +32,8 @@ export default async function BoardOgImage({
 
   let thumbnailUrl: string | null = null;
   try {
-    thumbnailUrl = await convex.query(api.screenshots.getThumbnailUrl, {
-      boardId: board._id as Id<"boards">,
+    thumbnailUrl = await convex.query(api.screenshots.getThumbnailBySlug, {
+      slug: boardId,
     });
   } catch {
     // No thumbnail available

@@ -6,6 +6,7 @@ Perform a version release for Dump. Do ALL of the following steps:
    - Add a new entry at the TOP of the `changelog` array
    - Set the version to match the new BUILD_VERSION
    - Set the date to today's date (YYYY-MM-DD)
+   - Write a `summary` string (max 3 sentences) highlighting the key user-facing features of this release
    - Include entries for all changes since the last version (check git log since the last version bump)
    - Each entry needs `type: "feature" | "fix"` and a `description` string
 

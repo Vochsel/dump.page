@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 import { requireBoardMember, checkBoardReadAccess } from "./lib/auth";
 
 export const generateUploadUrl = mutation({
@@ -30,6 +31,29 @@ export const storeThumbnail = mutation({
     await ctx.db.patch(args.boardId, {
       thumbnailStorageId: args.storageId,
     });
+  },
+});
+
+// Public query for OG image routes — returns thumbnail for public or shared boards
+export const getThumbnailBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    let board = await ctx.db
+      .query("boards")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique();
+    if (!board) {
+      try {
+        board = await ctx.db.get(args.slug as Id<"boards">);
+      } catch {
+        // Not a valid ID
+      }
+    }
+    if (!board) return null;
+    // Only expose thumbnails for public or shared boards (not private)
+    if (board.visibility === "private") return null;
+    if (!board.thumbnailStorageId) return null;
+    return await ctx.storage.getUrl(board.thumbnailStorageId);
   },
 });
 

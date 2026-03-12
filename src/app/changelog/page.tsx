@@ -8,6 +8,7 @@ import { changelog, type ChangelogEntry } from "@/lib/changelog";
 import { Footer } from "@/components/Footer";
 import { DraggableCard } from "@/components/landing/DraggableCard";
 import { SmallLoginButton } from "@/components/auth/SmallLoginButton";
+import { SuggestFeatureButton } from "@/components/SuggestFeatureButton";
 
 type Filter = "all" | "feature" | "fix";
 
@@ -127,6 +128,9 @@ export default function ChangelogPage() {
               {f === "all" ? "All" : f === "feature" ? "Features" : "Fixes"}
             </button>
           ))}
+          <div className="ml-auto">
+            <SuggestFeatureButton />
+          </div>
         </div>
 
         {/* Version sections */}
@@ -146,12 +150,15 @@ export default function ChangelogPage() {
                   v{version.version}
                 </div>
 
-                <div className="flex items-baseline justify-between mb-4 mt-1">
+                <div className="flex items-baseline justify-between mb-1 mt-1">
                   <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-100">
                     Version {version.version}
                   </h2>
                   <span className="text-xs text-stone-400 dark:text-stone-500 font-mono">{version.date}</span>
                 </div>
+                <p className="text-sm text-stone-500 dark:text-stone-400 mb-4 leading-relaxed">
+                  {version.summary}
+                </p>
 
                 <div className="space-y-2">
                   {version.entries.map((entry, i) => {

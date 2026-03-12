@@ -156,6 +156,26 @@ function getTwitterTweetId(url: string): string | null {
   }
 }
 
+type MediaType = "image" | "video" | "audio" | "pdf" | null;
+
+const IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "ico", "avif", "tiff"]);
+const VIDEO_EXTS = new Set(["mp4", "webm", "mov", "ogv", "m4v"]);
+const AUDIO_EXTS = new Set(["mp3", "wav", "ogg", "aac", "flac", "m4a", "opus"]);
+
+function getMediaType(url: string): MediaType {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    const ext = pathname.split(".").pop() || "";
+    if (IMAGE_EXTS.has(ext)) return "image";
+    if (VIDEO_EXTS.has(ext)) return "video";
+    if (AUDIO_EXTS.has(ext)) return "audio";
+    if (ext === "pdf") return "pdf";
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function looksLikeRssFeed(url: string): boolean {
   try {
     const path = new URL(url).pathname.toLowerCase();
@@ -272,6 +292,7 @@ export function LinkNode({ data }: NodeProps) {
   const faviconUrl = metadata?.favicon || getFaviconUrl(content);
   const title = metadata?.title;
   const description = metadata?.description;
+  const mediaType = getMediaType(content);
   const youtubeId = getYouTubeVideoId(content);
   const spotifyEmbed = getSpotifyEmbed(content);
   const googleMapsEmbedUrl = getGoogleMapsEmbedUrl(content);
@@ -281,7 +302,82 @@ export function LinkNode({ data }: NodeProps) {
 
   const handleDelete = () => deleteNodeWithUndo(nodeId);
 
-  const nodeContent = youtubeId ? (
+  const nodeContent = mediaType === "image" ? (
+    <div className="bg-card border rounded-lg shadow-sm group relative overflow-hidden" style={{ maxWidth: 360 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={content}
+        alt={title || ""}
+        className="block w-full max-h-[400px] object-contain"
+        draggable={false}
+      />
+      {canEdit && (
+        <div className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(); }}
+            className="bg-destructive rounded-full p-1 shadow-sm hover:bg-destructive/90"
+          >
+            <Trash2 className="h-3 w-3 text-white" />
+          </button>
+        </div>
+      )}
+    </div>
+  ) : mediaType === "video" ? (
+    <div className="bg-card border rounded-lg shadow-sm group relative overflow-hidden" style={{ width: 360 }}>
+      <video
+        src={content}
+        muted
+        loop
+        autoPlay
+        playsInline
+        className="block w-full max-h-[400px]"
+        draggable={false}
+      />
+      {canEdit && (
+        <div className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(); }}
+            className="bg-destructive rounded-full p-1 shadow-sm hover:bg-destructive/90"
+          >
+            <Trash2 className="h-3 w-3 text-white" />
+          </button>
+        </div>
+      )}
+    </div>
+  ) : mediaType === "audio" ? (
+    <div className="bg-card border rounded-lg shadow-sm group relative overflow-hidden p-3" style={{ width: 280 }}>
+      <audio src={content} controls className="w-full" />
+      {canEdit && (
+        <div className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(); }}
+            className="bg-destructive rounded-full p-1 shadow-sm hover:bg-destructive/90"
+          >
+            <Trash2 className="h-3 w-3 text-white" />
+          </button>
+        </div>
+      )}
+    </div>
+  ) : mediaType === "pdf" ? (
+    <div className="bg-card border rounded-lg shadow-sm group relative overflow-hidden" style={{ width: 360 }}>
+      <iframe
+        src={content}
+        title={title || "PDF"}
+        className="w-full border-0"
+        style={{ height: 460 }}
+      />
+      {canEdit && (
+        <div className="absolute -top-2.5 -right-2.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(); }}
+            className="bg-destructive rounded-full p-1 shadow-sm hover:bg-destructive/90"
+          >
+            <Trash2 className="h-3 w-3 text-white" />
+          </button>
+        </div>
+      )}
+    </div>
+  ) : youtubeId ? (
     <EmbedNode
       src={`https://www.youtube-nocookie.com/embed/${youtubeId}`}
       title={title || "YouTube video"}

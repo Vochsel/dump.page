@@ -225,7 +225,7 @@ function parseDumpPageSlug(url: string): string | null {
   }
 }
 
-// Internal query: look up a board name by slug (no auth — server-side only)
+// Internal query: look up a board name + thumbnail by slug (no auth — server-side only)
 export const getBoardNameBySlug = internalQuery({
   args: { slug: v.string() },
   handler: async (ctx, args) => {
@@ -242,7 +242,11 @@ export const getBoardNameBySlug = internalQuery({
     }
     if (!board) return null;
     const icon = board.icon && !board.icon.startsWith("lucide:") ? `${board.icon} ` : "";
-    return { name: `${icon}${board.name}` };
+    let thumbnailUrl: string | null = null;
+    if (board.thumbnailStorageId) {
+      thumbnailUrl = await ctx.storage.getUrl(board.thumbnailStorageId);
+    }
+    return { name: `${icon}${board.name}`, thumbnailUrl };
   },
 });
 
@@ -254,9 +258,27 @@ export const fetchLinkMetadata = internalAction({
     // This works for private, shared, and public boards since it's an internal query.
     const dumpSlug = parseDumpPageSlug(args.url);
     let dumpBoardName: string | undefined;
+    let dumpThumbnailUrl: string | undefined;
     if (dumpSlug) {
       const result = await ctx.runQuery(internal.nodes.getBoardNameBySlug, { slug: dumpSlug });
-      if (result) dumpBoardName = result.name;
+      if (result) {
+        dumpBoardName = result.name;
+        if (result.thumbnailUrl) dumpThumbnailUrl = result.thumbnailUrl;
+      }
+    }
+
+    // For dump.page links, skip HTTP fetch — use internal data directly
+    if (dumpSlug && dumpBoardName) {
+      await ctx.runMutation(internal.nodes.patchNodeMetadata, {
+        nodeId: args.nodeId,
+        metadata: {
+          title: dumpBoardName,
+          description: "dump.page",
+          image: dumpThumbnailUrl || undefined,
+          favicon: "https://www.dump.page/favicon.ico",
+        },
+      });
+      return;
     }
 
     try {
