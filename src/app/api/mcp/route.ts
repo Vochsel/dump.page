@@ -5,13 +5,26 @@ import { api, internal } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { adminQuery } from "@/lib/convex-server";
 import { z } from "zod";
-import { formatBoardDataAsMarkdown } from "@/lib/board-markdown";
 
 const convex = new ConvexHttpClient(
   process.env.NEXT_PUBLIC_CONVEX_URL as string
 );
 
 const MCP_WRITE_ENABLED = true;
+
+function jsonResponse(data: unknown) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(data) }],
+  };
+}
+
+function parseChecklist(content: string): unknown {
+  try {
+    const items = JSON.parse(content);
+    if (Array.isArray(items)) return items;
+  } catch {}
+  return content;
+}
 
 function getAccessToken(authInfo: { extra?: Record<string, unknown> } | undefined): string | undefined {
   return authInfo?.extra?.accessToken as string | undefined;
@@ -29,7 +42,7 @@ function createServer(): McpServer {
     {
       title: "List Boards",
       description:
-        "List all boards the authenticated user has access to. Returns board names, slugs, icons, visibility, and item counts.",
+        "List all boards the authenticated user has access to. Returns JSON array of boards with IDs, slugs, names, icons, visibility, and item counts.",
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true },
     },
@@ -48,26 +61,22 @@ function createServer(): McpServer {
       });
 
       if (!boards || boards.length === 0) {
-        return {
-          content: [{ type: "text" as const, text: "You have no boards yet." }],
-        };
+        return jsonResponse([]);
       }
 
-      const list = boards
-        .filter((b): b is NonNullable<typeof b> => b !== null)
-        .map(
-          (b) =>
-            `${b.icon} **${b.name}** (slug: \`${b.slug}\`, ${b.nodeCount} items, ${b.visibility}, role: ${b.role})`
-        );
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Found ${boards.length} board(s):\n\n${list.join("\n")}`,
-          },
-        ],
-      };
+      return jsonResponse(
+        boards
+          .filter((b): b is NonNullable<typeof b> => b !== null)
+          .map((b) => ({
+            id: b.id,
+            slug: b.slug,
+            name: b.name,
+            icon: b.icon,
+            nodeCount: b.nodeCount,
+            visibility: b.visibility,
+            role: b.role,
+          }))
+      );
     }
   );
 
@@ -77,7 +86,7 @@ function createServer(): McpServer {
     {
       title: "Get Board",
       description:
-        "Get the full content of a board as markdown. Use the board slug (the short ID from the URL). Returns all notes, links, and checklists.",
+        "Get the full content of a board as JSON. Use the board slug (the short ID from the URL). Returns all notes, links, and checklists with their IDs.",
       inputSchema: z.object({
         slug: z.string().describe("Board slug (e.g. 'a1b2c3d4')"),
       }),
@@ -107,11 +116,17 @@ function createServer(): McpServer {
         };
       }
 
-      const markdown = formatBoardDataAsMarkdown(board.board, board.nodes, board.edges);
-
-      return {
-        content: [{ type: "text" as const, text: markdown }],
-      };
+      return jsonResponse({
+        board: board.board,
+        nodes: board.nodes.map((n) => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          content: n.type === "checklist" ? parseChecklist(n.content) : n.content,
+          metadata: n.metadata,
+        })),
+        edges: board.edges,
+      });
     }
   );
 
@@ -121,7 +136,7 @@ function createServer(): McpServer {
     {
       title: "Search Boards",
       description:
-        "Search your boards by name. Returns matching boards with their slugs.",
+        "Search your boards by name. Returns JSON array of matching boards with IDs and slugs.",
       inputSchema: z.object({
         query: z.string().describe("Search query to match against board names"),
       }),
@@ -141,27 +156,20 @@ function createServer(): McpServer {
       });
 
       if (!boards || boards.length === 0) {
-        return {
-          content: [
-            { type: "text" as const, text: `No boards found matching "${query}".` },
-          ],
-        };
+        return jsonResponse([]);
       }
 
-      const list = boards
-        .filter((b): b is NonNullable<typeof b> => b !== null)
-        .map(
-          (b) => `${b.icon} **${b.name}** (slug: \`${b.slug}\`, ${b.visibility})`
-        );
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Found ${boards.length} board(s) matching "${query}":\n\n${list.join("\n")}`,
-          },
-        ],
-      };
+      return jsonResponse(
+        boards
+          .filter((b): b is NonNullable<typeof b> => b !== null)
+          .map((b) => ({
+            id: b.id,
+            slug: b.slug,
+            name: b.name,
+            icon: b.icon,
+            visibility: b.visibility,
+          }))
+      );
     }
   );
 
@@ -171,7 +179,7 @@ function createServer(): McpServer {
     {
       title: "Search Items",
       description:
-        "Search for notes, links, and checklists across your boards. Optionally limit to a specific board by slug.",
+        "Search for notes, links, and checklists across your boards. Returns JSON array of items with IDs. Optionally limit to a specific board by slug.",
       inputSchema: z.object({
         query: z.string().describe("Text to search for in item content, titles, and metadata"),
         board_slug: z
@@ -196,27 +204,19 @@ function createServer(): McpServer {
       });
 
       if (!items || items.length === 0) {
-        return {
-          content: [
-            { type: "text" as const, text: `No items found matching "${query}".` },
-          ],
-        };
+        return jsonResponse([]);
       }
 
-      const list = items.map((item) => {
-        const title =
-          item.title || item.metadata?.title || item.content.slice(0, 80);
-        return `- [${item.type}] **${title}** (board: ${item.boardName}, slug: \`${item.boardSlug}\`)`;
-      });
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Found ${items.length} item(s) matching "${query}":\n\n${list.join("\n")}`,
-          },
-        ],
-      };
+      return jsonResponse(
+        items.map((item) => ({
+          id: item.id,
+          type: item.type,
+          title: item.title || item.metadata?.title || null,
+          content: item.type === "checklist" ? parseChecklist(item.content) : item.content,
+          boardSlug: item.boardSlug,
+          boardName: item.boardName,
+        }))
+      );
     }
   );
 
@@ -226,7 +226,7 @@ function createServer(): McpServer {
     {
       title: "Get Item",
       description:
-        "Get a specific item from a board by its ID. Returns the item's type, content, title, and metadata.",
+        "Get a specific item from a board by its ID. Returns JSON with the item's ID, type, content (checklist items include IDs), title, and metadata.",
       inputSchema: z.object({
         board_slug: z.string().describe("Board slug (e.g. 'a1b2c3d4')"),
         item_id: z.string().describe("The ID of the item to retrieve"),
@@ -258,43 +258,13 @@ function createServer(): McpServer {
         };
       }
 
-      // Format as markdown similar to getItemMarkdown
-      let markdown = "";
-
-      if (item.type === "text") {
-        if (item.title) markdown += `## ${item.title}\n\n`;
-        markdown += `${item.content}\n`;
-      } else if (item.type === "checklist") {
-        if (item.title) markdown += `## ${item.title}\n\n`;
-        try {
-          const items = JSON.parse(item.content);
-          if (Array.isArray(items)) {
-            for (const entry of items) {
-              const idSuffix = entry.id ? ` (id: ${entry.id})` : "";
-              markdown += `- [${entry.checked ? "x" : " "}] ${entry.text}${idSuffix}\n`;
-            }
-          } else {
-            markdown += `${item.content}\n`;
-          }
-        } catch {
-          markdown += `${item.content}\n`;
-        }
-      } else if (item.type === "link") {
-        const title = item.metadata?.title || item.content;
-        markdown += `- [${title}](${item.content})`;
-        if (item.metadata?.description) {
-          markdown += ` - ${item.metadata.description}`;
-        }
-        markdown += "\n";
-      } else {
-        markdown += `${item.content}\n`;
-      }
-
-      markdown += `\n---\n*ID: ${item.id} | Type: ${item.type}*`;
-
-      return {
-        content: [{ type: "text" as const, text: markdown }],
-      };
+      return jsonResponse({
+        id: item.id,
+        type: item.type,
+        title: item.title || null,
+        content: item.type === "checklist" ? parseChecklist(item.content) : item.content,
+        metadata: item.metadata || null,
+      });
     }
   );
 
@@ -506,20 +476,12 @@ function createServer(): McpServer {
             checklistIndex: checklist_index,
           });
 
-          const statusEmoji = result.checked ? "[x]" : "[ ]";
-          const toggledItem = result.items.find(
-            (i: { id?: string }) => i.id === result.checklistItemId
-          );
-          const itemText = toggledItem ? toggledItem.text : "item";
-
-          let response = `Toggled: ${statusEmoji} ${itemText}\n\nFull checklist:\n`;
-          for (const item of result.items) {
-            response += `- [${item.checked ? "x" : " "}] ${item.text} (id: ${item.id ?? "none"})\n`;
-          }
-
-          return {
-            content: [{ type: "text" as const, text: response }],
-          };
+          return jsonResponse({
+            id: result.id,
+            toggledItemId: result.checklistItemId,
+            checked: result.checked,
+            items: result.items,
+          });
         } catch (e) {
           return {
             content: [
