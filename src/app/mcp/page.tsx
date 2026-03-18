@@ -33,7 +33,7 @@ function CopyButton({ text }: { text: string }) {
 const PROVIDERS = [
   {
     name: "Claude",
-    icon: "https://claude.ai/favicon.ico",
+    icon: "/claude-color.svg",
     description: "Add Dump as an MCP integration in Claude's web interface.",
     steps: [
       <>Go to <strong>Settings &rarr; Integrations</strong> in Claude</>,
@@ -57,7 +57,7 @@ const PROVIDERS = [
   },
   {
     name: "Claude Code",
-    icon: "https://claude.ai/favicon.ico",
+    icon: "/claude-color.svg",
     description: "Add the Dump MCP server to Claude Code's configuration.",
     steps: [
       <>Run the following command in your terminal:</>,

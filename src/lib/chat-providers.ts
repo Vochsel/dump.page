@@ -2,7 +2,7 @@ export const CHAT_PROVIDERS = [
   {
     id: "claude",
     name: "Claude",
-    favicon: "https://claude.ai/favicon.ico",
+    favicon: "/claude-color.svg",
     buildUrl: (prompt: string) =>
       `https://claude.ai/new?q=${encodeURIComponent(prompt)}`,
   },

@@ -19,7 +19,7 @@ const AI_PROVIDERS = [
   },
   {
     name: "Claude",
-    icon: "https://claude.ai/favicon.ico",
+    icon: "/claude-color.svg",
     steps: [
       "Share your board using the share button in the header",
       "Click the Chat button and select Claude from the dropdown",
@@ -29,7 +29,7 @@ const AI_PROVIDERS = [
   },
   {
     name: "Claude Code",
-    icon: "https://claude.ai/favicon.ico",
+    icon: "/claude-color.svg",
     steps: [
       "Share your board using the share button in the header",
       "Copy the board's share link and give it to Claude Code",
