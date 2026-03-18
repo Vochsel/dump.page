@@ -86,7 +86,9 @@ export default function Home() {
       {/* CTA Heading */}
       <div className="text-center space-y-3 max-w-xl mt-8">
         <h1 className="font-[family-name:var(--font-poppins)] text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-50 leading-tight">
-          The prompt dump for humans and AI{" "}
+          The prompt dump
+          <br />
+          for humans and AI{" "}
           <span className="inline-block landing-sparkle">&#10024;</span>
         </h1>
         <p className="font-[family-name:var(--font-poppins)] text-base sm:text-lg text-gray-500 dark:text-gray-400 font-medium">
@@ -100,6 +102,17 @@ export default function Home() {
 
       {/* Works with AI */}
       <AiWorksWithSection />
+
+      {/* Screenshot showcase */}
+      <div className="mt-12 max-w-3xl w-full px-4">
+        <div className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/40 dark:via-purple-900/40 dark:to-pink-900/40 rounded-2xl p-3 sm:p-4 shadow-lg">
+          <img
+            src="/screenshot-ai-demo.png"
+            alt="Dump board showing engineering tasks, notes, and links"
+            className="w-full rounded-xl shadow-md"
+          />
+        </div>
+      </div>
 
       {/* Feature cards */}
       <p className="mt-16 text-center text-xs font-[family-name:var(--font-poppins)] text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-6">
