@@ -88,8 +88,7 @@ export default function Home() {
         <h1 className="font-[family-name:var(--font-poppins)] text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-50 leading-tight">
           The prompt dump
           <br />
-          for humans and AI{" "}
-          <span className="inline-block landing-sparkle">&#10024;</span>
+          for humans and AI
         </h1>
         <p className="font-[family-name:var(--font-poppins)] text-base sm:text-lg text-gray-500 dark:text-gray-400 font-medium">
           Shared whiteboards of links and text, accessible to all agents and chatbots.
@@ -104,12 +103,12 @@ export default function Home() {
       <AiWorksWithSection />
 
       {/* Screenshot showcase */}
-      <div className="mt-12 max-w-3xl w-full px-4">
-        <div className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/40 dark:via-purple-900/40 dark:to-pink-900/40 rounded-2xl p-3 sm:p-4 shadow-lg">
+      <div className="mt-12 max-w-4xl w-full px-4">
+        <div className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/40 dark:via-purple-900/40 dark:to-pink-900/40 rounded-2xl p-3 sm:p-4">
           <img
             src="/screenshot-ai-demo.png"
             alt="Dump board showing engineering tasks, notes, and links"
-            className="w-full rounded-xl shadow-md"
+            className="w-full rounded-xl"
           />
         </div>
       </div>
