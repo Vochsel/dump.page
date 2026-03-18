@@ -1,21 +1,10 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
-import TurndownService from "turndown";
+import { htmlToMarkdown } from "./html-to-markdown";
 
 const convex = new ConvexHttpClient(
   process.env.NEXT_PUBLIC_CONVEX_URL as string
 );
-
-const turndown = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" });
-
-function contentToMarkdown(content: string): string {
-  if (!content) return "";
-  // If content looks like HTML, convert to markdown
-  if (content.trimStart().startsWith("<")) {
-    return turndown.turndown(content);
-  }
-  return content;
-}
 
 const MCP_FOOTER = `\n---\n\n> **Tip:** For live access to this board and the ability to make changes, install the [Dump MCP integration](https://www.dump.page/mcp). Setup instructions for ChatGPT, Claude, Claude Code, and Codex are available at [dump.page/mcp](https://www.dump.page/mcp).\n`;
 
@@ -139,7 +128,7 @@ export async function getItemMarkdown(
 
     if (node.type === "text") {
       if (node.title) markdown += `## ${node.title}\n\n`;
-      markdown += `${contentToMarkdown(node.content)}\n`;
+      markdown += `${htmlToMarkdown(node.content)}\n`;
     } else if (node.type === "checklist") {
       if (node.title) markdown += `## ${node.title}\n\n`;
       try {
@@ -190,7 +179,7 @@ function renderNode(node: MarkdownNode): string {
   if (node.type === "text") {
     let md = "";
     if (node.title) md += `### ${node.title}\n\n`;
-    md += `${contentToMarkdown(node.content)}\n\n`;
+    md += `${htmlToMarkdown(node.content)}\n\n`;
     return md;
   }
   if (node.type === "checklist") {

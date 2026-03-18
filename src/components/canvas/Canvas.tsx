@@ -27,6 +27,7 @@ import { ChecklistNode } from "./ChecklistNode";
 import { FloatingEdge } from "./FloatingEdge";
 import { FloatingConnectionLine } from "./FloatingConnectionLine";
 import { KnifeTool } from "./KnifeTool";
+import { htmlToMarkdown } from "@/lib/html-to-markdown";
 import { Toolbar } from "./Toolbar";
 import {
   ContextMenu,
@@ -1056,8 +1057,8 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
         text = data.content || "";
       }
     } else {
-      // For text nodes, strip HTML
-      text = (data.content || "").replace(/<[^>]*>/g, "");
+      // For text nodes, convert HTML to markdown
+      text = htmlToMarkdown(data.content || "");
     }
     const title = data.title;
     if (title) {
@@ -1571,7 +1572,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
                         text = items.map((i: { text: string; checked: boolean }) => `${i.checked ? "[x]" : "[ ]"} ${i.text}`).join("\n");
                       } catch { text = data.content || ""; }
                     } else {
-                      text = (data.content || "").replace(/<[^>]*>/g, "");
+                      text = htmlToMarkdown(data.content || "");
                     }
                     const title = data.title;
                     if (title) {
@@ -1679,7 +1680,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
                           text = items.map((i: { text: string; checked: boolean }) => `${i.checked ? "[x]" : "[ ]"} ${i.text}`).join("\n");
                         } catch { text = data.content || ""; }
                       } else {
-                        text = (data.content || "").replace(/<[^>]*>/g, "");
+                        text = htmlToMarkdown(data.content || "");
                       }
                       const title = data.title;
                       if (title) {

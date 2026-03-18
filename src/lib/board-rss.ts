@@ -1,20 +1,10 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
-import TurndownService from "turndown";
+import { htmlToMarkdown } from "./html-to-markdown";
 
 const convex = new ConvexHttpClient(
   process.env.NEXT_PUBLIC_CONVEX_URL as string
 );
-
-const turndown = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" });
-
-function stripHtml(content: string): string {
-  if (!content) return "";
-  if (content.trimStart().startsWith("<")) {
-    return turndown.turndown(content);
-  }
-  return content;
-}
 
 function escapeXml(str: string): string {
   return str
@@ -63,10 +53,10 @@ export async function getBoardRss(
           if (node.title) {
             title = node.title;
           } else {
-            const text = stripHtml(node.content);
+            const text = htmlToMarkdown(node.content);
             title = text.slice(0, 100) + (text.length > 100 ? "..." : "");
           }
-          description = stripHtml(node.content);
+          description = htmlToMarkdown(node.content);
         } else {
           // checklist
           title = node.title || "Checklist";
