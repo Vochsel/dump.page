@@ -189,17 +189,16 @@ Add to your `~/.codeium/windsurf/mcp_config.json`:
 <details>
 <summary>Codex</summary>
 
-Add to your `.codex/config.json`:
+```bash
+codex mcp add dump-mcp --transport http https://www.dump.page/api/mcp
+```
 
-```json
-{
-  "mcpServers": {
-    "dump-mcp": {
-      "type": "http",
-      "url": "https://www.dump.page/api/mcp"
-    }
-  }
-}
+Or add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.dump-mcp]
+type = "http"
+url = "https://www.dump.page/api/mcp"
 ```
 
 </details>
