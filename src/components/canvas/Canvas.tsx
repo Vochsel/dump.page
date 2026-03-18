@@ -1138,12 +1138,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
       shareToken,
       itemId: nodeMenu.nodeId,
     });
-    const provider = localStorage.getItem("dump-chat-provider") ?? "claude";
-    const llmsUrl = url.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
-    const text = provider === "claude"
-      ? `scrape ${url} and ${llmsUrl} as context to answer:\n`
-      : `scrape ${url} as context to answer:\n`;
-    navigator.clipboard.writeText(text).then(() => {
+    navigator.clipboard.writeText(url).then(() => {
       toast.success("Item link copied to clipboard");
     });
     setNodeMenu(null);
