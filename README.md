@@ -89,6 +89,121 @@ See [`.env.example`](.env.example) for the full list. Key variables:
 | `bun run deploy:convex:dev` | Start Convex dev server |
 | `bun run deploy:convex` | Deploy Convex to production |
 
+## MCP Server
+
+Dump exposes an MCP server at `https://www.dump.page/api/mcp` so AI tools can read and write to your boards.
+
+### Quick Install
+
+<details>
+<summary>Claude Code</summary>
+
+```bash
+claude mcp add dump-mcp --transport http https://www.dump.page/api/mcp
+```
+
+</details>
+
+<details>
+<summary>Claude Desktop / Claude.ai</summary>
+
+Go to **Settings → Integrations → Add More** and paste:
+
+```
+https://www.dump.page/api/mcp
+```
+
+</details>
+
+<details>
+<summary>ChatGPT</summary>
+
+Go to **Settings → Connectors → Add connector** and paste:
+
+```
+https://www.dump.page/api/mcp
+```
+
+</details>
+
+<details>
+<summary>Cursor</summary>
+
+Go to `Cursor Settings` → `MCP` → `Add new MCP Server`. Use `url` type with:
+
+```
+https://www.dump.page/api/mcp
+```
+
+Or add to your `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "dump-mcp": {
+      "url": "https://www.dump.page/api/mcp"
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>VS Code</summary>
+
+Add to your VS Code settings (JSON):
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "dump-mcp": {
+        "type": "http",
+        "url": "https://www.dump.page/api/mcp"
+      }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Windsurf</summary>
+
+Add to your `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "dump-mcp": {
+      "serverUrl": "https://www.dump.page/api/mcp"
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Codex</summary>
+
+Add to your `.codex/config.json`:
+
+```json
+{
+  "mcpServers": {
+    "dump-mcp": {
+      "type": "http",
+      "url": "https://www.dump.page/api/mcp"
+    }
+  }
+}
+```
+
+</details>
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
