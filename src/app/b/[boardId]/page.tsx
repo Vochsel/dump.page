@@ -16,7 +16,6 @@ import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { ChatButton } from "@/components/board/ChatButton";
 import { Button } from "@/components/ui/button";
 import { LoginButton } from "@/components/auth/LoginButton";
-import { BoardIcon } from "@/components/board/BoardIcon";
 import { BoardIconPicker } from "@/components/board/BoardIconPicker";
 import { darkenHex, lightenHex } from "@/lib/utils";
 import { getBoardUrl } from "@/lib/board-url";
@@ -29,6 +28,7 @@ import { DocumentView } from "@/components/board/DocumentView";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { PRO_MODE_STORAGE_KEY } from "@/lib/chat-providers";
 import { sfx } from "@/lib/sfx";
+import { BoardArchiveButton, BoardStarButton } from "@/components/board/BoardMembershipButtons";
 import {
   Popover,
   PopoverContent,
@@ -121,15 +121,21 @@ export default function BoardPage({
     slug: boardId,
     shareToken: token,
   });
+  const board = access?.board;
+  const boardNameForTitle = board?.name;
+  const boardIconForTitle = board?.icon;
 
   // Update tab title with board name and icon
   useEffect(() => {
-    if (access?.board) {
-      const icon = access.board.icon && !access.board.icon.startsWith("lucide:") ? `${access.board.icon} ` : "";
-      document.title = `${icon}${access.board.name} — Dump`;
+    if (boardNameForTitle) {
+      const icon =
+        boardIconForTitle && !boardIconForTitle.startsWith("lucide:")
+          ? `${boardIconForTitle} `
+          : "";
+      document.title = `${icon}${boardNameForTitle} — Dump`;
     }
     return () => { document.title = "Dump — The context dump for humans and AI"; };
-  }, [access?.board?.name, access?.board?.icon]);
+  }, [boardNameForTitle, boardIconForTitle]);
 
   // Debug: log board markdown to console (hooks must be before early returns)
   const markdownLogged = useRef(false);
@@ -278,6 +284,19 @@ export default function BoardPage({
                 visibility={access.board.visibility}
                 shareToken={access.board.shareToken}
               />
+              {access.role ? (
+                <>
+                  <BoardStarButton
+                    boardId={access.board._id}
+                    starred={access.starred ?? false}
+                  />
+                  <BoardArchiveButton
+                    boardId={access.board._id}
+                    archived={access.archived ?? false}
+                    showToast
+                  />
+                </>
+              ) : null}
               <BoardSettingsPopover
                 boardId={access.board._id}
                 settings={boardSettings}

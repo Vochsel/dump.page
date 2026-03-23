@@ -60,6 +60,8 @@ export default defineSchema({
     boardId: v.id("boards"),
     userId: v.id("users"),
     role: v.union(v.literal("owner"), v.literal("editor")),
+    starred: v.optional(v.boolean()),
+    archived: v.optional(v.boolean()),
     joinedAt: v.number(),
   })
     .index("by_boardId", ["boardId"])

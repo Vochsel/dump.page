@@ -1718,7 +1718,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
               <Copy className="h-3.5 w-3.5" />
               {localNodes.find((n) => n.id === nodeMenu.nodeId)?.type === "link" ? "Copy link" : "Copy content"}
             </button>
-            {boardSlug && (
+            {boardSlug && localNodes.find((n) => n.id === nodeMenu.nodeId)?.type !== "link" && (
               <button
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 onClick={handleNodeCopyLink}
@@ -1749,6 +1749,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
             </button>
             {localNodes.find((n) => n.id === nodeMenu.nodeId)?.type === "link" && (
               <>
+                <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
                 <button
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   onClick={handleNodeEditLink}

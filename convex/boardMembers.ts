@@ -105,6 +105,23 @@ export const getMembers = query({
   },
 });
 
+export const updatePreferences = mutation({
+  args: {
+    boardId: v.id("boards"),
+    starred: v.optional(v.boolean()),
+    archived: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const { membership } = await requireBoardMember(ctx, args.boardId);
+
+    const updates: { starred?: boolean; archived?: boolean } = {};
+    if (args.starred !== undefined) updates.starred = args.starred;
+    if (args.archived !== undefined) updates.archived = args.archived;
+
+    await ctx.db.patch(membership._id, updates);
+  },
+});
+
 export const checkAccess = query({
   args: {
     slug: v.string(),
@@ -150,7 +167,14 @@ export const checkAccess = query({
 
     // Members can always view and edit
     if (membership) {
-      return { canView: true, canEdit: true, board, role: membership.role };
+      return {
+        canView: true,
+        canEdit: true,
+        board,
+        role: membership.role,
+        starred: membership.starred ?? false,
+        archived: membership.archived ?? false,
+      };
     }
 
     // Public boards: anyone can view

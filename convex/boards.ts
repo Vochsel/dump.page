@@ -1,8 +1,9 @@
-import { mutation, query, internalMutation, MutationCtx } from "./_generated/server";
+import { mutation, query, internalMutation, MutationCtx, QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 import { UserIdentity } from "convex/server";
+import { getAuthUser } from "./lib/auth";
 
 async function ensureUser(ctx: MutationCtx, identity: UserIdentity) {
   const existing = await ctx.db
@@ -32,6 +33,58 @@ function generateSlug(): string {
   for (const b of bytes) slug += chars[b % chars.length];
   return slug;
 }
+
+async function buildBoardSummary(
+  ctx: QueryCtx,
+  membership: Doc<"boardMembers">,
+  options: { includeRecentNodes?: boolean } = {}
+) {
+  const board = await ctx.db.get(membership.boardId);
+  if (!board) return null;
+
+  const memberCount = (
+    await ctx.db
+      .query("boardMembers")
+      .withIndex("by_boardId", (q) => q.eq("boardId", membership.boardId))
+      .collect()
+  ).length;
+
+  const recentNodes = options.includeRecentNodes
+    ? (
+        await ctx.db
+          .query("nodes")
+          .withIndex("by_boardId", (q) => q.eq("boardId", membership.boardId))
+          .collect()
+      )
+        .filter((n) => !n.archived)
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .slice(0, 4)
+        .map((n) => ({
+          _id: n._id,
+          type: n.type,
+          content: n.content,
+          title: n.title,
+          metadata: n.metadata,
+          updatedAt: n.updatedAt,
+        }))
+    : undefined;
+
+  const thumbnailUrl = board.thumbnailStorageId
+    ? await ctx.storage.getUrl(board.thumbnailStorageId)
+    : null;
+
+  return {
+    ...board,
+    role: membership.role,
+    memberCount,
+    recentNodes,
+    thumbnailUrl,
+    starred: membership.starred ?? false,
+    archived: membership.archived ?? false,
+  };
+}
+
+type BoardSummary = NonNullable<Awaited<ReturnType<typeof buildBoardSummary>>>;
 
 export const createBoard = mutation({
   args: {
@@ -116,35 +169,21 @@ export const createBoard = mutation({
 export const getMyBoards = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
+    const user = await getAuthUser(ctx);
     if (!user) return [];
 
-    const memberships = await ctx.db
-      .query("boardMembers")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+    const memberships = (
+      await ctx.db
+        .query("boardMembers")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect()
+    ).filter((membership) => !membership.archived);
 
     const boards = await Promise.all(
-      memberships.map(async (m) => {
-        const board = await ctx.db.get(m.boardId);
-        if (!board) return null;
-        const memberCount = (
-          await ctx.db
-            .query("boardMembers")
-            .withIndex("by_boardId", (q) => q.eq("boardId", m.boardId))
-            .collect()
-        ).length;
-        return { ...board, role: m.role, memberCount };
-      })
+      memberships.map((membership) => buildBoardSummary(ctx, membership))
     );
 
-    return boards.filter(Boolean);
+    return boards.filter((board): board is BoardSummary => board !== null);
   },
 });
 
@@ -431,54 +470,46 @@ export const seedDefaultBoard = internalMutation({
 export const getMyBoardsWithRecentNodes = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
+    const user = await getAuthUser(ctx);
     if (!user) return [];
 
-    const memberships = await ctx.db
-      .query("boardMembers")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+    const memberships = (
+      await ctx.db
+        .query("boardMembers")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect()
+    ).filter((membership) => !membership.archived);
 
     const boards = await Promise.all(
-      memberships.map(async (m) => {
-        const board = await ctx.db.get(m.boardId);
-        if (!board) return null;
-        const memberCount = (
-          await ctx.db
-            .query("boardMembers")
-            .withIndex("by_boardId", (q) => q.eq("boardId", m.boardId))
-            .collect()
-        ).length;
-        const nodes = await ctx.db
-          .query("nodes")
-          .withIndex("by_boardId", (q) => q.eq("boardId", m.boardId))
-          .collect();
-        // Sort by updatedAt descending and take top 4 (exclude archived)
-        const recentNodes = nodes
-          .filter((n) => !n.archived)
-          .sort((a, b) => b.updatedAt - a.updatedAt)
-          .slice(0, 4)
-          .map((n) => ({
-            _id: n._id,
-            type: n.type,
-            content: n.content,
-            metadata: n.metadata,
-            updatedAt: n.updatedAt,
-          }));
-        const thumbnailUrl = board.thumbnailStorageId
-          ? await ctx.storage.getUrl(board.thumbnailStorageId)
-          : null;
-        return { ...board, role: m.role, memberCount, recentNodes, thumbnailUrl };
-      })
+      memberships.map((membership) =>
+        buildBoardSummary(ctx, membership, { includeRecentNodes: true })
+      )
     );
 
-    return boards.filter(Boolean);
+    return boards.filter((board): board is BoardSummary => board !== null);
+  },
+});
+
+export const getArchivedBoards = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthUser(ctx);
+    if (!user) return [];
+
+    const memberships = (
+      await ctx.db
+        .query("boardMembers")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect()
+    ).filter((membership) => membership.archived);
+
+    const boards = await Promise.all(
+      memberships.map((membership) =>
+        buildBoardSummary(ctx, membership, { includeRecentNodes: true })
+      )
+    );
+
+    return boards.filter((board): board is BoardSummary => board !== null);
   },
 });
 
@@ -632,21 +663,17 @@ export const getBoardForMarkdown = query({
 export const globalSearch = query({
   args: { query: v.string() },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return { boards: [], items: [] };
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_firebaseUid", (q) => q.eq("firebaseUid", identity.subject))
-      .unique();
+    const user = await getAuthUser(ctx);
     if (!user) return { boards: [], items: [] };
 
     const searchLower = args.query.toLowerCase();
 
-    const memberships = await ctx.db
-      .query("boardMembers")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+    const memberships = (
+      await ctx.db
+        .query("boardMembers")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .collect()
+    ).filter((membership) => !membership.archived);
 
     const boards: Array<{
       _id: Id<"boards">;
