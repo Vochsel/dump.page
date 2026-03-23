@@ -132,7 +132,7 @@ export function BoardShare({ board, isOwner, isMember }: BoardShareProps) {
     const { board: b, nodes, edges } = markdownData;
     const activeNodes = nodes.filter((n: { archived?: boolean }) => !n.archived);
     return formatBoardDataAsMarkdown(
-      { name: `${b.icon} ${b.name}`, settings: b.settings },
+      { name: b.name, settings: b.settings },
       activeNodes.map((n) => ({
         id: n._id,
         type: n.type,
