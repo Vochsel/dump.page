@@ -28,6 +28,7 @@ import { FloatingEdge } from "./FloatingEdge";
 import { FloatingConnectionLine } from "./FloatingConnectionLine";
 import { KnifeTool } from "./KnifeTool";
 import { htmlToMarkdown } from "@/lib/html-to-markdown";
+import { stripHtmlStyles } from "@/lib/strip-html-styles";
 import { Toolbar } from "./Toolbar";
 import {
   ContextMenu,
@@ -254,7 +255,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     } else {
       // Use clipboard HTML if available, otherwise convert plain text newlines to paragraphs
       const content = html
-        ? html
+        ? stripHtmlStyles(html)
         : trimmed.split(/\n\n+/).map((para) =>
             `<p>${para.split(/\n/).join("<br>")}</p>`
           ).join("");
