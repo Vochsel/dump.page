@@ -28,7 +28,6 @@ import { DocumentView } from "@/components/board/DocumentView";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { PRO_MODE_STORAGE_KEY } from "@/lib/chat-providers";
 import { sfx } from "@/lib/sfx";
-import { BoardArchiveButton, BoardStarButton } from "@/components/board/BoardMembershipButtons";
 import {
   Popover,
   PopoverContent,
@@ -284,23 +283,13 @@ export default function BoardPage({
                 visibility={access.board.visibility}
                 shareToken={access.board.shareToken}
               />
-              {access.role ? (
-                <>
-                  <BoardStarButton
-                    boardId={access.board._id}
-                    starred={access.starred ?? false}
-                  />
-                  <BoardArchiveButton
-                    boardId={access.board._id}
-                    archived={access.archived ?? false}
-                    showToast
-                  />
-                </>
-              ) : null}
               <BoardSettingsPopover
                 boardId={access.board._id}
                 settings={boardSettings}
                 canEdit={access.role === "owner"}
+                canManageBoard={!!access.role}
+                starred={access.starred ?? false}
+                archived={access.archived ?? false}
               />
               <BoardShare
                 board={access.board}

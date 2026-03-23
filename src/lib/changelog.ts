@@ -12,6 +12,18 @@ export type ChangelogVersion = {
 
 export const changelog: ChangelogVersion[] = [
   {
+    version: "1.9.0",
+    date: "2026-03-23",
+    summary: "Star the boards you care about, archive boards out of your dashboard, and restore them from a dedicated Archive page.",
+    entries: [
+      { type: "feature", description: "Starred boards — star owned or shared boards and pin them to a dedicated section at the top of the dashboard" },
+      { type: "feature", description: "Board archive — archive owned or shared boards per-user so they disappear from the dashboard without affecting other members" },
+      { type: "feature", description: "Archive page — restore archived boards from a dedicated page linked from the dashboard settings menu" },
+      { type: "feature", description: "Board settings actions — star and archive controls on board pages now live inside the settings dropdown instead of the header" },
+      { type: "fix", description: "Node copy link menu — right-click copy-link is now hidden for link nodes, and edit link is visually separated in the menu" },
+    ],
+  },
+  {
     version: "1.8.0",
     date: "2026-03-11",
     summary: "Connect nodes with labeled edges, merge checklists by dragging, and unlock Pro mode for power-user features. Media files now render inline, and paste preserves formatting.",
