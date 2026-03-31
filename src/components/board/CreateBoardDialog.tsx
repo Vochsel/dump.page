@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 import { IconPicker } from "./IconPicker";
 
 type TemplateNode = {
-  type: "text" | "link" | "checklist";
+  type: "text" | "link" | "checklist" | "board";
   content: string;
   title?: string;
   position: { x: number; y: number };

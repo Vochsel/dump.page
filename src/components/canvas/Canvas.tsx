@@ -24,6 +24,7 @@ import "@xyflow/react/dist/style.css";
 import { TextNode } from "./TextNode";
 import { LinkNode } from "./LinkNode";
 import { ChecklistNode } from "./ChecklistNode";
+import { BoardNode } from "./BoardNode";
 import { FloatingEdge } from "./FloatingEdge";
 import { FloatingConnectionLine } from "./FloatingConnectionLine";
 import { KnifeTool } from "./KnifeTool";
@@ -45,7 +46,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown, Loader2, ClipboardPaste, Send, Zap } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown, Loader2, ClipboardPaste, Send, Zap, LayoutDashboard } from "lucide-react";
+import { BoardPickerDialog } from "./BoardPickerDialog";
 import {
   Popover,
   PopoverContent,
@@ -74,6 +76,7 @@ const nodeTypes: NodeTypes = {
   text: TextNode,
   link: LinkNode,
   checklist: ChecklistNode,
+  board: BoardNode,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -140,6 +143,10 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   const [linkUrl, setLinkUrl] = useState("");
   const [editLinkNodeId, setEditLinkNodeId] = useState<string | null>(null);
   const [linkSearching, setLinkSearching] = useState(false);
+
+  // Board picker dialog state
+  const [boardPickerOpen, setBoardPickerOpen] = useState(false);
+  const boardPickerPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Clipboard state for context menu
   const [clipboardText, setClipboardText] = useState<string | null>(null);
@@ -934,6 +941,32 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     setLinkDialogOpen(true);
   }, []);
 
+  const openBoardPicker = useCallback((fromToolbar?: boolean) => {
+    if (fromToolbar) {
+      boardPickerPosRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    } else {
+      boardPickerPosRef.current = contextMenuPosRef.current;
+    }
+    setBoardPickerOpen(true);
+  }, []);
+
+  const handleBoardSelected = useCallback((board: { id: string; name: string; icon: string; slug: string; thumbnailUrl?: string | null }) => {
+    const screenPos = boardPickerPosRef.current ?? { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    const pos = screenToFlowPosition(screenPos);
+    createNode({
+      boardId,
+      type: "board",
+      content: board.id,
+      position: { x: pos.x - 140, y: pos.y - 40 },
+      metadata: {
+        title: board.name,
+        favicon: board.icon,
+        description: board.slug,
+        image: board.thumbnailUrl ?? undefined,
+      },
+    }).then((nodeId) => { pushAction({ type: "create", nodeId }); sfx.add(); });
+  }, [boardId, createNode, screenToFlowPosition, pushAction]);
+
   const handleLinkSubmit = useCallback(async () => {
     const input = linkUrl.trim();
     if (!input) return;
@@ -1078,9 +1111,10 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
     const data = node.data as { content?: string; title?: string };
     createNode({
       boardId,
-      type: node.type as "text" | "link" | "checklist",
+      type: node.type as "text" | "link" | "checklist" | "board",
       content: data.content || "",
       position: { x: node.position.x + 30, y: node.position.y + 30 },
+      metadata: source?.metadata,
     }).then((newNodeId) => {
       pushAction({ type: "create", nodeId: newNodeId });
       sfx.add();
@@ -1347,6 +1381,8 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
           onRedo={redo}
           onNodeCreated={(nodeId) => { pushAction({ type: "create", nodeId }); sfx.add(); }}
           onAddLink={() => addLinkNodeAtCursor(true)}
+          onAddBoard={() => openBoardPicker(true)}
+          proMode={proMode}
           connectModeActive={isConnectMode}
           onToggleConnectMode={() => setConnectModeToggled((prev) => !prev)}
         />
@@ -1555,6 +1591,15 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
             <CheckSquare className="h-4 w-4 mr-2" />
             Add Checklist
           </ContextMenuItem>
+          {proMode && (
+            <>
+              <ContextMenuSeparator />
+              <ContextMenuItem onClick={() => openBoardPicker()}>
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Add Board
+              </ContextMenuItem>
+            </>
+          )}
           {(() => {
             const allSelected = localNodes.filter((n) => n.selected);
             if (allSelected.length < 2) return null;
@@ -1886,6 +1931,13 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
           </form>
         </DialogContent>
       </Dialog>
+
+      <BoardPickerDialog
+        open={boardPickerOpen}
+        onOpenChange={setBoardPickerOpen}
+        onSelect={handleBoardSelected}
+        currentBoardId={boardId}
+      />
 
       {/* Preview dialog for collapsed items */}
       <Dialog open={previewNodeId !== null} onOpenChange={(open) => { if (!open) setPreviewNodeId(null); }}>

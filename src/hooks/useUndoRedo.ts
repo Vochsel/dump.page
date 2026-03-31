@@ -3,7 +3,7 @@ import type { Position, Metadata, BoardNode } from "@/context/board-ops-context"
 
 type NodeSnapshot = {
   boardId: string;
-  type: "text" | "link" | "checklist";
+  type: "text" | "link" | "checklist" | "board";
   content: string;
   position: Position;
   metadata?: Metadata;
@@ -24,7 +24,7 @@ interface UseUndoRedoArgs {
   convexNodes: BoardNode[] | undefined;
   createNode: (args: {
     boardId: string;
-    type: "text" | "link" | "checklist";
+    type: "text" | "link" | "checklist" | "board";
     content: string;
     position: Position;
     metadata?: Metadata;

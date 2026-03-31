@@ -1,12 +1,18 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, Minus, CheckSquare, Undo2, Redo2, Spline } from "lucide-react";
+import { Type, Link, Plus, Minus, CheckSquare, Undo2, Redo2, Spline, MoreHorizontal, LayoutGrid } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useReactFlow, useViewport } from "@xyflow/react";
 import { useBoardOps } from "@/context/board-ops-context";
 
@@ -17,11 +23,13 @@ interface ToolbarProps {
   onRedo: () => void;
   onNodeCreated: (nodeId: string) => void;
   onAddLink: () => void;
+  onAddBoard?: () => void;
+  proMode?: boolean;
   connectModeActive?: boolean;
   onToggleConnectMode?: () => void;
 }
 
-export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated, onAddLink, connectModeActive, onToggleConnectMode }: ToolbarProps) {
+export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated, onAddLink, onAddBoard, proMode, connectModeActive, onToggleConnectMode }: ToolbarProps) {
   const { createNode, boardId } = useBoardOps();
   const { screenToFlowPosition, fitView, zoomIn, zoomOut, zoomTo } = useReactFlow();
   const { zoom } = useViewport();
@@ -76,6 +84,22 @@ export function Toolbar({ canUndo, canRedo, onUndo, onRedo, onNodeCreated, onAdd
         <Link className="h-4 w-4" />
         Link
       </Button>
+      {proMode && onAddBoard && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1 px-2">
+              <MoreHorizontal className="h-4 w-4" />
+              More
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="center">
+            <DropdownMenuItem onClick={onAddBoard}>
+              <LayoutGrid className="h-4 w-4" />
+              Add Board
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
       <div className="w-px h-6 bg-border" />
       {onToggleConnectMode && (
         <Button

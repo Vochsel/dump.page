@@ -14,7 +14,7 @@ type BoardRole = "owner" | "editor";
 
 interface RecentNode {
   _id: string;
-  type: "text" | "link" | "checklist";
+  type: "text" | "link" | "checklist" | "board";
   content: string;
   title?: string;
   metadata?: {

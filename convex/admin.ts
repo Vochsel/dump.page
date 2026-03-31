@@ -29,7 +29,7 @@ export const stats = query({
     const visibilityCounts = { private: 0, shared: 0, public: 0 };
     for (const b of boards) visibilityCounts[b.visibility]++;
 
-    const typeCounts = { text: 0, link: 0, checklist: 0 };
+    const typeCounts: Record<string, number> = { text: 0, link: 0, checklist: 0, board: 0 };
     for (const n of nodes) typeCounts[n.type]++;
 
     const nodesPerBoard = boards.map((b) => ({

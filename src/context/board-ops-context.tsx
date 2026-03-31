@@ -22,7 +22,7 @@ export type BoardEdge = {
 export type BoardNode = {
   _id: string;
   boardId: string;
-  type: "text" | "link" | "checklist";
+  type: "text" | "link" | "checklist" | "board";
   content: string;
   title?: string;
   showTitle?: boolean;
@@ -37,7 +37,7 @@ export interface BoardOps {
   boardId: string;
   createNode: (args: {
     boardId: string;
-    type: "text" | "link" | "checklist";
+    type: "text" | "link" | "checklist" | "board";
     content: string;
     position: Position;
     metadata?: Metadata;

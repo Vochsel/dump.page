@@ -115,7 +115,7 @@ export default function NewBoardPage() {
         name: "Untitled Board",
         icon: "📋",
         nodes: nodes.map((n: { type: string; content: string; position: { x: number; y: number }; metadata?: { title?: string; favicon?: string; description?: string } }) => ({
-          type: n.type as "text" | "link" | "checklist",
+          type: n.type as "text" | "link" | "checklist" | "board",
           content: n.content,
           position: n.position,
           metadata: n.metadata,
