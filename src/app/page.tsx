@@ -204,9 +204,6 @@ export default function Home() {
           <Link href="/mcp" className="underline decoration-gray-300 underline-offset-4 hover:text-gray-800">
             Connect with MCP
           </Link>
-          <Link href="/blog" className="underline decoration-gray-300 underline-offset-4 hover:text-gray-800">
-            Read positioning guides
-          </Link>
         </div>
       </div>
 
