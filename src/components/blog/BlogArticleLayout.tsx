@@ -117,7 +117,7 @@ export function BlogArticleLayout({
 
           <div className="relative">
             <div
-              className="absolute -left-6 top-6 hidden rounded-[0.95rem] border px-4 py-3 text-sm text-left shadow-sm lg:block"
+              className="absolute -left-7 top-5 z-10 hidden rounded-[0.95rem] border px-4 py-3 text-sm text-left shadow-sm lg:block"
               style={{
                 borderColor: `${palette.ink}18`,
                 backgroundColor: "rgba(255,255,255,0.8)",

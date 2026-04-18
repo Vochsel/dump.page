@@ -186,15 +186,13 @@ export default function Home() {
           The prompt dump for humans and AI
         </p>
         <h1 className="font-[family-name:var(--font-poppins)] text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-50 leading-tight">
-          Share project context between
+          One project context for
           <br />
           ChatGPT, Claude, and your team
         </h1>
         <p className="font-[family-name:var(--font-poppins)] text-base sm:text-lg text-gray-500 dark:text-gray-400 font-medium max-w-2xl">
-          Dump is a collaborative context board for links, notes, checklists,
-          and project briefs. Keep one source of truth for humans, coding
-          agents, and AI chats instead of rebuilding the same context over and
-          over.
+          Dump is a shared board for links, notes, and briefs, so humans and
+          agents work from the same context.
         </p>
         <StartDumpingButton />
         <Suspense>
