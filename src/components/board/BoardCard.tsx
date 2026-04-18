@@ -22,23 +22,26 @@ interface RecentNode {
   };
 }
 
-interface BoardCardProps {
-  board: {
-    _id: Id<"boards">;
-    slug: string;
-    name: string;
-    icon: string;
-    visibility: BoardVisibility;
-    memberCount: number;
-    role: BoardRole;
-    starred?: boolean;
-    archived?: boolean;
-    thumbnailUrl?: string | null;
-    settings?: {
-      backgroundColor?: string;
-    };
-    recentNodes?: RecentNode[];
+export interface DashboardBoard {
+  _id: Id<"boards">;
+  slug: string;
+  name: string;
+  icon: string;
+  visibility: BoardVisibility;
+  memberCount: number;
+  role: BoardRole;
+  starred?: boolean;
+  archived?: boolean;
+  thumbnailUrl?: string | null;
+  updatedAt?: number;
+  settings?: {
+    backgroundColor?: string;
   };
+  recentNodes?: RecentNode[];
+}
+
+interface BoardCardProps {
+  board: DashboardBoard;
   mode?: "dashboard" | "archived";
 }
 
@@ -271,6 +274,64 @@ export function BoardCard({ board, mode = "dashboard" }: BoardCardProps) {
             )}
           </div>
         </>
+      )}
+    </Link>
+  );
+}
+
+export function BoardRow({ board, mode = "dashboard" }: BoardCardProps) {
+  const boardHref = `/b/${board.slug ?? board._id}`;
+  const starred = board.starred ?? false;
+  const archived = board.archived ?? false;
+  const isArchivedView = mode === "archived";
+
+  return (
+    <Link
+      href={boardHref}
+      className="group bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 hover:border-stone-300 dark:hover:border-gray-700 hover:shadow-sm transition-all duration-200 flex items-center gap-3 px-4 py-2.5"
+    >
+      <span className="flex-shrink-0">
+        <BoardIcon icon={board.icon} className="text-lg" size={20} />
+      </span>
+      <span className="font-[family-name:var(--font-poppins)] font-medium text-stone-800 dark:text-stone-100 text-sm truncate min-w-0 flex-1">
+        {board.name}
+      </span>
+      <span className="hidden sm:inline-flex text-[11px] text-stone-400 items-center gap-1 flex-shrink-0">
+        {board.recentNodes?.length ?? 0} items
+      </span>
+      <Badge
+        variant={
+          board.visibility === "public"
+            ? "default"
+            : board.visibility === "shared"
+              ? "secondary"
+              : "outline"
+        }
+        className="hidden sm:inline-flex text-[10px] capitalize px-1.5 py-0 flex-shrink-0"
+      >
+        {board.visibility}
+      </Badge>
+      <span className="text-[11px] text-stone-400 flex items-center gap-1 flex-shrink-0 w-10 justify-end">
+        <Users className="h-3 w-3" />
+        {board.memberCount}
+      </span>
+      {isArchivedView ? (
+        <BoardArchiveButton
+          boardId={board._id}
+          archived
+          showToast
+          showLabel
+          size="sm"
+          variant="outline"
+        />
+      ) : (
+        <BoardActionIcons
+          boardId={board._id}
+          boardName={board.name}
+          role={board.role}
+          starred={starred}
+          archived={archived}
+        />
       )}
     </Link>
   );

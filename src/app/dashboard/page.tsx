@@ -1,15 +1,16 @@
 "use client";
 
-import { type ComponentProps, useEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
-import { Archive, ExternalLink, FileText, HelpCircle, Monitor, Moon, Plus, Settings, Sun, Zap } from "lucide-react";
+import { Archive, ExternalLink, FileText, HelpCircle, LayoutGrid, List, Monitor, Moon, Plus, Settings, Sun, Zap } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAuth } from "@/context/auth-context";
 import { useTheme } from "@/context/theme-context";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { CreateBoardDialog } from "@/components/board/CreateBoardDialog";
-import { BoardCard } from "@/components/board/BoardCard";
+import { BoardCard, BoardRow, type DashboardBoard } from "@/components/board/BoardCard";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { SuggestFeatureButton } from "@/components/SuggestFeatureButton";
 import { Footer } from "@/components/Footer";
@@ -20,16 +21,18 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 
-type DashboardBoard = ComponentProps<typeof BoardCard>["board"];
+type DashboardViewMode = "grid" | "list";
 
 function BoardSection({
   title,
   boards,
   mode = "dashboard",
+  viewMode,
 }: {
   title: string;
   boards: DashboardBoard[];
   mode?: "dashboard" | "archived";
+  viewMode: DashboardViewMode;
 }) {
   if (boards.length === 0) return null;
 
@@ -38,11 +41,19 @@ function BoardSection({
       <h2 className="font-[family-name:var(--font-poppins)] text-sm font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wide mb-4">
         {title}
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {boards.map((board) => (
-          <BoardCard key={board._id} board={board} mode={mode} />
-        ))}
-      </div>
+      {viewMode === "grid" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {boards.map((board) => (
+            <BoardCard key={board._id} board={board} mode={mode} />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {boards.map((board) => (
+            <BoardRow key={board._id} board={board} mode={mode} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -52,6 +63,10 @@ export default function DashboardPage() {
   const boards = useQuery(api.boards.getMyBoardsWithRecentNodes);
   const hasMcp = useQuery(api.mcpAuth.hasActiveMcpToken);
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const [viewMode, setViewMode] = useLocalStorage<DashboardViewMode>(
+    "dump-dashboard-view-mode",
+    "grid"
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -156,13 +171,47 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-10">
-        <div className="mb-8">
-          <h1 className="font-[family-name:var(--font-poppins)] text-2xl font-semibold text-stone-900 dark:text-stone-100">
-            Hey {firstName} 👋
-          </h1>
-          <p className="font-[family-name:var(--font-poppins)] text-sm text-stone-400 dark:text-stone-500 mt-1">
-            Your boards and recent activity
-          </p>
+        <div className="mb-8 flex items-end justify-between gap-4">
+          <div>
+            <h1 className="font-[family-name:var(--font-poppins)] text-2xl font-semibold text-stone-900 dark:text-stone-100">
+              Hey {firstName} 👋
+            </h1>
+            <p className="font-[family-name:var(--font-poppins)] text-sm text-stone-400 dark:text-stone-500 mt-1">
+              Your boards and recent activity
+            </p>
+          </div>
+          {boards && boards.length > 0 ? (
+            <div className="flex items-center rounded-md border border-stone-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                aria-pressed={viewMode === "grid"}
+                aria-label="Grid view"
+                title="Grid view"
+                className={`flex items-center justify-center h-7 w-7 rounded transition-colors ${
+                  viewMode === "grid"
+                    ? "bg-accent text-stone-700 dark:text-stone-200"
+                    : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                aria-pressed={viewMode === "list"}
+                aria-label="List view"
+                title="List view"
+                className={`flex items-center justify-center h-7 w-7 rounded transition-colors ${
+                  viewMode === "list"
+                    ? "bg-accent text-stone-700 dark:text-stone-200"
+                    : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                }`}
+              >
+                <List className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {hasMcp === false ? (
@@ -203,9 +252,9 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            <BoardSection title="Starred" boards={starredBoards} />
-            <BoardSection title="My Boards" boards={ownedBoards} />
-            <BoardSection title="Shared With Me" boards={sharedBoards} />
+            <BoardSection title="Starred" boards={starredBoards} viewMode={viewMode} />
+            <BoardSection title="My Boards" boards={ownedBoards} viewMode={viewMode} />
+            <BoardSection title="Shared With Me" boards={sharedBoards} viewMode={viewMode} />
           </>
         )}
       </main>
