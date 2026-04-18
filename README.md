@@ -1,8 +1,18 @@
 # Dump
 
-A visual canvas for collecting and organizing links, notes, and ideas. Drop anything onto a board and share it with others.
+A collaborative context board for sharing projects between ChatGPT, Claude, coding agents, and humans.
+
+Dump is a visual canvas for collecting links, notes, checklists, and project briefs. Use it as a shared project context layer: one board your team can read, your AI tools can consume, and your future self can actually find again.
 
 **Live at [dump.page](https://www.dump.page)**
+
+## What Dump Is Good For
+
+- Share a project between ChatGPT and Claude without rebuilding the same context in every chat
+- Create a reusable project brief for Claude Code, Codex, Cursor, or other coding agents
+- Replace scattered Slack threads and bookmark folders with one shared research board
+- Keep multimodal context outside any single LLM vendor or chat history
+- Expose board content through MCP and `llms.txt` for agent-friendly workflows
 
 ## Features
 
@@ -12,8 +22,19 @@ A visual canvas for collecting and organizing links, notes, and ideas. Drop anyt
 - Checklists
 - Board sharing (private, shared via link, or public)
 - Real-time collaboration via Convex
-- MCP server for AI tool integrations
+- MCP server for ChatGPT, Claude, Codex, Cursor, and other AI tool integrations
+- `llms.txt` endpoints for shared and public boards
 - Local-first mode — use without an account
+
+## Positioning Angles
+
+Different people find Dump through different problems. These are all valid ways to describe the product:
+
+- Shared project context for ChatGPT and Claude
+- AI project handoff board
+- MCP-ready context layer for agents
+- Research hub for modern product and engineering teams
+- Human-and-AI-readable whiteboard for links, notes, and decisions
 
 ## Tech Stack
 
@@ -92,6 +113,8 @@ See [`.env.example`](.env.example) for the full list. Key variables:
 ## MCP Server
 
 Dump exposes an MCP server at `https://www.dump.page/api/mcp` so AI tools can read and write to your boards.
+
+If you want the short version: Dump is a practical way to give ChatGPT, Claude, Claude Code, Codex, and similar tools the same project context instead of pasting links and notes into every conversation.
 
 ## Installing Boards as Skills
 
@@ -220,6 +243,12 @@ url = "https://www.dump.page/api/mcp"
 ```
 
 </details>
+
+## Learn More
+
+- [Blog: how to share project context between ChatGPT and Claude](https://www.dump.page/blog/share-project-context-between-chatgpt-and-claude)
+- [Blog: the AI project handoff board](https://www.dump.page/blog/ai-project-handoff-board)
+- [Blog: MCP is better with shared context](https://www.dump.page/blog/mcp-shared-context-for-agents)
 
 ## Contributing
 

@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-export const alt = "Dump — collaborative context boards for teams and AI";
+export const alt = "Dump - shared project context for ChatGPT, Claude, and teams";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -88,7 +88,7 @@ export default async function OgImage() {
                 color: "#374151",
               }}
             >
-              Your team&apos;s context dump
+              Share project context across agents
             </span>
             <span
               style={{
@@ -98,8 +98,7 @@ export default async function OgImage() {
                 textAlign: "center",
               }}
             >
-              Dump links, notes &amp; ideas — make them useful for humans and
-              AI.
+              One board for ChatGPT, Claude, coding agents, and your team.
             </span>
           </div>
 

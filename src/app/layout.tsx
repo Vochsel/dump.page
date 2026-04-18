@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/context/theme-context";
 import { CommandPalette } from "@/components/CommandPalette";
+import { createMetadata } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,41 +31,18 @@ const dynaPuff = DynaPuff({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Dump — The prompt dump for humans and AI",
+export const metadata: Metadata = createMetadata({
+  title: "Dump | Share project context between ChatGPT, Claude, and your team",
   description:
-    "Shared whiteboards of links and text, accessible to all agents and chatbots.",
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.dump.page"
-  ),
-  openGraph: {
-    title: "Dump — The prompt dump for humans and AI",
-    description:
-      "Shared whiteboards of links and text, accessible to all agents and chatbots.",
-    siteName: "Dump",
-    locale: "en_US",
-    type: "website",
-    images: [
-      {
-        url: "/opengraph-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Dump — collaborative context boards for teams and AI",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Dump — The prompt dump for humans and AI",
-    description:
-      "Shared whiteboards of links and text, accessible to all agents and chatbots.",
-    images: ["/opengraph-image.png"],
-  },
-  icons: {
-    icon: "/dump.png",
-    apple: "/dump.png",
-  },
-};
+    "Dump is a collaborative context board for links, notes, checklists, and project briefs. Share one source of truth with ChatGPT, Claude, coding agents, and humans.",
+  path: "/",
+  keywords: [
+    "share projects between ChatGPT and Claude",
+    "shared project brief for AI",
+    "AI project handoff",
+    "shared context for coding agents",
+  ],
+});
 
 export default function RootLayout({
   children,

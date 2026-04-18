@@ -12,6 +12,10 @@ export function Footer() {
         GitHub
       </a>
       {" "}&middot;{" "}
+      <a href="/blog" className="underline hover:text-stone-600 dark:hover:text-stone-300 transition-colors">
+        Blog
+      </a>
+      {" "}&middot;{" "}
       <a href="/privacy" className="underline hover:text-stone-600 dark:hover:text-stone-300 transition-colors">
         Privacy
       </a>

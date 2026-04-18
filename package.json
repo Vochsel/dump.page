@@ -1,6 +1,22 @@
 {
   "name": "dump",
   "version": "0.1.0",
+  "description": "Collaborative AI context boards for sharing projects between ChatGPT, Claude, coding agents, and humans.",
+  "homepage": "https://www.dump.page",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vochsel/dump.page.git"
+  },
+  "keywords": [
+    "chatgpt",
+    "claude",
+    "mcp",
+    "ai-agents",
+    "project-context",
+    "research-board",
+    "knowledge-management",
+    "whiteboard"
+  ],
   "scripts": {
     "dev": "env-cmd -f .env.local next dev",
     "dev:prod": "env-cmd -f .env.production next dev",

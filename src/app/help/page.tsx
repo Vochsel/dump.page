@@ -1,10 +1,10 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SmallLoginButton } from "@/components/auth/SmallLoginButton";
 import { Footer } from "@/components/Footer";
+import { createMetadata } from "@/lib/seo";
 
 const AI_PROVIDERS = [
   {
@@ -65,6 +65,19 @@ const AI_PROVIDERS = [
   },
 ];
 
+export const metadata: Metadata = createMetadata({
+  title: "Dump Help | Use shared project boards with ChatGPT, Claude, and AI agents",
+  description:
+    "Learn how to share Dump boards with ChatGPT, Claude, Codex, Gemini, Grok, and other AI tools using board URLs, llms.txt, and MCP.",
+  path: "/help",
+  keywords: [
+    "how to use Dump with ChatGPT",
+    "how to use Dump with Claude",
+    "shared project board help",
+    "llms.txt project context",
+  ],
+});
+
 export default function HelpPage() {
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-gray-950">
@@ -94,10 +107,11 @@ export default function HelpPage() {
 
       <main className="max-w-3xl mx-auto px-6 py-10">
         <h1 className="font-[family-name:var(--font-poppins)] text-2xl font-semibold text-stone-900 dark:text-stone-100 mb-2">
-          Getting Started with Dump
+          Use Dump with ChatGPT, Claude, and other AI assistants
         </h1>
         <p className="text-stone-500 dark:text-stone-400 mb-10">
-          Dump is a shared whiteboard for links, notes, and checklists — readable by humans and AI agents.
+          Dump is a shared context board for links, notes, and checklists that
+          humans and AI agents can both use.
         </p>
 
         {/* Adding context */}

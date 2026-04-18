@@ -113,10 +113,12 @@ export default function McpPage() {
 
       <main className="max-w-3xl mx-auto px-6 py-10">
         <h1 className="font-[family-name:var(--font-poppins)] text-2xl font-semibold text-stone-900 dark:text-stone-100 mb-2">
-          Connect Dump to your AI assistant
+          Connect Dump to ChatGPT, Claude, and your AI assistant
         </h1>
         <p className="text-stone-500 dark:text-stone-400 mb-4">
-          The Dump MCP server lets AI assistants read your boards, search your notes, and create new content — all through a secure OAuth connection.
+          The Dump MCP server lets AI assistants read your shared project boards,
+          search your notes, and create new content through a secure OAuth
+          connection.
         </p>
 
         <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 p-4 mb-6">
