@@ -93,6 +93,24 @@ See [`.env.example`](.env.example) for the full list. Key variables:
 
 Dump exposes an MCP server at `https://www.dump.page/api/mcp` so AI tools can read and write to your boards.
 
+## Installing Boards as Skills
+
+Shared and public boards can also be installed with [`vercel-labs/skills`](https://github.com/vercel-labs/skills) via `npx skills add`.
+
+### Public board
+
+```bash
+npx skills add https://www.dump.page/b/<board-slug>
+```
+
+### Shared board
+
+```bash
+npx skills add https://www.dump.page/s/<share-token>/b/<board-slug>
+```
+
+Dump serves a hosted `SKILL.md` for each board through the well-known skills endpoints. The installed skill is a snapshot of the board at install/update time. For live reads, search, and write access, use the Dump MCP server instead.
+
 ### Quick Install
 
 <details>

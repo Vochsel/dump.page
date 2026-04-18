@@ -136,6 +136,42 @@ export default function HelpPage() {
           </div>
         </section>
 
+        <section className="mb-12">
+          <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">
+            Install a board as a skill
+          </h2>
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-stone-200 dark:border-gray-800 p-4 text-sm text-stone-600 dark:text-stone-300 space-y-4">
+            <p>
+              Shared and public boards can also be installed as hosted skills with
+              <code className="bg-stone-100 dark:bg-gray-800 px-1 rounded font-mono ml-1">npx skills add</code>.
+              Dump exposes the well-known skill endpoints automatically for each board.
+            </p>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500 mb-2">
+                Public board
+              </p>
+              <pre className="bg-stone-100 dark:bg-gray-800 rounded-lg px-4 py-3 text-xs font-mono text-stone-700 dark:text-stone-300 overflow-x-auto">
+{`npx skills add https://www.dump.page/b/<board-slug>`}
+              </pre>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500 mb-2">
+                Shared board
+              </p>
+              <pre className="bg-stone-100 dark:bg-gray-800 rounded-lg px-4 py-3 text-xs font-mono text-stone-700 dark:text-stone-300 overflow-x-auto">
+{`npx skills add https://www.dump.page/s/<share-token>/b/<board-slug>`}
+              </pre>
+            </div>
+            <p className="text-xs text-stone-400 dark:text-stone-500">
+              The installed skill is a snapshot of the board. For real-time reads and write access, use the
+              <Link href="/mcp" className="underline underline-offset-2 ml-1">
+                Dump MCP integration
+              </Link>
+              .
+            </p>
+          </div>
+        </section>
+
         {/* AI provider sections */}
         <section className="mb-12">
           <h2 className="font-[family-name:var(--font-poppins)] text-lg font-semibold text-stone-800 dark:text-stone-200 mb-4">

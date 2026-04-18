@@ -7,6 +7,7 @@ const convex = new ConvexHttpClient(
 );
 
 const MCP_FOOTER = `\n---\n\n> **Tip:** For live access to this board and the ability to make changes, install the [Dump MCP integration](https://www.dump.page/mcp). Setup instructions for ChatGPT, Claude, Claude Code, and Codex are available at [dump.page/mcp](https://www.dump.page/mcp).\n`;
+const SKILL_MCP_HINT = `> **Live updates:** This skill is a snapshot of a Dump board. For real-time updates and write access, use the [Dump MCP integration](https://www.dump.page/mcp).\n\n`;
 
 const RSS_EXTENSIONS = [".rss", ".xml", ".atom"];
 const RSS_PATH_PATTERNS = ["/feed", "/rss", "/atom"];
@@ -172,6 +173,23 @@ type MarkdownNode = {
 type MarkdownEdge = {
   source: string;
   target: string;
+};
+
+type BoardMarkdownSettings = {
+  contextType?: string;
+  systemPrompt?: string;
+} | null;
+
+type MarkdownBoard = {
+  name: string;
+  slug?: string;
+  settings?: BoardMarkdownSettings;
+};
+
+type BoardExportData = {
+  board: MarkdownBoard;
+  nodes: MarkdownNode[];
+  edges: MarkdownEdge[];
 };
 
 /** Render a single node to markdown */
@@ -347,14 +365,7 @@ function clusterByProximity(
 }
 
 // Format pre-fetched board data as markdown (no auth check, caller must verify access)
-export function formatBoardDataAsMarkdown(
-  board: {
-    name: string;
-    settings?: { contextType?: string; systemPrompt?: string } | null;
-  },
-  nodes: Array<MarkdownNode>,
-  edges?: Array<MarkdownEdge>
-): string {
+function buildBoardMarkdownHeader(board: MarkdownBoard): string {
   let markdown = `# ${board.name}\n\n`;
 
   const contextType = board.settings?.contextType;
@@ -368,9 +379,17 @@ export function formatBoardDataAsMarkdown(
     markdown += `${board.settings.systemPrompt}\n\n`;
   }
 
+  return markdown;
+}
+
+function buildBoardMarkdownBody(
+  nodes: Array<MarkdownNode>,
+  edges?: Array<MarkdownEdge>
+): string {
+  let markdown = "";
+
   if (nodes.length === 0) {
     markdown += `*This board is empty.*\n`;
-    markdown += MCP_FOOTER;
     return markdown;
   }
 
@@ -426,8 +445,172 @@ export function formatBoardDataAsMarkdown(
     }
   }
 
+  return markdown;
+}
+
+function sanitizeSkillName(input: string): string {
+  const sanitized = input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+
+  return sanitized || "dump-board";
+}
+
+function yamlQuote(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+function stripMarkdown(markdown: string): string {
+  return markdown
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, " ")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^>\s?/gm, "")
+    .replace(/[*_~]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildSkillDescription(board: MarkdownBoard, nodes: Array<MarkdownNode>): string {
+  const systemPrompt = board.settings?.systemPrompt?.trim();
+  if (systemPrompt) {
+    return stripMarkdown(systemPrompt).slice(0, 180);
+  }
+
+  const firstTextNode = nodes.find((node) => node.type === "text" && node.content.trim().length > 0);
+  if (firstTextNode) {
+    return stripMarkdown(htmlToMarkdown(firstTextNode.content)).slice(0, 180);
+  }
+
+  return `Reusable Dump board skill for ${board.name}`.slice(0, 180);
+}
+
+function buildBoardSkillFrontmatter(
+  board: MarkdownBoard,
+  nodes: Array<MarkdownNode>,
+  options?: { boardUrl?: string; skillName?: string }
+): string {
+  const skillName = sanitizeSkillName(options?.skillName ?? board.slug ?? board.name);
+  const description = buildSkillDescription(board, nodes);
+  const lines = [
+    "---",
+    `name: ${yamlQuote(skillName)}`,
+    `description: ${yamlQuote(description)}`,
+    "metadata:",
+    `  source: ${yamlQuote("dump")}`,
+  ];
+
+  if (options?.boardUrl) {
+    lines.push(`  board_url: ${yamlQuote(options.boardUrl)}`);
+  }
+
+  lines.push("---", "");
+  return lines.join("\n");
+}
+
+export function formatBoardDataAsMarkdown(
+  board: MarkdownBoard,
+  nodes: Array<MarkdownNode>,
+  edges?: Array<MarkdownEdge>
+): string {
+  let markdown = buildBoardMarkdownHeader(board);
+  markdown += buildBoardMarkdownBody(nodes, edges);
   markdown += MCP_FOOTER;
   return markdown;
+}
+
+export function formatBoardDataAsSkill(
+  board: MarkdownBoard,
+  nodes: Array<MarkdownNode>,
+  edges?: Array<MarkdownEdge>,
+  options?: { boardUrl?: string; skillName?: string }
+): string {
+  let markdown = buildBoardSkillFrontmatter(board, nodes, options);
+  markdown += `# ${board.name}\n\n`;
+  markdown += `This skill was generated from a Dump board and should be treated as reusable, evolving context.\n\n`;
+  markdown += SKILL_MCP_HINT;
+
+  if (options?.boardUrl) {
+    markdown += `> **Source board:** ${options.boardUrl}\n\n`;
+  }
+
+  if (board.settings?.contextType === "agent") {
+    markdown += `> **Board Context Type:** Agent. The instructions below were authored to define an agent persona.\n\n`;
+  } else {
+    markdown += `> **Board Context Type:** ${board.settings?.contextType === "skill" ? "Skill" : "Default"}.\n\n`;
+  }
+
+  if (board.settings?.systemPrompt) {
+    markdown += `## System Prompt\n\n${board.settings.systemPrompt}\n\n`;
+  }
+
+  markdown += `## Board Content\n\n`;
+  markdown += buildBoardMarkdownBody(nodes, edges);
+  markdown += MCP_FOOTER;
+  return markdown;
+}
+
+async function getBoardExportData(
+  slug: string,
+  shareToken?: string
+): Promise<BoardExportData | null> {
+  const result = await convex.query(api.boards.getBoardForMarkdown, {
+    slug,
+    shareToken,
+  });
+
+  if (!result) return null;
+
+  const { board, nodes: allNodes, edges: rawEdges } = result;
+  const nodes = allNodes.filter((n: { archived?: boolean }) => !n.archived);
+
+  // Enrich link nodes with RSS feed items before rendering
+  const linkNodes = nodes.filter((n) => n.type === "link");
+  if (linkNodes.length > 0) {
+    const rssResults = await Promise.all(
+      linkNodes.map((node) =>
+        looksLikeRssFeed(node.content)
+          ? fetchRssItems(node.content)
+          : Promise.resolve([] as RssItem[])
+      )
+    );
+    for (let i = 0; i < linkNodes.length; i++) {
+      const rssItems = rssResults[i];
+      if (rssItems.length > 0) {
+        const rssText = rssItems.map((item) => `  - [${item.title}](${item.link})`).join("\n");
+        (linkNodes[i] as { _rssAppend?: string })._rssAppend = rssText;
+      }
+    }
+  }
+
+  const markdownNodes: MarkdownNode[] = nodes.map((n) => ({
+    id: n._id,
+    type: n.type,
+    content: n.content,
+    title: n.title,
+    position: n.position,
+    metadata: n.metadata,
+    _rssAppend: (n as { _rssAppend?: string })._rssAppend,
+  }));
+
+  const edges: MarkdownEdge[] = (rawEdges || []).map((e) => ({
+    source: e.source as string,
+    target: e.target as string,
+  }));
+
+  return {
+    board: {
+      name: board.name,
+      slug: board.slug,
+      settings: board.settings,
+    },
+    nodes: markdownNodes,
+    edges,
+  };
 }
 
 export async function getBoardMarkdown(
@@ -435,63 +618,55 @@ export async function getBoardMarkdown(
   shareToken?: string
 ): Promise<{ markdown: string; status: number }> {
   try {
-    const result = await convex.query(api.boards.getBoardForMarkdown, {
-      slug,
-      shareToken,
-    });
-
-    if (!result) {
+    const exportData = await getBoardExportData(slug, shareToken);
+    if (!exportData) {
       return {
         markdown: "# Board Not Found\n\nThis board is private or does not exist.",
         status: 404,
       };
     }
-
-    const { board, nodes: allNodes, edges: rawEdges } = result;
-    const nodes = allNodes.filter((n: { archived?: boolean }) => !n.archived);
-
-    // Enrich link nodes with RSS feed items before rendering
-    const linkNodes = nodes.filter((n) => n.type === "link");
-    if (linkNodes.length > 0) {
-      const rssResults = await Promise.all(
-        linkNodes.map((node) =>
-          looksLikeRssFeed(node.content)
-            ? fetchRssItems(node.content)
-            : Promise.resolve([] as RssItem[])
-        )
-      );
-      for (let i = 0; i < linkNodes.length; i++) {
-        const rssItems = rssResults[i];
-        if (rssItems.length > 0) {
-          // Append RSS items as sub-content so renderNode picks them up
-          const rssText = rssItems.map((item) => `  - [${item.title}](${item.link})`).join("\n");
-          (linkNodes[i] as { _rssAppend?: string })._rssAppend = rssText;
-        }
-      }
-    }
-
-    // Map to MarkdownNode with IDs and positions
-    const markdownNodes: MarkdownNode[] = nodes.map((n) => ({
-      id: n._id,
-      type: n.type,
-      content: n.content,
-      title: n.title,
-      position: n.position,
-      metadata: n.metadata,
-      _rssAppend: (n as { _rssAppend?: string })._rssAppend,
-    }));
-
-    const edges: MarkdownEdge[] = (rawEdges || []).map((e) => ({
-      source: e.source as string,
-      target: e.target as string,
-    }));
-
-    const markdown = formatBoardDataAsMarkdown(board, markdownNodes, edges);
+    const markdown = formatBoardDataAsMarkdown(
+      exportData.board,
+      exportData.nodes,
+      exportData.edges
+    );
 
     return { markdown, status: 200 };
   } catch {
     return {
       markdown: "# Error\n\nFailed to load board.",
+      status: 500,
+    };
+  }
+}
+
+export async function getBoardSkill(
+  slug: string,
+  shareToken?: string,
+  options?: { boardUrl?: string; skillName?: string }
+): Promise<{ markdown: string; status: number; skillName?: string; description?: string }> {
+  try {
+    const exportData = await getBoardExportData(slug, shareToken);
+    if (!exportData) {
+      return {
+        markdown: "# Skill Not Found\n\nThis board is private or does not exist.",
+        status: 404,
+      };
+    }
+
+    const skillName = sanitizeSkillName(options?.skillName ?? exportData.board.slug ?? exportData.board.name);
+    const description = buildSkillDescription(exportData.board, exportData.nodes);
+    const markdown = formatBoardDataAsSkill(
+      exportData.board,
+      exportData.nodes,
+      exportData.edges,
+      { ...options, skillName }
+    );
+
+    return { markdown, status: 200, skillName, description };
+  } catch {
+    return {
+      markdown: "# Error\n\nFailed to load board skill.",
       status: 500,
     };
   }

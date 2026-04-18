@@ -58,8 +58,24 @@ function isBot(userAgent: string): boolean {
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const sharedPathMatch = request.nextUrl.pathname.match(/^\/s\/([^/]+)\/b\/(.+)$/);
+  const pathToken = sharedPathMatch?.[1];
+  const pathname = sharedPathMatch ? `/b/${sharedPathMatch[2]}` : request.nextUrl.pathname;
   const hasAuthCookie = request.cookies.has("__dump_authed");
+  const token = pathToken ?? request.nextUrl.searchParams.get("token") ?? undefined;
+
+  const buildRewriteUrl = (targetPath: string) => {
+    const url = new URL(targetPath, request.url);
+    request.nextUrl.searchParams.forEach((value, key) => {
+      if (key !== "token") {
+        url.searchParams.set(key, value);
+      }
+    });
+    if (token) {
+      url.searchParams.set("token", token);
+    }
+    return url;
+  };
 
   // Auth-hint redirects: skip flicker by redirecting before page renders
   if (pathname === "/" && hasAuthCookie) {
@@ -75,9 +91,13 @@ export function middleware(request: NextRequest) {
   const segments = pathname.split("/").filter(Boolean);
   // Skip sub-routes that are already content endpoints (llms.txt, rss.xml)
   const lastSegment = segments[segments.length - 1];
-  if (lastSegment?.includes(".")) return NextResponse.next();
+  if (lastSegment?.includes(".")) {
+    return pathToken ? NextResponse.rewrite(buildRewriteUrl(pathname)) : NextResponse.next();
+  }
   // Only handle /b/[boardId] and /b/[boardId]/[itemId]
-  if (segments.length > 3) return NextResponse.next();
+  if (segments.length > 3) {
+    return pathToken ? NextResponse.rewrite(buildRewriteUrl(pathname)) : NextResponse.next();
+  }
 
   const userAgent = request.headers.get("user-agent") ?? "";
   const accept = request.headers.get("accept") ?? "";
@@ -90,25 +110,26 @@ export function middleware(request: NextRequest) {
   // TODO: Some LLMs may share user-agents with these scrapers in future,
   // which would break their access to the markdown/llms.txt content.
   // Consider serving both OG tags AND markdown, or using a query param override.
-  if (isOgScraper(userAgent)) return NextResponse.next();
+  if (isOgScraper(userAgent)) {
+    return pathToken ? NextResponse.rewrite(buildRewriteUrl(pathname)) : NextResponse.next();
+  }
 
-  if (!isBot(userAgent) && !prefersText) return NextResponse.next();
+  if (!isBot(userAgent) && !prefersText) {
+    return pathToken ? NextResponse.rewrite(buildRewriteUrl(pathname)) : NextResponse.next();
+  }
 
   const boardId = segments[1];
   if (!boardId) return NextResponse.next();
   const itemId = segments[2]; // undefined for board-only URLs
 
-  const token = request.nextUrl.searchParams.get("token") ?? undefined;
-
   // Redirect bots to the llms.txt route (plain text, no API hop — works with restricted fetch layers)
-  const llmsUrl = itemId
-    ? new URL(`/b/${boardId}/${itemId}/llms.txt`, request.url)
-    : new URL(`/b/${boardId}/llms.txt`, request.url);
-  if (token) llmsUrl.searchParams.set("token", token);
+  const llmsPath = itemId
+    ? `/b/${boardId}/${itemId}/llms.txt`
+    : `/b/${boardId}/llms.txt`;
 
-  return NextResponse.rewrite(llmsUrl);
+  return NextResponse.rewrite(buildRewriteUrl(llmsPath));
 }
 
 export const config = {
-  matcher: ["/", "/dashboard", "/b/:path*"],
+  matcher: ["/", "/dashboard", "/b/:path*", "/s/:path*"],
 };

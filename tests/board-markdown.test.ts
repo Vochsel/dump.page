@@ -7,10 +7,13 @@ process.env.NEXT_PUBLIC_CONVEX_URL = "https://dummy.convex.cloud";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let formatBoardDataAsMarkdown: any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let formatBoardDataAsSkill: any;
 
 beforeAll(async () => {
   const mod = await import("../src/lib/board-markdown");
   formatBoardDataAsMarkdown = mod.formatBoardDataAsMarkdown;
+  formatBoardDataAsSkill = mod.formatBoardDataAsSkill;
 });
 
 describe("formatBoardDataAsMarkdown", () => {
@@ -158,5 +161,27 @@ describe("formatBoardDataAsMarkdown", () => {
   it("includes MCP footer", () => {
     const md = formatBoardDataAsMarkdown({ name: "Test" }, []);
     expect(md).toContain("dump.page/mcp");
+  });
+
+  it("renders skill frontmatter with stable name and description", () => {
+    const md = formatBoardDataAsSkill(
+      { name: "API Standards", slug: "abc123xy", settings: { contextType: "skill" } },
+      [{ type: "text", content: "<p>Use strict API conventions.</p>" }],
+      [],
+      { boardUrl: "https://www.dump.page/b/abc123xy" }
+    );
+    expect(md).toContain("---\nname: 'abc123xy'");
+    expect(md).toContain("description: 'Use strict API conventions.'");
+    expect(md).toContain("board_url: 'https://www.dump.page/b/abc123xy'");
+  });
+
+  it("includes a realtime MCP hint in skill format", () => {
+    const md = formatBoardDataAsSkill(
+      { name: "Ops", slug: "ops-board" },
+      []
+    );
+    expect(md).toContain("Live updates");
+    expect(md).toContain("Dump MCP integration");
+    expect(md).toContain("## Board Content");
   });
 });
