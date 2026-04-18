@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ChevronDown, Copy, Link2, AlertTriangle, Send } from "lucide-react";
+import { ChevronDown, Copy, Link2, AlertTriangle, Send, Plug } from "lucide-react";
 import { toast } from "sonner";
 import { getBoardUrl } from "@/lib/board-url";
 import { CHAT_PROVIDERS, type ChatProviderId, CHAT_PROVIDER_STORAGE_KEY, PRO_MODE_STORAGE_KEY } from "@/lib/chat-providers";
@@ -101,7 +101,7 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
       }
       let prompt: string;
       if (hasMcp) {
-        prompt = `Use your Dump MCP connection to read board "${slug}" and use it as context to answer:\n`;
+        prompt = `mcp://dump.page/b/${slug}\n`;
       } else {
         const llmsUrl = boardUrl.replace(/\/b\/([^?]+)/, '/b/$1/llms.txt');
         prompt = `scrape ${llmsUrl} as context to answer:\n`;
@@ -306,6 +306,20 @@ export function ChatButton({ boardId, slug, visibility, shareToken }: ChatButton
                 </div>
               </div>
             </button>
+            <a
+              href="/mcp"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-start gap-3 rounded-lg border p-3 text-left hover:bg-accent transition-colors"
+            >
+              <Plug className="h-5 w-5 mt-0.5 shrink-0 text-muted-foreground" />
+              <div>
+                <div className="font-medium text-sm">Connect MCP</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Set up the Dump MCP server so {chosenProvider.name} can securely access your private boards directly.
+                </div>
+              </div>
+            </a>
           </div>
         </DialogContent>
       </Dialog>

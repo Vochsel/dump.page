@@ -399,7 +399,7 @@ interface BoardSettingsPopoverProps {
 }
 
 const CONTEXT_TYPES: { value: BoardSettingsData["contextType"]; label: string; description: string; icon: typeof Settings }[] = [
-  { value: "default", label: "Default", description: "Standard context dump", icon: FileText },
+  { value: "default", label: "Project", description: "Standard context dump", icon: FileText },
   { value: "skill", label: "Skill", description: "Usable as a skill by LLMs", icon: Wand2 },
   { value: "agent", label: "Agent", description: "Agent persona & goals", icon: Bot },
 ];
