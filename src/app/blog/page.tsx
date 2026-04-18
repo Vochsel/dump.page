@@ -53,7 +53,7 @@ export default function BlogPage() {
           </div>
 
           <div className="relative">
-            <div className="absolute -right-3 -top-5 rounded-[0.9rem] border border-stone-900/10 bg-white/80 px-4 py-3 text-right text-sm text-stone-600 shadow-sm">
+            <div className="absolute -right-5 -top-4 z-10 rounded-[0.9rem] border border-stone-900/10 bg-white/80 px-4 py-3 text-right text-sm text-stone-600 shadow-sm">
               Abstract context map
               <br />
               for humans and agents
