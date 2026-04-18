@@ -39,6 +39,9 @@ export default function McpSharedContextForAgentsPage() {
         description={post.description}
         publishedTime={post.publishedTime}
         readingTime={post.readingTime}
+        eyebrow={post.eyebrow}
+        tags={post.tags}
+        palette={post.palette}
       >
         <p>
           MCP makes agents more useful, but only if the agent can reach context

@@ -39,6 +39,9 @@ export default function ShareProjectContextBetweenChatGptAndClaudePage() {
         description={post.description}
         publishedTime={post.publishedTime}
         readingTime={post.readingTime}
+        eyebrow={post.eyebrow}
+        tags={post.tags}
+        palette={post.palette}
       >
         <p>
           The fastest way to make ChatGPT and Claude useful on the same project

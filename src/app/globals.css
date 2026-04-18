@@ -254,6 +254,70 @@
   color: #93c5fd; /* blue-300 */
 }
 
+.blog-article > :first-child {
+  margin-top: 0;
+}
+
+.blog-article > p:first-of-type {
+  font-size: 1.3rem;
+  line-height: 1.95;
+  color: #2d2925;
+}
+
+.blog-article > p:first-of-type::first-letter {
+  float: left;
+  font-size: 4.9rem;
+  line-height: 0.86;
+  padding-right: 0.65rem;
+  padding-top: 0.35rem;
+  font-family: var(--font-dynapuff);
+  color: #1d1a17;
+}
+
+.blog-article h2 {
+  position: relative;
+  margin-top: 3.35rem;
+  padding-top: 1.35rem;
+  scroll-margin-top: 2rem;
+}
+
+.blog-article h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3.2rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d97745, #2d8f83);
+}
+
+.blog-article p {
+  line-height: 1.95;
+}
+
+.blog-article ul {
+  padding-left: 1.2rem;
+}
+
+.blog-article li::marker {
+  color: #d97745;
+}
+
+.blog-article blockquote {
+  margin: 2rem 0;
+  border-left: 0;
+  border-radius: 1.5rem;
+  background: rgba(244, 231, 214, 0.7);
+  padding: 1.2rem 1.4rem;
+}
+
+.blog-article code {
+  border-radius: 0.45rem;
+  background: rgba(22, 23, 28, 0.08);
+  padding: 0.12rem 0.35rem;
+}
+
 /* TipTap table styles (GFM tables) */
 .tiptap-editor table {
   border-collapse: collapse;

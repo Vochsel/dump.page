@@ -39,6 +39,9 @@ export default function AiProjectHandoffBoardPage() {
         description={post.description}
         publishedTime={post.publishedTime}
         readingTime={post.readingTime}
+        eyebrow={post.eyebrow}
+        tags={post.tags}
+        palette={post.palette}
       >
         <p>
           Most teams already create project handoff documents. The problem is
