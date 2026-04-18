@@ -30,12 +30,11 @@ export default function BlogPage() {
               Dump guides
             </p>
             <h1 className="font-[family-name:var(--font-poppins)] text-4xl font-semibold leading-[1.02] text-stone-900 sm:text-5xl lg:text-6xl">
-              Shared project context, designed like it matters
+              Guides for shared project context
             </h1>
             <p className="text-lg leading-8 text-stone-700 sm:text-xl">
-              The blog now frames Dump less like a generic product update feed
-              and more like an editorial guide to cross-agent workflows,
-              reusable project briefs, and MCP-ready context systems.
+              Practical ways to use Dump for ChatGPT, Claude, coding agents,
+              and team handoffs without rebuilding the same context every time.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -54,7 +53,7 @@ export default function BlogPage() {
           </div>
 
           <div className="relative">
-            <div className="absolute -right-3 -top-5 rounded-[1.5rem] border border-stone-900/10 bg-white/80 px-4 py-3 text-right text-sm text-stone-600 shadow-sm">
+            <div className="absolute -right-3 -top-5 rounded-[0.9rem] border border-stone-900/10 bg-white/80 px-4 py-3 text-right text-sm text-stone-600 shadow-sm">
               Abstract context map
               <br />
               for humans and agents
@@ -72,14 +71,14 @@ export default function BlogPage() {
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="group rounded-[2rem] border border-stone-900/10 bg-white/80 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_60px_rgba(0,0,0,0.1)]"
+              className="group rounded-[1.2rem] border border-stone-900/10 bg-white/80 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_60px_rgba(0,0,0,0.1)]"
               style={{
                 backgroundColor: "rgba(255,255,255,0.78)",
                 backdropFilter: "blur(10px)",
               }}
             >
               <div
-                className="relative overflow-hidden rounded-[1.6rem] border p-2"
+                className="relative overflow-hidden rounded-[0.95rem] border p-2"
                 style={{
                   borderColor: `${post.palette.ink}18`,
                   backgroundColor: post.palette.panel,

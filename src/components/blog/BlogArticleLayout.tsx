@@ -117,7 +117,7 @@ export function BlogArticleLayout({
 
           <div className="relative">
             <div
-              className="absolute -left-6 top-6 hidden rounded-[1.75rem] border px-4 py-3 text-sm text-left shadow-sm lg:block"
+              className="absolute -left-6 top-6 hidden rounded-[0.95rem] border px-4 py-3 text-sm text-left shadow-sm lg:block"
               style={{
                 borderColor: `${palette.ink}18`,
                 backgroundColor: "rgba(255,255,255,0.8)",
@@ -149,7 +149,7 @@ export function BlogArticleLayout({
         <section className="mt-12 grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside className="space-y-4 lg:sticky lg:top-8 lg:self-start">
             <div
-              className="rounded-[2rem] border p-5 shadow-sm"
+              className="rounded-[1.1rem] border p-5 shadow-sm"
               style={{
                 borderColor: `${palette.ink}12`,
                 backgroundColor: "rgba(255,255,255,0.68)",
@@ -170,7 +170,7 @@ export function BlogArticleLayout({
               </p>
             </div>
             <div
-              className="rounded-[2rem] border p-5 shadow-sm"
+              className="rounded-[1.1rem] border p-5 shadow-sm"
               style={{
                 borderColor: `${palette.ink}12`,
                 backgroundColor: "rgba(255,255,255,0.68)",
@@ -201,7 +201,7 @@ export function BlogArticleLayout({
 
           <div className="space-y-8">
             <div
-              className="rounded-[2rem] border px-6 py-8 shadow-[0_28px_80px_rgba(0,0,0,0.08)] sm:px-10 sm:py-10"
+              className="rounded-[1.25rem] border px-6 py-8 shadow-[0_28px_80px_rgba(0,0,0,0.08)] sm:px-10 sm:py-10"
               style={{
                 borderColor: `${palette.ink}14`,
                 backgroundColor: "rgba(255,255,255,0.84)",
@@ -213,7 +213,7 @@ export function BlogArticleLayout({
             </div>
 
             <div
-              className="rounded-[2rem] border p-6 sm:p-8"
+              className="rounded-[1.2rem] border p-6 sm:p-8"
               style={{
                 borderColor: `${palette.accent}33`,
                 background: `linear-gradient(135deg, rgba(255,255,255,0.82), ${palette.accent}14)`,

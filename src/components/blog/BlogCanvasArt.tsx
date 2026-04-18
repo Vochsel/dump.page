@@ -186,7 +186,7 @@ export function BlogCanvasArt({
   return (
     <div
       ref={frameRef}
-      className={cn("relative overflow-hidden rounded-[2rem]", className)}
+      className={cn("relative overflow-hidden rounded-[1.1rem]", className)}
       style={{
         backgroundColor: palette.panel,
         backgroundImage: [
