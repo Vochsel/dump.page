@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Link as LinkIcon, FileText, ExternalLink, CheckSquare } from "lucide-react";
+import { Users, Link as LinkIcon, FileText, CheckSquare } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { BoardIcon } from "./BoardIcon";
@@ -36,6 +36,7 @@ export interface DashboardBoard {
   updatedAt?: number;
   settings?: {
     backgroundColor?: string;
+    contextType?: "default" | "skill" | "agent";
   };
   recentNodes?: RecentNode[];
 }
@@ -75,20 +76,27 @@ function BoardActionIcons({
   role,
   starred,
   archived,
+  variant = "overlay",
 }: {
   boardId: Id<"boards">;
   boardName: string;
   role: BoardRole;
   starred: boolean;
   archived: boolean;
+  variant?: "overlay" | "inline";
 }) {
+  const sizeClass = variant === "inline" ? "h-7 w-7 rounded-md" : "h-8 w-8 rounded-lg";
+  const surfaceClass =
+    variant === "inline" ? "" : "bg-white/90 dark:bg-gray-900/90 shadow-sm";
   return (
-    <div className="relative z-10 flex items-center gap-1">
+    <div className="relative z-10 flex items-center gap-0.5">
       <BoardStarButton
         boardId={boardId}
         starred={starred}
         className={cn(
-          "h-8 w-8 rounded-lg bg-white/90 dark:bg-gray-900/90 shadow-sm transition-opacity",
+          sizeClass,
+          surfaceClass,
+          "transition-opacity",
           starred ? "opacity-100" : "opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
         )}
       />
@@ -96,7 +104,11 @@ function BoardActionIcons({
         boardId={boardId}
         archived={archived}
         showToast
-        className="h-8 w-8 rounded-lg bg-white/90 dark:bg-gray-900/90 shadow-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+        className={cn(
+          sizeClass,
+          surfaceClass,
+          "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+        )}
       />
       {role === "owner" ? (
         <span className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
@@ -205,27 +217,18 @@ export function BoardCard({ board, mode = "dashboard" }: BoardCardProps) {
                 {board.visibility}
               </Badge>
             ) : (
-              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                <Badge
-                  variant={
-                    board.visibility === "public"
-                      ? "default"
-                      : board.visibility === "shared"
-                        ? "secondary"
-                        : "outline"
-                  }
-                  className="text-[10px] capitalize px-1.5 py-0"
-                >
-                  {board.visibility}
-                </Badge>
-                <BoardActionIcons
-                  boardId={board._id}
-                  boardName={board.name}
-                  role={board.role}
-                  starred={starred}
-                  archived={archived}
-                />
-              </div>
+              <Badge
+                variant={
+                  board.visibility === "public"
+                    ? "default"
+                    : board.visibility === "shared"
+                      ? "secondary"
+                      : "outline"
+                }
+                className="text-[10px] capitalize px-1.5 py-0 flex-shrink-0 ml-2"
+              >
+                {board.visibility}
+              </Badge>
             )}
           </div>
           <div className="px-5 pb-4 flex-1">
@@ -253,7 +256,7 @@ export function BoardCard({ board, mode = "dashboard" }: BoardCardProps) {
               </p>
             )}
           </div>
-          <div className="px-5 py-3 border-t border-stone-100 dark:border-gray-800 flex items-center justify-between gap-3">
+          <div className="px-5 py-2 border-t border-stone-100 dark:border-gray-800 flex items-center justify-between gap-3">
             <span className="text-[11px] text-stone-400 flex items-center gap-1">
               <Users className="h-3 w-3" />
               {board.memberCount} {board.memberCount === 1 ? "member" : "members"}
@@ -268,9 +271,14 @@ export function BoardCard({ board, mode = "dashboard" }: BoardCardProps) {
                 variant="outline"
               />
             ) : (
-              <span className="text-[11px] text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                Open <ExternalLink className="h-2.5 w-2.5" />
-              </span>
+              <BoardActionIcons
+                boardId={board._id}
+                boardName={board.name}
+                role={board.role}
+                starred={starred}
+                archived={archived}
+                variant="inline"
+              />
             )}
           </div>
         </>

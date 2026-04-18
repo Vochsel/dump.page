@@ -40,6 +40,51 @@ const TEMPLATES: BoardTemplate[] = [
     nodes: [],
   },
   {
+    id: "skill",
+    name: "Skill",
+    icon: "💡",
+    description: "Define a reusable skill for an LLM",
+    nodes: [
+      {
+        type: "text",
+        content:
+          "Name: code-reviewer\nDescription: Use when reviewing pull requests for quality and security issues.\n\nInstructions:\n- Scan for security issues (injection, XSS, hardcoded secrets)\n- Verify error handling at system boundaries\n- Flag premature abstractions or unused code\n- Confirm tests cover edge cases\n- Return a prioritized list of findings, most critical first",
+        title: "Example Skill",
+        position: { x: 100, y: 100 },
+      },
+    ],
+  },
+  {
+    id: "agent",
+    name: "Agent",
+    icon: "🤖",
+    description: "Define an LLM agent with role and tools",
+    nodes: [
+      {
+        type: "text",
+        content:
+          "Role: Research agent\nTools: WebSearch, WebFetch, Read\n\nSystem prompt:\nYou gather information from multiple sources, synthesize findings, and produce concise reports. Always cite sources. When sources conflict, present both views with context.\n\nOutput format:\nMarkdown with sections for Summary, Key Findings, and Sources.",
+        title: "Example Agent",
+        position: { x: 100, y: 100 },
+      },
+    ],
+  },
+  {
+    id: "project",
+    name: "Project",
+    icon: "🚀",
+    description: "Plan a project with goals and scope",
+    nodes: [
+      {
+        type: "text",
+        content:
+          "Goal: One sentence describing what we're building.\n\nWhy: The problem this solves and for whom.\n\nSuccess criteria:\n- Measurable outcome 1\n- Measurable outcome 2\n\nConstraints:\n- Technical or timeline constraints",
+        title: "Project Brief",
+        position: { x: 100, y: 100 },
+      },
+    ],
+  },
+  {
     id: "project-tracker",
     name: "Project Tracker",
     icon: "🎯",
@@ -217,11 +262,18 @@ export function CreateBoardDialog() {
     if (!name.trim()) return;
     const tpl = selectedTemplate ? TEMPLATES.find((t) => t.id === selectedTemplate) : undefined;
     const templateNodes = tpl && tpl.nodes.length > 0 ? tpl.nodes : undefined;
+    const contextType: "skill" | "agent" | "default" | undefined =
+      selectedTemplate === "skill"
+        ? "skill"
+        : selectedTemplate === "agent"
+        ? "agent"
+        : undefined;
     const slug = await createBoard({
       name: name.trim(),
       icon,
       visibility,
       templateNodes,
+      contextType,
     });
     setOpen(false);
     setName("");
@@ -246,23 +298,36 @@ export function CreateBoardDialog() {
         </DialogHeader>
 
         {step === "template" ? (
-          <div className="space-y-2">
-            {TEMPLATES.map((tpl) => (
-              <button
-                key={tpl.id}
-                onClick={() => handleSelectTemplate(tpl.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors ${
-                  selectedTemplate === tpl.id
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-muted"
-                }`}
-              >
-                <span className="text-xl flex-shrink-0">{tpl.icon}</span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{tpl.name}</p>
-                  <p className="text-xs text-muted-foreground">{tpl.description}</p>
-                </div>
-              </button>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+            {([
+              { heading: "Board types", ids: ["blank", "skill", "agent", "project"] },
+              { heading: "Examples", ids: ["project-tracker", "event-plan", "engineering", "brand-tone"] },
+            ] as const).map((group) => (
+              <div key={group.heading} className="space-y-2">
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide px-1">
+                  {group.heading}
+                </p>
+                {group.ids
+                  .map((id) => TEMPLATES.find((t) => t.id === id))
+                  .filter((tpl): tpl is BoardTemplate => Boolean(tpl))
+                  .map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      onClick={() => handleSelectTemplate(tpl.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors ${
+                        selectedTemplate === tpl.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted"
+                      }`}
+                    >
+                      <span className="text-xl flex-shrink-0">{tpl.icon}</span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{tpl.name}</p>
+                        <p className="text-xs text-muted-foreground">{tpl.description}</p>
+                      </div>
+                    </button>
+                  ))}
+              </div>
             ))}
           </div>
         ) : (

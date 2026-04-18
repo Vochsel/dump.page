@@ -6,6 +6,11 @@
       "name": "magpai-collab",
       "dependencies": {
         "@radix-ui/react-alert-dialog": "^1.1.15",
+        "@tiptap/extension-link": "^3.20.0",
+        "@tiptap/extension-table": "^3.20.1",
+        "@tiptap/extension-table-cell": "^3.20.1",
+        "@tiptap/extension-table-header": "^3.20.1",
+        "@tiptap/extension-table-row": "^3.20.1",
         "@tiptap/extension-task-item": "^3.20.0",
         "@tiptap/extension-task-list": "^3.20.0",
         "@tiptap/pm": "^3.20.0",
@@ -730,6 +735,14 @@
     "@tiptap/extension-paragraph": ["@tiptap/extension-paragraph@3.20.0", "", { "peerDependencies": { "@tiptap/core": "^3.20.0" } }, "sha512-mM99zK4+RnEXIMCv6akfNATAs0Iija6FgyFA9J9NZ6N4o8y9QiNLLa6HjLpAC+W+VoCgQIekyoF/Q9ftxmAYDQ=="],
 
     "@tiptap/extension-strike": ["@tiptap/extension-strike@3.20.0", "", { "peerDependencies": { "@tiptap/core": "^3.20.0" } }, "sha512-0vcTZRRAiDfon3VM1mHBr9EFmTkkUXMhm0Xtdtn0bGe+sIqufyi+hUYTEw93EQOD9XNsPkrud6jzQNYpX2H3AQ=="],
+
+    "@tiptap/extension-table": ["@tiptap/extension-table@3.22.3", "", { "peerDependencies": { "@tiptap/core": "^3.22.3", "@tiptap/pm": "^3.22.3" } }, "sha512-inbQSusJad7H0T++L1APg/anfL5d15cNGp2YG3vwo6TQr71nn2c9pepvmz3xuAIt8eygZDRba+4GT/COP1f9QA=="],
+
+    "@tiptap/extension-table-cell": ["@tiptap/extension-table-cell@3.22.3", "", { "peerDependencies": { "@tiptap/extension-table": "^3.22.3" } }, "sha512-LgaUgNwjHe6J7dq66N7iflC9efjgygsYWkHJtfLzaSU82tXzk8HSwBrMRCaj0PU+AR967/jGixEZIxH9xfXswQ=="],
+
+    "@tiptap/extension-table-header": ["@tiptap/extension-table-header@3.22.3", "", { "peerDependencies": { "@tiptap/extension-table": "^3.22.3" } }, "sha512-5wQ5rne9ccdbzeqC1AEDaUzlWjnpQNgBctgSPKEv+Da88lRRcGX21H+b/8jhL7fr4/sznr45toKGUg8NmRhboQ=="],
+
+    "@tiptap/extension-table-row": ["@tiptap/extension-table-row@3.22.3", "", { "peerDependencies": { "@tiptap/extension-table": "^3.22.3" } }, "sha512-dkoHnbOZgb2iQLXsp2FUu0KejAh3LOqDLMixYYU/0lnUwhqGG8kgu6+0YkCiUhedbfMFqVvemdKnRddpTQ4sqg=="],
 
     "@tiptap/extension-task-item": ["@tiptap/extension-task-item@3.20.0", "", { "peerDependencies": { "@tiptap/extension-list": "^3.20.0" } }, "sha512-UArl5ffRNKyiOGJYNtjF50+A0qgYF2DXIEFGyMgJsbp1KYQpDj+UrezWvnGOHZfX64eBWDIO6Bum5jS7o32dYQ=="],
 

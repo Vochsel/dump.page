@@ -105,6 +105,9 @@ export const createBoard = mutation({
         })
       )
     ),
+    contextType: v.optional(
+      v.union(v.literal("default"), v.literal("skill"), v.literal("agent"))
+    ),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -126,6 +129,7 @@ export const createBoard = mutation({
       ownerId: user._id,
       visibility: args.visibility,
       shareToken,
+      settings: args.contextType ? { contextType: args.contextType } : undefined,
       createdAt: now,
       updatedAt: now,
     });

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
-import { Archive, ExternalLink, FileText, HelpCircle, LayoutGrid, List, Monitor, Moon, Plus, Settings, Sun, Zap } from "lucide-react";
+import { Archive, Bot, Boxes, ExternalLink, FileText, HelpCircle, LayoutGrid, Lightbulb, List, Monitor, Moon, Plus, Rocket, Settings, Sun, Zap } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { useAuth } from "@/context/auth-context";
 import { useTheme } from "@/context/theme-context";
@@ -22,6 +22,14 @@ import {
 import { Button } from "@/components/ui/button";
 
 type DashboardViewMode = "grid" | "list";
+type DashboardContextFilter = "all" | "default" | "skill" | "agent";
+
+const CONTEXT_FILTERS: { value: DashboardContextFilter; label: string; icon: typeof Rocket }[] = [
+  { value: "all", label: "All", icon: Boxes },
+  { value: "default", label: "Projects", icon: Rocket },
+  { value: "skill", label: "Skills", icon: Lightbulb },
+  { value: "agent", label: "Agents", icon: Bot },
+];
 
 function BoardSection({
   title,
@@ -67,6 +75,10 @@ export default function DashboardPage() {
     "dump-dashboard-view-mode",
     "grid"
   );
+  const [contextFilter, setContextFilter] = useLocalStorage<DashboardContextFilter>(
+    "dump-dashboard-context-filter",
+    "default"
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -88,11 +100,17 @@ export default function DashboardPage() {
   const firstName = user.displayName?.split(" ")[0] ?? "there";
   const sortedBoards =
     boards?.slice().sort((a, b) => b.updatedAt - a.updatedAt) ?? [];
-  const starredBoards = sortedBoards.filter((board) => board.starred);
-  const ownedBoards = sortedBoards.filter(
+  const filteredBoards =
+    contextFilter === "all"
+      ? sortedBoards
+      : sortedBoards.filter(
+          (board) => (board.settings?.contextType ?? "default") === contextFilter
+        );
+  const starredBoards = filteredBoards.filter((board) => board.starred);
+  const ownedBoards = filteredBoards.filter(
     (board) => board.role === "owner" && !board.starred
   );
-  const sharedBoards = sortedBoards.filter(
+  const sharedBoards = filteredBoards.filter(
     (board) => board.role !== "owner" && !board.starred
   );
 
@@ -158,7 +176,7 @@ export default function DashboardPage() {
                   className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md transition-colors hover:bg-accent/50"
                 >
                   <Archive className="h-3.5 w-3.5" />
-                  Archive
+                  View Archive
                 </Link>
                 <div className="my-1.5 border-t border-border" />
                 <SuggestFeatureButton />
@@ -181,35 +199,56 @@ export default function DashboardPage() {
             </p>
           </div>
           {boards && boards.length > 0 ? (
-            <div className="flex items-center rounded-md border border-stone-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-0.5">
-              <button
-                type="button"
-                onClick={() => setViewMode("grid")}
-                aria-pressed={viewMode === "grid"}
-                aria-label="Grid view"
-                title="Grid view"
-                className={`flex items-center justify-center h-7 w-7 rounded transition-colors ${
-                  viewMode === "grid"
-                    ? "bg-accent text-stone-700 dark:text-stone-200"
-                    : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
-                }`}
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("list")}
-                aria-pressed={viewMode === "list"}
-                aria-label="List view"
-                title="List view"
-                className={`flex items-center justify-center h-7 w-7 rounded transition-colors ${
-                  viewMode === "list"
-                    ? "bg-accent text-stone-700 dark:text-stone-200"
-                    : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
-                }`}
-              >
-                <List className="h-3.5 w-3.5" />
-              </button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center rounded-md border border-stone-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-0.5">
+                {CONTEXT_FILTERS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setContextFilter(option.value)}
+                    aria-pressed={contextFilter === option.value}
+                    title={option.label}
+                    className={`flex items-center gap-1.5 h-7 px-2 rounded text-xs font-medium transition-colors ${
+                      contextFilter === option.value
+                        ? "bg-accent text-stone-700 dark:text-stone-200"
+                        : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                    }`}
+                  >
+                    <option.icon className="h-3.5 w-3.5" />
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center rounded-md border border-stone-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("grid")}
+                  aria-pressed={viewMode === "grid"}
+                  aria-label="Grid view"
+                  title="Grid view"
+                  className={`flex items-center justify-center h-7 w-7 rounded transition-colors ${
+                    viewMode === "grid"
+                      ? "bg-accent text-stone-700 dark:text-stone-200"
+                      : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                  }`}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("list")}
+                  aria-pressed={viewMode === "list"}
+                  aria-label="List view"
+                  title="List view"
+                  className={`flex items-center justify-center h-7 w-7 rounded transition-colors ${
+                    viewMode === "list"
+                      ? "bg-accent text-stone-700 dark:text-stone-200"
+                      : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                  }`}
+                >
+                  <List className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           ) : null}
         </div>
@@ -247,6 +286,16 @@ export default function DashboardPage() {
             </p>
             <p className="font-[family-name:var(--font-poppins)] text-sm text-stone-400 mb-6">
               Create a board or restore one from Archive
+            </p>
+            <CreateBoardDialog />
+          </div>
+        ) : filteredBoards.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="font-[family-name:var(--font-poppins)] text-lg font-medium text-stone-600 dark:text-stone-300 mb-1">
+              No {CONTEXT_FILTERS.find((f) => f.value === contextFilter)?.label.toLowerCase()} yet
+            </p>
+            <p className="font-[family-name:var(--font-poppins)] text-sm text-stone-400 mb-6">
+              Create a new board from the {CONTEXT_FILTERS.find((f) => f.value === contextFilter)?.label} template
             </p>
             <CreateBoardDialog />
           </div>
