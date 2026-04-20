@@ -94,6 +94,7 @@ interface BoardShareProps {
 export function BoardShare({ board, isOwner, isMember }: BoardShareProps) {
   const [copied, setCopied] = useState(false);
   const [copiedRss, setCopiedRss] = useState(false);
+  const [copiedSkill, setCopiedSkill] = useState(false);
   const [proMode] = useLocalStorage(PRO_MODE_STORAGE_KEY, false);
   const [mdOpen, setMdOpen] = useState(false);
   const [copiedMd, setCopiedMd] = useState(false);
@@ -175,6 +176,8 @@ export function BoardShare({ board, isOwner, isMember }: BoardShareProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const skillInstallCommand = shareUrl ? `npx skills add ${shareUrl}` : null;
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -234,6 +237,32 @@ export function BoardShare({ board, isOwner, isMember }: BoardShareProps) {
                   onRegenerate={() => regenerateToken({ boardId: board._id })}
                 />
               )}
+            </div>
+          )}
+
+          {skillInstallCommand && (
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Install as Skill
+              </label>
+              <div className="flex gap-2">
+                <Input value={skillInstallCommand} readOnly className="text-xs font-mono" />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(skillInstallCommand);
+                    setCopiedSkill(true);
+                    setTimeout(() => setCopiedSkill(false), 2000);
+                  }}
+                >
+                  {copiedSkill ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Wand2 className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           )}
 
