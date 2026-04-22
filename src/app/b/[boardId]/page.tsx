@@ -249,7 +249,7 @@ export default function BoardPage({
             </div>
           ) : viewMode === "kanban" ? (
             <div className="h-full pt-20 md:pt-24" style={{ backgroundColor: bgColor }}>
-              <KanbanView canEdit={access.canEdit} />
+              <KanbanView canEdit={access.canEdit} bgColor={bgColor} isDark={theme === "dark"} />
             </div>
           ) : (
             <div className="h-full overflow-y-auto pt-16" style={{ backgroundColor: bgColor }}>

@@ -13,11 +13,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { KanbanColumn as KanbanColumnType, BoardNode } from "@/context/board-ops-context";
 import { KanbanCard, SortableKanbanCard } from "./KanbanCard";
+import type { KanbanTheme } from "./KanbanView";
 
 interface KanbanColumnProps {
   column: KanbanColumnType;
   canEdit: boolean;
   nodeMap: Map<string, BoardNode>;
+  theme: KanbanTheme;
   onRename: (title: string) => void;
   onDelete: () => void;
   onRemoveCard: (nodeId: string) => void;
@@ -29,6 +31,7 @@ export function KanbanColumn({
   column,
   canEdit,
   nodeMap,
+  theme,
   onRename,
   onDelete,
   onRemoveCard,
@@ -63,11 +66,16 @@ export function KanbanColumn({
   });
 
   const style: React.CSSProperties = overlay
-    ? {}
+    ? {
+        backgroundColor: theme.columnBg,
+        border: `1px solid ${theme.columnBorder}`,
+      }
     : {
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.3 : 1,
+        backgroundColor: theme.columnBg,
+        border: `1px solid ${theme.columnBorder}`,
       };
 
   useEffect(() => {
@@ -92,12 +100,16 @@ export function KanbanColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex-shrink-0 w-72 bg-gray-100/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-lg flex flex-col max-h-full"
+      className="flex-shrink-0 w-72 backdrop-blur-sm rounded-lg flex flex-col max-h-full"
     >
-      <div className="flex items-center gap-1 px-2 py-2 border-b border-gray-200/70 dark:border-gray-800/70">
+      <div
+        className="flex items-center gap-1 px-2 py-2 border-b"
+        style={{ borderColor: theme.columnBorder }}
+      >
         {canEdit && (
           <button
-            className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded"
+            className="cursor-grab active:cursor-grabbing p-1 rounded hover:opacity-80"
+            style={{ color: theme.mutedText }}
             {...attributes}
             {...listeners}
             aria-label="Drag column"
@@ -118,25 +130,34 @@ export function KanbanColumn({
                 setEditingTitle(false);
               }
             }}
-            className="flex-1 text-sm font-semibold bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 text-sm font-semibold rounded px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+            style={{
+              backgroundColor: theme.cardBg,
+              color: theme.emphText,
+              border: `1px solid ${theme.columnBorder}`,
+            }}
           />
         ) : (
           <button
             onClick={() => canEdit && startEditingTitle()}
-            className={`flex-1 text-left text-sm font-semibold text-gray-800 dark:text-gray-200 px-1 py-1 rounded truncate ${
-              canEdit ? "hover:bg-gray-200/60 dark:hover:bg-gray-800/60 cursor-text" : "cursor-default"
+            className={`flex-1 text-left text-sm font-semibold px-1 py-1 rounded truncate ${
+              canEdit ? "hover:opacity-80 cursor-text" : "cursor-default"
             }`}
+            style={{ color: theme.emphText }}
             title={column.title}
           >
             {column.title}
           </button>
         )}
-        <span className="text-xs text-gray-400 font-mono px-1">{cards.length}</span>
+        <span className="text-xs font-mono px-1" style={{ color: theme.mutedText }}>
+          {cards.length}
+        </span>
         {canEdit && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="p-1 rounded hover:bg-gray-200/60 dark:hover:bg-gray-800/60 text-gray-500 dark:text-gray-400"
+                className="p-1 rounded hover:opacity-80"
+                style={{ color: theme.mutedText }}
                 aria-label="Column options"
               >
                 <MoreHorizontal className="h-3.5 w-3.5" />
@@ -154,9 +175,10 @@ export function KanbanColumn({
 
       <div
         ref={setDropzoneRef}
-        className={`flex-1 min-h-0 overflow-y-auto p-2 space-y-2 ${
-          isDropzoneOver ? "bg-blue-50/40 dark:bg-blue-950/20" : ""
-        }`}
+        className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2"
+        style={{
+          backgroundColor: isDropzoneOver ? "rgba(59, 130, 246, 0.08)" : undefined,
+        }}
       >
         <SortableContext
           items={cards.map((n) => `card:${n._id}`)}
@@ -164,19 +186,20 @@ export function KanbanColumn({
         >
           {cards.map((node) =>
             overlay ? (
-              <KanbanCard key={node._id} node={node} />
+              <KanbanCard key={node._id} node={node} theme={theme} />
             ) : (
               <SortableKanbanCard
                 key={node._id}
                 node={node}
                 canEdit={canEdit}
+                theme={theme}
                 onRemove={() => onRemoveCard(node._id)}
               />
             )
           )}
         </SortableContext>
         {cards.length === 0 && !overlay && (
-          <div className="text-xs text-gray-400 dark:text-gray-500 italic text-center py-4">
+          <div className="text-xs italic text-center py-4" style={{ color: theme.mutedText, opacity: 0.7 }}>
             No items
           </div>
         )}
@@ -185,7 +208,11 @@ export function KanbanColumn({
       {canEdit && !overlay && (
         <button
           onClick={onAddItem}
-          className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-gray-800/60 transition-colors px-3 py-2 border-t border-gray-200/70 dark:border-gray-800/70 rounded-b-lg"
+          className="flex items-center gap-1.5 text-xs transition-colors px-3 py-2 border-t rounded-b-lg hover:opacity-90"
+          style={{
+            color: theme.mutedText,
+            borderColor: theme.columnBorder,
+          }}
         >
           <Plus className="h-3.5 w-3.5" />
           Add item

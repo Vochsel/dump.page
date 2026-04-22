@@ -20,10 +20,26 @@ import type { KanbanLayout, BoardNode } from "@/context/board-ops-context";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { KanbanAddItemDialog } from "./KanbanAddItemDialog";
+import { lightenHex, darkenHex } from "@/lib/utils";
 
 interface KanbanViewProps {
   canEdit: boolean;
+  bgColor: string;
+  isDark: boolean;
 }
+
+function computeTheme(bgColor: string, isDark: boolean) {
+  return {
+    columnBg: isDark ? lightenHex(bgColor, 0.08) : lightenHex(bgColor, 0.04),
+    columnBorder: isDark ? lightenHex(bgColor, 0.16) : darkenHex(bgColor, 0.1),
+    cardBg: isDark ? lightenHex(bgColor, 0.16) : "#ffffff",
+    cardBorder: isDark ? lightenHex(bgColor, 0.24) : darkenHex(bgColor, 0.12),
+    mutedText: isDark ? lightenHex(bgColor, 0.5) : darkenHex(bgColor, 0.4),
+    emphText: isDark ? "#f3f4f6" : "#111827",
+  };
+}
+
+export type KanbanTheme = ReturnType<typeof computeTheme>;
 
 function makeId() {
   try {
@@ -40,8 +56,9 @@ function findContainer(layout: KanbanLayout, nodeId: string): string | null {
   return null;
 }
 
-export function KanbanView({ canEdit }: KanbanViewProps) {
+export function KanbanView({ canEdit, bgColor, isDark }: KanbanViewProps) {
   const { nodes, kanbanLayout, setKanbanLayout } = useBoardOps();
+  const themeColors = useMemo(() => computeTheme(bgColor, isDark), [bgColor, isDark]);
   const [addItemColumnId, setAddItemColumnId] = useState<string | null>(null);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
@@ -314,6 +331,7 @@ export function KanbanView({ canEdit }: KanbanViewProps) {
                   column={col}
                   canEdit={canEdit}
                   nodeMap={nodeMap}
+                  theme={themeColors}
                   onRename={(title) => renameColumn(col.id, title)}
                   onDelete={() => deleteColumn(col.id)}
                   onRemoveCard={(nodeId) => removeCard(col.id, nodeId)}
@@ -325,7 +343,12 @@ export function KanbanView({ canEdit }: KanbanViewProps) {
             {canEdit && (
               <button
                 onClick={addColumn}
-                className="flex-shrink-0 w-72 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 px-3 py-3 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-white/50 dark:hover:bg-gray-900/50 transition-colors flex items-center justify-center gap-2"
+                className="flex-shrink-0 w-72 rounded-lg border border-dashed px-3 py-3 text-sm transition-colors flex items-center justify-center gap-2 hover:opacity-100"
+                style={{
+                  borderColor: themeColors.columnBorder,
+                  color: themeColors.mutedText,
+                  opacity: 0.75,
+                }}
               >
                 <Plus className="h-4 w-4" />
                 Add column
@@ -336,7 +359,7 @@ export function KanbanView({ canEdit }: KanbanViewProps) {
           <DragOverlay>
             {activeCardNode ? (
               <div className="w-72">
-                <KanbanCard node={activeCardNode} dragging />
+                <KanbanCard node={activeCardNode} theme={themeColors} dragging />
               </div>
             ) : activeColumn ? (
               <div className="opacity-90">
@@ -344,6 +367,7 @@ export function KanbanView({ canEdit }: KanbanViewProps) {
                   column={activeColumn}
                   canEdit={false}
                   nodeMap={nodeMap}
+                  theme={themeColors}
                   onRename={() => {}}
                   onDelete={() => {}}
                   onRemoveCard={() => {}}

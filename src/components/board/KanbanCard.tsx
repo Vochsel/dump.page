@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FileText, CheckSquare, Link as LinkIcon, X, LayoutGrid } from "lucide-react";
 import type { BoardNode } from "@/context/board-ops-context";
+import type { KanbanTheme } from "./KanbanView";
 
 function stripHtml(html: string) {
   return html
@@ -59,10 +60,11 @@ function TypeIcon({ type }: { type: BoardNode["type"] }) {
 
 interface KanbanCardProps {
   node: BoardNode;
+  theme: KanbanTheme;
   dragging?: boolean;
 }
 
-export function KanbanCard({ node, dragging }: KanbanCardProps) {
+export function KanbanCard({ node, theme, dragging }: KanbanCardProps) {
   const { title, subtitle } = getCardPreview(node);
   let favicon: string | undefined;
   if (node.type === "link") {
@@ -77,9 +79,13 @@ export function KanbanCard({ node, dragging }: KanbanCardProps) {
 
   return (
     <div
-      className={`group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-2.5 py-2 shadow-sm ${
-        dragging ? "shadow-lg ring-2 ring-blue-400/40" : "hover:border-gray-300 dark:hover:border-gray-600"
+      className={`group rounded-md px-2.5 py-2 shadow-sm ${
+        dragging ? "shadow-lg ring-2 ring-blue-400/40" : ""
       }`}
+      style={{
+        backgroundColor: theme.cardBg,
+        border: `1px solid ${theme.cardBorder}`,
+      }}
     >
       <div className="flex items-start gap-2">
         {node.type === "link" && favicon ? (
@@ -95,11 +101,17 @@ export function KanbanCard({ node, dragging }: KanbanCardProps) {
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-gray-800 dark:text-gray-200 font-medium line-clamp-2 break-words">
+          <p
+            className="text-sm font-medium line-clamp-2 break-words"
+            style={{ color: theme.emphText }}
+          >
             {title}
           </p>
           {subtitle && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+            <p
+              className="text-xs mt-0.5 truncate"
+              style={{ color: theme.mutedText }}
+            >
               {subtitle}
             </p>
           )}
@@ -112,10 +124,11 @@ export function KanbanCard({ node, dragging }: KanbanCardProps) {
 interface SortableKanbanCardProps {
   node: BoardNode;
   canEdit: boolean;
+  theme: KanbanTheme;
   onRemove: () => void;
 }
 
-export function SortableKanbanCard({ node, canEdit, onRemove }: SortableKanbanCardProps) {
+export function SortableKanbanCard({ node, canEdit, theme, onRemove }: SortableKanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `card:${node._id}`,
     disabled: !canEdit,
@@ -129,7 +142,7 @@ export function SortableKanbanCard({ node, canEdit, onRemove }: SortableKanbanCa
 
   return (
     <div ref={setNodeRef} style={style} className="relative group/card" {...attributes} {...listeners}>
-      <KanbanCard node={node} />
+      <KanbanCard node={node} theme={theme} />
       {canEdit && (
         <button
           onPointerDown={(e) => e.stopPropagation()}
@@ -137,7 +150,11 @@ export function SortableKanbanCard({ node, canEdit, onRemove }: SortableKanbanCa
             e.stopPropagation();
             onRemove();
           }}
-          className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 transition-opacity p-0.5 rounded bg-white/90 dark:bg-gray-900/90 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-red-500"
+          className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-100 transition-opacity p-0.5 rounded border text-gray-400 hover:text-red-500"
+          style={{
+            backgroundColor: theme.cardBg,
+            borderColor: theme.cardBorder,
+          }}
           title="Remove from kanban"
           aria-label="Remove from kanban"
         >
