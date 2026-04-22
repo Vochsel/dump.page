@@ -4,7 +4,7 @@ import { ReactNode, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { BoardOpsContext, BoardOps, BoardNode, BoardEdge } from "./board-ops-context";
+import { BoardOpsContext, BoardOps, BoardNode, BoardEdge, KanbanLayout } from "./board-ops-context";
 
 interface ConvexBoardOpsProviderProps {
   boardId: Id<"boards">;
@@ -24,6 +24,9 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
   const createEdgeMutation = useMutation(api.edges.createEdge);
   const updateEdgeMutation = useMutation(api.edges.updateEdge);
   const deleteEdgeMutation = useMutation(api.edges.deleteEdge);
+
+  const convexKanban = useQuery(api.kanban.getLayoutByBoard, { boardId, shareToken });
+  const setKanbanLayoutMutation = useMutation(api.kanban.setLayout);
 
   const nodes: BoardNode[] | undefined = useMemo(() => {
     if (!convexNodes) return undefined;
@@ -51,6 +54,18 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
       label: e.label,
     }));
   }, [convexEdges]);
+
+  const kanbanLayout: KanbanLayout | undefined = useMemo(() => {
+    if (convexKanban === undefined) return undefined;
+    if (convexKanban === null) return { columns: [] };
+    return {
+      columns: convexKanban.columns.map((c) => ({
+        id: c.id,
+        title: c.title,
+        nodeIds: c.nodeIds as string[],
+      })),
+    };
+  }, [convexKanban]);
 
   const ops: BoardOps = useMemo(
     () => ({
@@ -120,8 +135,19 @@ export function ConvexBoardOpsProvider({ boardId, shareToken, children }: Convex
         });
         return null;
       },
+      kanbanLayout,
+      setKanbanLayout: async (layout) => {
+        await setKanbanLayoutMutation({
+          boardId: boardId,
+          columns: layout.columns.map((c) => ({
+            id: c.id,
+            title: c.title,
+            nodeIds: c.nodeIds as Id<"nodes">[],
+          })),
+        });
+      },
     }),
-    [nodes, boardId, createNodeMutation, updateNodeMutation, updateNodePositionMutation, deleteNodeMutation, fetchMetadataMutation, edges, createEdgeMutation, updateEdgeMutation, deleteEdgeMutation]
+    [nodes, boardId, createNodeMutation, updateNodeMutation, updateNodePositionMutation, deleteNodeMutation, fetchMetadataMutation, edges, createEdgeMutation, updateEdgeMutation, deleteEdgeMutation, kanbanLayout, setKanbanLayoutMutation]
   );
 
   return (

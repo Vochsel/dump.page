@@ -32,6 +32,16 @@ export type BoardNode = {
   metadata?: Metadata;
 };
 
+export type KanbanColumn = {
+  id: string;
+  title: string;
+  nodeIds: string[];
+};
+
+export type KanbanLayout = {
+  columns: KanbanColumn[];
+};
+
 export interface BoardOps {
   nodes: BoardNode[] | undefined;
   boardId: string;
@@ -62,6 +72,8 @@ export interface BoardOps {
   createEdge: (args: { boardId: string; source: string; target: string }) => Promise<string>;
   updateEdge: (args: { edgeId: string; label?: string }) => Promise<null>;
   deleteEdge: (args: { edgeId: string }) => Promise<null>;
+  kanbanLayout: KanbanLayout | undefined;
+  setKanbanLayout: (layout: KanbanLayout) => Promise<void>;
 }
 
 export const BoardOpsContext = createContext<BoardOps | null>(null);

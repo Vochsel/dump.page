@@ -30,6 +30,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@tiptap/extension-link": "^3.20.0",
     "@tiptap/extension-table": "^3.20.1",

@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown, Loader2, ClipboardPaste, Send, Zap, LayoutDashboard } from "lucide-react";
+import { Type, Link, Plus, CheckSquare, Copy, CopyPlus, Trash2, Upload, Pencil, Volume2, VolumeOff, PanelTop, ChevronsUpDown, ExternalLink, Sun, Moon, Settings2, Archive, Grid3X3, Map as MapIcon, ListChecks, Maximize2, LayoutGrid, List, FileText, ChevronDown, Loader2, ClipboardPaste, Send, Zap, LayoutDashboard, KanbanSquare } from "lucide-react";
 import { BoardPickerDialog } from "./BoardPickerDialog";
 import {
   Popover,
@@ -102,8 +102,8 @@ interface CanvasInnerProps {
   settings: BoardSettingsData;
   boardSlug?: string;
   shareToken?: string;
-  viewMode?: "board" | "list" | "document";
-  onViewModeChange?: (mode: "board" | "list" | "document") => void;
+  viewMode?: "board" | "list" | "document" | "kanban";
+  onViewModeChange?: (mode: "board" | "list" | "document" | "kanban") => void;
   focusNodeId?: string;
 }
 
@@ -1495,7 +1495,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
               className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm"
               title="Switch view"
             >
-              {viewMode === "board" ? <LayoutGrid className="h-3.5 w-3.5" /> : viewMode === "list" ? <List className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+              {viewMode === "board" ? <LayoutGrid className="h-3.5 w-3.5" /> : viewMode === "list" ? <List className="h-3.5 w-3.5" /> : viewMode === "kanban" ? <KanbanSquare className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
               <span className="capitalize">{viewMode}</span>
               <ChevronDown className="h-3 w-3 opacity-50" />
             </button>
@@ -1504,6 +1504,7 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
             {([
               { value: "board" as const, label: "Board", icon: LayoutGrid },
               { value: "list" as const, label: "List", icon: List },
+              { value: "kanban" as const, label: "Kanban", icon: KanbanSquare },
               { value: "document" as const, label: "Document", icon: FileText },
             ]).map((option) => (
               <button
@@ -2078,8 +2079,8 @@ interface CanvasProps {
   settings?: BoardSettingsData;
   boardSlug?: string;
   shareToken?: string;
-  viewMode?: "board" | "list" | "document";
-  onViewModeChange?: (mode: "board" | "list" | "document") => void;
+  viewMode?: "board" | "list" | "document" | "kanban";
+  onViewModeChange?: (mode: "board" | "list" | "document" | "kanban") => void;
   focusNodeId?: string;
 }
 

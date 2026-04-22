@@ -1,10 +1,11 @@
 "use client";
 
 import { ReactNode, useState, useCallback, useEffect, useRef } from "react";
-import { BoardOpsContext, BoardOps, BoardNode, BoardEdge } from "./board-ops-context";
+import { BoardOpsContext, BoardOps, BoardNode, BoardEdge, KanbanLayout } from "./board-ops-context";
 
 const STORAGE_KEY = "dump-local-board";
 const EDGES_STORAGE_KEY = "dump-local-board-edges";
+const KANBAN_STORAGE_KEY = "dump-local-board-kanban";
 
 function loadNodes(): BoardNode[] {
   if (typeof window === "undefined") return [];
@@ -44,6 +45,25 @@ function saveEdges(edges: BoardEdge[]) {
   }
 }
 
+function loadKanban(): KanbanLayout {
+  if (typeof window === "undefined") return { columns: [] };
+  try {
+    const raw = localStorage.getItem(KANBAN_STORAGE_KEY);
+    if (!raw) return { columns: [] };
+    return JSON.parse(raw);
+  } catch {
+    return { columns: [] };
+  }
+}
+
+function saveKanban(layout: KanbanLayout) {
+  try {
+    localStorage.setItem(KANBAN_STORAGE_KEY, JSON.stringify(layout));
+  } catch {
+    // localStorage full or unavailable
+  }
+}
+
 export function clearLocalBoard() {
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -67,6 +87,7 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
   nodesRef.current = nodes;
 
   const [edges, setEdges] = useState<BoardEdge[]>(() => loadEdges());
+  const [kanbanLayout, setKanbanLayoutState] = useState<KanbanLayout>(() => loadKanban());
 
   // Persist on change
   useEffect(() => {
@@ -76,6 +97,10 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
   useEffect(() => {
     saveEdges(edges);
   }, [edges]);
+
+  useEffect(() => {
+    saveKanban(kanbanLayout);
+  }, [kanbanLayout]);
 
   const createNode: BoardOps["createNode"] = useCallback(async (args) => {
     const id = crypto.randomUUID();
@@ -177,6 +202,10 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
     }
   }, []);
 
+  const setKanbanLayout: BoardOps["setKanbanLayout"] = useCallback(async (layout) => {
+    setKanbanLayoutState(layout);
+  }, []);
+
   const ops: BoardOps = {
     nodes,
     boardId: "local",
@@ -189,6 +218,8 @@ export function LocalBoardOpsProvider({ children, seedNodes }: { children: React
     createEdge,
     updateEdge,
     deleteEdge,
+    kanbanLayout,
+    setKanbanLayout,
   };
 
   return (

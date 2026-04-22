@@ -129,6 +129,18 @@ export default defineSchema({
     .index("by_source", ["source"])
     .index("by_target", ["target"]),
 
+  kanbanLayouts: defineTable({
+    boardId: v.id("boards"),
+    columns: v.array(
+      v.object({
+        id: v.string(),
+        title: v.string(),
+        nodeIds: v.array(v.id("nodes")),
+      })
+    ),
+    updatedAt: v.number(),
+  }).index("by_boardId", ["boardId"]),
+
   nodes: defineTable({
     boardId: v.id("boards"),
     type: v.union(v.literal("text"), v.literal("link"), v.literal("checklist"), v.literal("board")),

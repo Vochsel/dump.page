@@ -14,6 +14,7 @@ import type * as boards from "../boards.js";
 import type * as crons from "../crons.js";
 import type * as edges from "../edges.js";
 import type * as featureRequests from "../featureRequests.js";
+import type * as kanban from "../kanban.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as mcp from "../mcp.js";
 import type * as mcpAuth from "../mcpAuth.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   edges: typeof edges;
   featureRequests: typeof featureRequests;
+  kanban: typeof kanban;
   "lib/auth": typeof lib_auth;
   mcp: typeof mcp;
   mcpAuth: typeof mcpAuth;

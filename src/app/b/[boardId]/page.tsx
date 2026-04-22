@@ -11,7 +11,7 @@ import { UserMenu } from "@/components/auth/UserMenu";
 import { useAuth } from "@/context/auth-context";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown, Sun, Moon, Volume2, VolumeOff, Pencil, Newspaper } from "lucide-react";
+import { ArrowLeft, HelpCircle, LayoutGrid, List, FileText, ChevronDown, Sun, Moon, Volume2, VolumeOff, Pencil, Newspaper, KanbanSquare } from "lucide-react";
 import { DeleteBoardButton } from "@/components/board/DeleteBoardButton";
 import { ChatButton } from "@/components/board/ChatButton";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { BUILD_VERSION } from "@/lib/constants";
 import { ListView } from "@/components/board/ListView";
 import { DocumentView } from "@/components/board/DocumentView";
+import { KanbanView } from "@/components/board/KanbanView";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { PRO_MODE_STORAGE_KEY } from "@/lib/chat-providers";
 import { sfx } from "@/lib/sfx";
@@ -111,7 +112,7 @@ export default function BoardPage({
   const { user, loading: authLoading } = useAuth();
   const { resolved: theme, setMode: setThemeMode } = useTheme();
 
-  const [viewMode, setViewMode] = useLocalStorage<"board" | "list" | "document">("dump-view-mode", "board");
+  const [viewMode, setViewMode] = useLocalStorage<"board" | "list" | "document" | "kanban">("dump-view-mode", "board");
   const [proMode] = useLocalStorage(PRO_MODE_STORAGE_KEY, false);
   const [isMuted, setIsMuted] = useState(() => sfx.isMuted());
   const [docEditMode, setDocEditMode] = useState(false);
@@ -246,6 +247,10 @@ export default function BoardPage({
             <div className="h-full overflow-y-auto pt-16" style={{ backgroundColor: bgColor }}>
               <ListView />
             </div>
+          ) : viewMode === "kanban" ? (
+            <div className="h-full pt-16" style={{ backgroundColor: bgColor }}>
+              <KanbanView canEdit={access.canEdit} />
+            </div>
           ) : (
             <div className="h-full overflow-y-auto pt-16" style={{ backgroundColor: bgColor }}>
               <DocumentView boardName={access.board.name} canEdit={access.canEdit} editMode={docEditMode} />
@@ -342,7 +347,13 @@ export default function BoardPage({
                 className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300 text-sm"
                 title="Switch view"
               >
-                {viewMode === "list" ? <List className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+                {viewMode === "list" ? (
+                  <List className="h-3.5 w-3.5" />
+                ) : viewMode === "kanban" ? (
+                  <KanbanSquare className="h-3.5 w-3.5" />
+                ) : (
+                  <FileText className="h-3.5 w-3.5" />
+                )}
                 <span className="capitalize">{viewMode}</span>
                 <ChevronDown className="h-3 w-3 text-gray-400" />
               </button>
@@ -351,6 +362,7 @@ export default function BoardPage({
               {([
                 { value: "board" as const, label: "Board", icon: LayoutGrid },
                 { value: "list" as const, label: "List", icon: List },
+                { value: "kanban" as const, label: "Kanban", icon: KanbanSquare },
                 { value: "document" as const, label: "Document", icon: FileText },
               ]).map((option) => (
                 <button
