@@ -248,7 +248,7 @@ export default function BoardPage({
               <ListView />
             </div>
           ) : viewMode === "kanban" ? (
-            <div className="h-full pt-16" style={{ backgroundColor: bgColor }}>
+            <div className="h-full pt-20 md:pt-24" style={{ backgroundColor: bgColor }}>
               <KanbanView canEdit={access.canEdit} />
             </div>
           ) : (

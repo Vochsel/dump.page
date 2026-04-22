@@ -14,7 +14,18 @@ import { useBoardOps } from "@/context/board-ops-context";
 import type { BoardNode } from "@/context/board-ops-context";
 
 function stripHtml(html: string) {
-  return html.replace(/<[^>]*>/g, "").trim();
+  return html
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/(p|div|h[1-6]|li|blockquote|tr|pre)>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function previewTitle(node: BoardNode): string {
