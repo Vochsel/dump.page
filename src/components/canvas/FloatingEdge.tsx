@@ -132,6 +132,7 @@ function EdgeLabelInput({
       placeholder="label"
       onChange={(e) => setValue(e.target.value)}
       onBlur={commit}
+      onContextMenu={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === "Enter") {

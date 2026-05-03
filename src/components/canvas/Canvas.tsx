@@ -97,6 +97,19 @@ function normalizeUrl(text: string): string {
   return text.startsWith("http://") || text.startsWith("https://") ? text : "https://" + text;
 }
 
+function shouldUseNativeTextContextMenu(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+
+  const nativeTarget = target.closest("textarea, input, [contenteditable], .ProseMirror, [data-native-context-menu]");
+  if (!nativeTarget) return false;
+
+  if (nativeTarget instanceof HTMLInputElement) {
+    return !["button", "checkbox", "color", "file", "hidden", "image", "radio", "range", "reset", "submit"].includes(nativeTarget.type);
+  }
+
+  return true;
+}
+
 interface CanvasInnerProps {
   canEdit: boolean;
   settings: BoardSettingsData;
@@ -1042,6 +1055,10 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
   }, [linkUrl, editLinkNodeId, boardId, boardNodes, createNode, fetchMetadata, screenToFlowPosition, pushAction, updateNode]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    if (shouldUseNativeTextContextMenu(e.target)) {
+      e.stopPropagation();
+      return;
+    }
     contextMenuPosRef.current = { x: e.clientX, y: e.clientY };
     // Read clipboard for paste context menu item
     navigator.clipboard.readText().then((text) => {
@@ -1053,6 +1070,10 @@ function CanvasInner({ canEdit, settings, boardSlug, shareToken, viewMode, onVie
 
   const onNodeContextMenu = useCallback(
     (e: React.MouseEvent, node: Node) => {
+      if (shouldUseNativeTextContextMenu(e.target)) {
+        e.stopPropagation();
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       setNodeMenu({ nodeId: node.id, x: e.clientX, y: e.clientY });
