@@ -431,6 +431,7 @@ export function ChecklistNode({ data }: NodeProps) {
                 placeholder=""
                 onChange={(e) => setTitleValue(e.target.value)}
                 onBlur={commitTitle}
+                onContextMenu={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") commitTitle();
                   if (e.key === "Escape") {
@@ -515,6 +516,7 @@ export function ChecklistNode({ data }: NodeProps) {
                   e.target.style.height = e.target.scrollHeight + "px";
                 }}
                 onBlur={handleBlur}
+                onContextMenu={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

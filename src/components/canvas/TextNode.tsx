@@ -89,6 +89,7 @@ export function TextNode({ data }: NodeProps) {
                 placeholder=""
                 onChange={(e) => setTitleValue(e.target.value)}
                 onBlur={commitTitle}
+                onContextMenu={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") commitTitle();
                   if (e.key === "Escape") {

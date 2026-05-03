@@ -72,7 +72,9 @@ export function TipTapEditor({ content, onSave, onCancel }: TipTapEditorProps) {
 
   return (
     <div
+      data-native-context-menu
       className="nodrag nowheel overflow-hidden"
+      onContextMenu={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === "Escape") {
